@@ -1,0 +1,124 @@
+:root {
+  --sidebar-bg: #2d6238; /* Chick Pastil Green */
+  --sidebar-width: 230px;
+  --topbar-height: 70px;
+}
+
+body {
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* 1. TOPBAR: Highest Z-Index (1030) */
+.topbar {
+  height: var(--topbar-height);
+  background-color: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1030; /* Highest priority */
+}
+
+.topbar-logo {
+  height: 70px;
+  object-fit: contain;
+}
+
+/* Layout Container */
+.app-container {
+  padding-top: var(--topbar-height);
+  min-height: 100vh;
+}
+
+/* 2. SIDEBAR: Fixed position, directly below Topbar, higher than main content (1020) */
+.sidebar {
+  width: var(--sidebar-width);
+  background-color: var(--sidebar-bg);
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  bottom: 0;
+  height: calc(100vh - var(--topbar-height));
+  z-index: 1020; /* Below Topbar (1030), above Main Content (1) */
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2); /* Creates floating overlay effect */
+  transition: transform 0.3s ease;
+}
+
+/* Sidebar collapsed state (Slide left) */
+.sidebar.collapsed {
+  transform: translateX(-100%);
+}
+
+.sidebar-nav {
+  padding: 2rem 1.5rem;
+  list-style: none;
+  margin: 0;
+}
+
+.sidebar-nav .nav-item {
+  margin-bottom: 0.75rem;
+}
+
+.sidebar-nav .nav-link {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.35rem;
+  text-align: right;
+  padding: 0.4rem 0;
+  text-decoration: none;
+  display: block;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-nav .nav-link:hover,
+.sidebar-nav .nav-link.active {
+  color: #ffffff;
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.sidebar-nav .nav-link:not(.active) {
+  opacity: 0.85;
+}
+
+/* Toggle Button */
+.sidebar-toggle-btn {
+  position: absolute;
+  right: -18px;
+  top: 400px;
+  width: 36px;
+  height: 36px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  border: none;
+  z-index: 1025;
+  color: #555;
+  transition: transform 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-toggle-btn {
+  right: -24px;
+  transform: rotate(180deg);
+}
+
+/* MAIN CONTENT: Takes full screen width, sitting directly underneath topbar & floating sidebar */
+.main-content {
+  margin-left: 0; /* Set to 0 so content extends to the left edge */
+  padding: 2rem;
+  width: 100%;
+}
+
+/* Adjust main content when sidebar is collapsed */
+.sidebar-wrapper:has(.sidebar.collapsed) + .main-content {
+  margin-left: 0;
+}
