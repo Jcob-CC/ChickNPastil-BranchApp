@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chick N Pastil</title>
+  
+  <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+  
+  <!-- Custom Layout CSS -->
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+</head>
+<body data-page-header="Supply Dashboard">
+
+  <!-- Topbar Placeholder -->
+  <div id="topbar-wrapper"></div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <!-- Sidebar Placeholder -->
+    <div id="sidebar-wrapper"></div>
+
+    <!-- Main Page Content -->
+    <main class="main-content">
+      <div class="container-fluid py-4">
+
+        <div class="row g-4 mb-4">
+          <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #fff7ed, #fff1f2);">
+              <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2">
+                <span class="badge rounded-pill bg-danger-subtle text-danger p-2"><i class="bi bi-bell-fill"></i></span>
+                <h5 class="mb-0 text-dark">Notifications</h5>
+              </div>
+              <div class="card-body pt-0" style="max-height: 320px; overflow-y: auto;">
+                <div class="d-flex flex-column gap-2">
+                  <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body py-2">
+                      <strong>Warehouse:</strong> Pending stock verification for the latest rice delivery.
+                    </div>
+                  </div>
+                  
+                  <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body py-2">
+                      <strong>Procurement:</strong> Requisition approval awaiting branch manager review.
+                    </div>
+                  </div>
+                  <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body py-2">
+                      <strong>Accounting:</strong> Unexpected expense report pending budget confirmation.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #f8fafc, #eef2ff);">
+              <div class="card-header border-0 bg-transparent d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis p-2"><i class="bi bi-gear-fill"></i></span>
+                  <h5 class="mb-0 text-dark">Tools</h5>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <button class="btn btn-outline-primary w-100" style="background: #f0fdf4; border-color: #86efac; color: #166534;">
+                      <i class="bi bi-box-seam me-1"></i>
+                      <span class="fw-semibold">Stock Requisition</span>
+                    </button>
+                    <p class="small text-muted mt-2 mb-0">Prepare tomorrow’s supply request before closing.</p>
+                  </div>
+                  <div class="col-md-6">
+                    <button class="btn btn-outline-primary w-100" style="background: #eff6ff; border-color: #93c5fd; color: #1d4ed8;">
+                      <i class="bi bi-truck me-1"></i>
+                      <span class="fw-semibold">Requisition Fulfillment</span>
+                    </button>
+                    <p class="small text-muted mt-2 mb-0">Review branch requests, track fulfillment, and log incoming deliveries.</p>
+                  </div>
+                  <div class="col-md-6">
+                    <button class="btn btn-outline-primary w-100" style="background: #fff7ed; border-color: #fdba74; color: #c2410c;">
+                      <i class="bi bi-cash-stack me-1"></i>
+                      <span class="fw-semibold">Unexpected Expenses</span>
+                    </button>
+                    <p class="small text-muted mt-2 mb-0">Submit urgent purchase requests to keep essential supplies on hand.</p>
+                  </div>
+                  <div class="col-md-6">
+                    <button class="btn btn-outline-primary w-100" style="background: #f5f3ff; border-color: #c4b5fd; color: #6d28d9;">
+                      <i class="bi bi-clipboard-data me-1"></i>
+                      <span class="fw-semibold">Inventory Manager</span>
+                    </button>
+                    <p class="small text-muted mt-2 mb-0">Maintain item records and keep inventory details up to date.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-lg-4">
+            <div class="card h-100 shadow-sm border-0" style="background: linear-gradient(135deg, #ecfeff, #cffafe);">
+              <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2">
+                <span class="badge rounded-pill bg-info-subtle text-info-emphasis p-2"><i class="bi bi-calendar3"></i></span>
+                <h5 class="mb-0 text-dark">Last Restock Date</h5>
+              </div>
+              <div class="card-body">
+                <h3 class="mb-2">September 30, 2026</h3>
+                <p class="text-muted mb-0">No restock has been performed today. Supply should be in transit and will be checked before the next delivery window.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-8">
+            <div class="card h-100 shadow-sm border-0" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);">
+              <div class="card-header border-0 bg-transparent d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis p-2"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                  <h5 class="mb-0 text-dark">Low Stock Items</h5>
+                </div>
+                <button class="btn btn-sm btn-light border">Threshold Settings</button>
+              </div>
+              <div class="card-body p-0" style="max-height: 320px; overflow-y: auto; position: relative; z-index: 1;">
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0 align-middle">
+                    <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
+                      <tr>
+                        <th>Item</th>
+                        <th>Current Stock</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Rice</td>
+                        <td>18 sacks</td>
+                      </tr>
+                      <tr>
+                        <td>Cooking Oil</td>
+                        <td>12 bottles</td>
+                      </tr>
+                      <tr>
+                        <td>Chicken</td>
+                        <td>25 packs</td>
+                      </tr>
+                      <tr>
+                        <td>Tomato Paste</td>
+                        <td>9 cans</td>
+                      </tr>
+                      <tr>
+                        <td>Garlic</td>
+                        <td>11 kg</td>
+                      </tr>
+                      <tr>
+                        <td>Onion</td>
+                        <td>7 kg</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Bars Loader Script -->
+  <script src="../../js/bars.js"></script>
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

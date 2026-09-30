@@ -93,7 +93,7 @@ body {
   top: 400px;
   width: 36px;
   height: 36px;
-  background-color: #ffffff;
+  background-color: #ad2727;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -102,7 +102,7 @@ body {
   cursor: pointer;
   border: none;
   z-index: 1025;
-  color: #555;
+  color: #ffffff;
   transition: transform 0.3s ease;
 }
 

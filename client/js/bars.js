@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
   // 1. Fetch reusable components from components.html
-  fetch("components.html")
+  fetch("../../assets/html/components.html")
     .then((response) => {
       if (!response.ok) throw new Error("Failed to load components.html");
       return response.text();
@@ -27,20 +27,7 @@ document.addEventListener("DOMContentLoaded", function () {
         titleHeading.textContent = customTitle;
       }
 
-      // 3. Set Active Navigation Link based on current page URL filename
-      const currentPage = window.location.pathname.split("/").pop() || "user.html";
-      const navLinks = document.querySelectorAll(".sidebar-nav .nav-link");
-
-      navLinks.forEach((link) => {
-        const href = link.getAttribute("href");
-        if (href === currentPage) {
-          link.classList.add("active");
-        } else {
-          link.classList.remove("active");
-        }
-      });
-
-      // 4. Initialize Sidebar Toggle Functionality
+      // 3. Initialize Sidebar Toggle Functionality
       const sidebarToggleBtn = document.getElementById("sidebar-toggle");
       const sidebar = document.getElementById("app-sidebar");
 
