@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chick N Pastil</title>
+  
+  <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+  
+  <!-- Custom Layout CSS -->
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+</head>
+<body data-page-header="Stock Requisition">
+
+  <!-- Topbar Placeholder -->
+  <div id="topbar-wrapper"></div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <!-- Sidebar Placeholder -->
+    <div id="sidebar-wrapper"></div>
+
+    <!-- Main Page Content -->
+    <main class="main-content">
+      <div class="container-fluid py-4">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+          <button class="btn btn-outline-success" type="button" onclick="showInventoryPopup()">
+            <i class="bi bi-boxes me-2" aria-hidden="true"></i>Confirm inventory
+          </button>
+        </div>
+
+        <form id="requisitionForm">
+          <div class="row g-4">
+            <div class="col-xl-8">
+              <section class="card border-0 shadow-sm h-100" aria-labelledby="itemsHeading" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
+                <div class="card-header border-0 bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                    <div>
+                      <h2 class="h5 mb-1" id="itemsHeading">Requested items</h2>
+                      <p class="small text-secondary mb-0">6 items · quantities for this request</p>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-success" type="button" onclick="showItemsPopup()">
+                      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add item
+                    </button>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th scope="col" class="ps-3">Item</th>
+                        <th scope="col">On hand</th>
+                        <th scope="col">Target</th>
+                        <th scope="col" class="pe-3" style="min-width: 150px;">Request quantity</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><th scope="row" class="ps-3 fw-medium">Rice<small class="d-block text-secondary fw-normal">sacks</small></th><td>18 sacks</td><td>30 sacks</td><td class="pe-3"><input class="form-control" type="number" min="0" value="12" aria-label="Rice request quantity"></td></tr>
+                      <tr><th scope="row" class="ps-3 fw-medium">Cooking oil<small class="d-block text-secondary fw-normal">bottles</small></th><td>12 bottles</td><td>24 bottles</td><td class="pe-3"><input class="form-control" type="number" min="0" value="12" aria-label="Cooking oil request quantity"></td></tr>
+                      <tr><th scope="row" class="ps-3 fw-medium">Chicken<small class="d-block text-secondary fw-normal">packs</small></th><td>25 packs</td><td>40 packs</td><td class="pe-3"><input class="form-control" type="number" min="0" value="15" aria-label="Chicken request quantity"></td></tr>
+                      <tr><th scope="row" class="ps-3 fw-medium">Tomato paste<small class="d-block text-secondary fw-normal">cans</small></th><td>9 cans</td><td>18 cans</td><td class="pe-3"><input class="form-control" type="number" min="0" value="9" aria-label="Tomato paste request quantity"></td></tr>
+                      <tr><th scope="row" class="ps-3 fw-medium">Coconut milk<small class="d-block text-secondary fw-normal">cans</small></th><td>14 cans</td><td>24 cans</td><td class="pe-3"><input class="form-control" type="number" min="0" value="10" aria-label="Coconut milk request quantity"></td></tr>
+                      <tr><th scope="row" class="ps-3 fw-medium">Packaging boxes<small class="d-block text-secondary fw-normal">bundles</small></th><td>6 bundles</td><td>15 bundles</td><td class="pe-3"><input class="form-control" type="number" min="0" value="9" aria-label="Packaging boxes request quantity"></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="card-footer bg-white text-secondary small py-3">
+                  Request quantities are shown for review.
+                </div>
+              </section>
+            </div>
+
+            <div class="col-xl-4">
+              <div class="d-flex flex-column gap-4">
+                <section class="card border-0 shadow-sm" aria-labelledby="detailsHeading" style="background: linear-gradient(135deg, #eff6ff, #ecfeff);">
+                  <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2 py-3">
+                    <span class="badge rounded-pill bg-primary-subtle text-primary p-2"><i class="bi bi-geo-alt" aria-hidden="true"></i></span>
+                    <div>
+                      <h2 class="h5 mb-1" id="detailsHeading">Request details</h2>
+                      <p class="small text-secondary mb-0">Branch and staff information</p>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      <label class="form-label" for="requestLocation">Branch location</label>
+                      <input class="form-control" id="requestLocation" value="Branch Location" readonly>
+                    </div>
+                    <div class="mb-0">
+                      <label class="form-label" for="requestStaff">Prepared by</label>
+                      <input class="form-control" id="requestStaff" value="User Staff Full Name" readonly>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="card border-0 shadow-sm" aria-labelledby="noteHeading" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);">
+                  <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2 py-3">
+                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis p-2"><i class="bi bi-sticky" aria-hidden="true"></i></span>
+                    <div>
+                      <h2 class="h5 mb-1" id="noteHeading">Request note</h2>
+                      <p class="small text-secondary mb-0">Optional message for the supply team</p>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <label class="visually-hidden" for="requestNote">Note for this requisition</label>
+                    <textarea class="form-control" id="requestNote" rows="4" placeholder="Add a note for the supply team"></textarea>
+                  </div>
+                </section>
+
+                <div class="card border-0 shadow-sm" role="note" style="background: linear-gradient(135deg, #ecfeff, #cffafe);">
+                  <div class="card-body d-flex gap-3 align-items-start">
+                    <span class="badge rounded-pill bg-info-subtle text-info-emphasis p-2"><i class="bi bi-receipt" aria-hidden="true"></i></span>
+                    <div><strong>Today’s sales are attached</strong><div class="small text-secondary mt-1">Sales record for today will be included with this request.</div></div>
+                  </div>
+                </div>
+                <button class="btn btn-success btn-lg" type="button">
+                  <i class="bi bi-send me-2" aria-hidden="true"></i>Submit requisition
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+
+  </div>
+
+  <div class="modal fade" id="inventoryModal" tabindex="-1" aria-labelledby="inventoryModalTitle" aria-describedby="inventoryModalDescription" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title fs-5" id="inventoryModalTitle">Confirm inventory data</h2>
+            <p class="small text-secondary mb-0 mt-1" id="inventoryModalDescription">Check on-hand counts and target quantities before building the requisition.</p>
+          </div>
+        </div>
+        <div class="modal-body p-0">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3" scope="col">Inventory item</th>
+                  <th scope="col" style="min-width: 145px;">Current on hand</th>
+                  <th class="pe-3" scope="col" style="min-width: 145px;">Target quantity</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row" class="ps-3 fw-medium">Rice<small class="d-block text-secondary fw-normal">sacks</small></th><td><label class="visually-hidden" for="onHandRice">Rice current quantity</label><input class="form-control" id="onHandRice" type="number" min="0" value="18"></td><td class="pe-3"><label class="visually-hidden" for="targetRice">Rice target quantity</label><input class="form-control" id="targetRice" type="number" min="0" value="30"></td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Cooking oil<small class="d-block text-secondary fw-normal">bottles</small></th><td><label class="visually-hidden" for="onHandOil">Cooking oil current quantity</label><input class="form-control" id="onHandOil" type="number" min="0" value="12"></td><td class="pe-3"><label class="visually-hidden" for="targetOil">Cooking oil target quantity</label><input class="form-control" id="targetOil" type="number" min="0" value="24"></td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Chicken<small class="d-block text-secondary fw-normal">packs</small></th><td><label class="visually-hidden" for="onHandChicken">Chicken current quantity</label><input class="form-control" id="onHandChicken" type="number" min="0" value="25"></td><td class="pe-3"><label class="visually-hidden" for="targetChicken">Chicken target quantity</label><input class="form-control" id="targetChicken" type="number" min="0" value="40"></td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Tomato paste<small class="d-block text-secondary fw-normal">cans</small></th><td><label class="visually-hidden" for="onHandTomato">Tomato paste current quantity</label><input class="form-control" id="onHandTomato" type="number" min="0" value="9"></td><td class="pe-3"><label class="visually-hidden" for="targetTomato">Tomato paste target quantity</label><input class="form-control" id="targetTomato" type="number" min="0" value="18"></td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Coconut milk<small class="d-block text-secondary fw-normal">cans</small></th><td><label class="visually-hidden" for="onHandCoconut">Coconut milk current quantity</label><input class="form-control" id="onHandCoconut" type="number" min="0" value="14"></td><td class="pe-3"><label class="visually-hidden" for="targetCoconut">Coconut milk target quantity</label><input class="form-control" id="targetCoconut" type="number" min="0" value="24"></td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Packaging boxes<small class="d-block text-secondary fw-normal">bundles</small></th><td><label class="visually-hidden" for="onHandBoxes">Packaging boxes current quantity</label><input class="form-control" id="onHandBoxes" type="number" min="0" value="6"></td><td class="pe-3"><label class="visually-hidden" for="targetBoxes">Packaging boxes target quantity</label><input class="form-control" id="targetBoxes" type="number" min="0" value="15"></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <span class="small text-secondary">Inventory and target quantities</span>
+          <button class="btn btn-success" type="button" data-bs-dismiss="modal">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="itemsModal" tabindex="-1" aria-labelledby="itemsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title fs-5" id="itemsModalTitle">Available items</h2>
+            <p class="small text-secondary mb-0 mt-1">Inventory items available for requisition</p>
+          </div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="ps-3">Item</th>
+                  <th scope="col">On hand</th>
+                  <th scope="col" class="pe-3">Target</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row" class="ps-3 fw-medium">Eggs<small class="d-block text-secondary fw-normal">trays</small></th><td>8 trays</td><td class="pe-3">20 trays</td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Onions<small class="d-block text-secondary fw-normal">kilograms</small></th><td>6 kg</td><td class="pe-3">12 kg</td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Garlic<small class="d-block text-secondary fw-normal">kilograms</small></th><td>4 kg</td><td class="pe-3">8 kg</td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Soy sauce<small class="d-block text-secondary fw-normal">bottles</small></th><td>5 bottles</td><td class="pe-3">12 bottles</td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Vinegar<small class="d-block text-secondary fw-normal">bottles</small></th><td>3 bottles</td><td class="pe-3">10 bottles</td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Chili<small class="d-block text-secondary fw-normal">packs</small></th><td>2 packs</td><td class="pe-3">6 packs</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bars Loader Script -->
+  <script src="../../js/bars.js"></script>
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function showInventoryPopup() {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById("inventoryModal")).show();
+    }
+
+    function showItemsPopup() {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById("itemsModal")).show();
+    }
+
+    showInventoryPopup()
+  </script>
+</body>
+</html>
