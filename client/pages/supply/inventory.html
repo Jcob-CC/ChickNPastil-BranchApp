@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chick N Pastil</title>
+  
+  <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+  
+  <!-- Custom Layout CSS -->
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+</head>
+<body data-page-header="Inventory Manager">
+
+  <!-- Topbar Placeholder -->
+  <div id="topbar-wrapper"></div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <!-- Sidebar Placeholder -->
+    <div id="sidebar-wrapper"></div>
+
+    <!-- Main Page Content -->
+    <main class="main-content">
+      <div class="container-fluid py-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-clipboard-data" aria-hidden="true"></i></span>
+            <h1 class="h4 mb-0" id="catalogHeading">Inventory</h1>
+          </div>
+          <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#addItemModal"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add item</button>
+        </div>
+
+        <section class="card border-0 shadow-sm mb-4" aria-labelledby="catalogHeading" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="ps-3">Item</th>
+                  <th scope="col">Stock</th>
+                  <th scope="col">Low threshold</th>
+                  <th scope="col">Restock target</th>
+                  <th scope="col">Unit cost</th>
+                  <th scope="col" class="text-end pe-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row" class="ps-3 fw-medium">Rice<small class="d-block text-secondary fw-normal">sacks</small></th><td><span class="fw-semibold">18 sacks</span> <span class="badge bg-warning-subtle text-warning-emphasis">Low</span></td><td>20 sacks</td><td>30 sacks</td><td>PHP 1,850.00</td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editItemModal"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit item</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editBranchSpecsModal"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Edit branch settings</button> <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#updateStockModal"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Update stock</button></td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Cooking oil<small class="d-block text-secondary fw-normal">bottles</small></th><td><span class="fw-semibold">12 bottles</span> <span class="badge bg-warning-subtle text-warning-emphasis">Low</span></td><td>15 bottles</td><td>24 bottles</td><td>PHP 92.00</td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editItemModal"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit item</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editBranchSpecsModal"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Edit branch settings</button> <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#updateStockModal"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Update stock</button></td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Chicken<small class="d-block text-secondary fw-normal">packs</small></th><td><span class="fw-semibold">25 packs</span></td><td>20 packs</td><td>40 packs</td><td>PHP 210.00</td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editItemModal"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit item</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editBranchSpecsModal"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Edit branch settings</button> <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#updateStockModal"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Update stock</button></td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Tomato paste<small class="d-block text-secondary fw-normal">cans</small></th><td><span class="fw-semibold">9 cans</span> <span class="badge bg-warning-subtle text-warning-emphasis">Low</span></td><td>10 cans</td><td>18 cans</td><td>PHP 48.00</td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editItemModal"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit item</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editBranchSpecsModal"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Edit branch settings</button> <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#updateStockModal"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Update stock</button></td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Coconut milk<small class="d-block text-secondary fw-normal">cans</small></th><td><span class="fw-semibold">14 cans</span></td><td>12 cans</td><td>24 cans</td><td>PHP 39.00</td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editItemModal"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit item</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editBranchSpecsModal"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Edit branch settings</button> <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#updateStockModal"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Update stock</button></td></tr>
+                <tr><th scope="row" class="ps-3 fw-medium">Packaging boxes<small class="d-block text-secondary fw-normal">bundles</small></th><td><span class="fw-semibold">6 bundles</span> <span class="badge bg-warning-subtle text-warning-emphasis">Low</span></td><td>8 bundles</td><td>15 bundles</td><td>PHP 135.00</td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editItemModal"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit item</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editBranchSpecsModal"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Edit branch settings</button> <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#updateStockModal"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Update stock</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span class="small text-secondary">Showing 1–6 of 18 items</span>
+            <nav aria-label="Items database pages">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item disabled"><button class="page-link" type="button" aria-label="Previous page">Previous</button></li>
+                <li class="page-item active" aria-current="page"><button class="page-link" type="button">1</button></li>
+                <li class="page-item"><button class="page-link" type="button">2</button></li>
+                <li class="page-item"><button class="page-link" type="button">3</button></li>
+                <li class="page-item"><button class="page-link" type="button" aria-label="Next page">Next</button></li>
+              </ul>
+            </nav>
+          </div>
+        </section>
+
+        <section class="card border-0 shadow-sm" aria-labelledby="logHeading" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);">
+          <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2 py-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis p-2"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
+              <h2 class="h5 mb-0" id="logHeading">Quantity update log</h2>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr><th scope="col" class="ps-3">Date and time</th><th scope="col">Item</th><th scope="col">Previous</th><th scope="col">Updated</th><th scope="col">Change</th><th scope="col">Reason</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="ps-3 text-nowrap">Sep 30, 2026 · 9:15 AM</td><th scope="row" class="fw-medium">Rice</th><td>16 sacks</td><td>18 sacks</td><td class="text-success fw-semibold">+2 sacks</td><td>Physical count correction</td></tr>
+                <tr><td class="ps-3 text-nowrap">Sep 29, 2026 · 3:40 PM</td><th scope="row" class="fw-medium">Cooking oil</th><td>15 bottles</td><td>12 bottles</td><td class="text-danger fw-semibold">-3 bottles</td><td>Damaged stock</td></tr>
+                <tr><td class="ps-3 text-nowrap">Sep 29, 2026 · 10:05 AM</td><th scope="row" class="fw-medium">Chicken</th><td>10 packs</td><td>25 packs</td><td class="text-success fw-semibold">+15 packs</td><td>Delivery received</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span class="small text-secondary">Showing 1–3 of 12 updates</span>
+            <nav aria-label="Quantity update log pages">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item disabled"><button class="page-link" type="button" aria-label="Previous page">Previous</button></li>
+                <li class="page-item active" aria-current="page"><button class="page-link" type="button">1</button></li>
+                <li class="page-item"><button class="page-link" type="button">2</button></li>
+                <li class="page-item"><button class="page-link" type="button">3</button></li>
+                <li class="page-item"><button class="page-link" type="button">4</button></li>
+                <li class="page-item"><button class="page-link" type="button" aria-label="Next page">Next</button></li>
+              </ul>
+            </nav>
+          </div>
+        </section>
+      </div>
+    </main>
+
+  </div>
+
+  <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div><h2 class="modal-title fs-5" id="addItemModalTitle">Add inventory item</h2><p class="small text-secondary mb-0 mt-1">New item details and branch stock levels</p></div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label" for="newItemName">Item name</label><input class="form-control" id="newItemName" placeholder="Enter item name"></div>
+          <div class="row g-3">
+            <div class="col-6"><label class="form-label" for="newItemUnit">Unit</label><input class="form-control" id="newItemUnit" placeholder="e.g. sacks"></div>
+            <div class="col-6"><label class="form-label" for="newItemStock">Branch starting stock</label><input class="form-control" id="newItemStock" type="number" min="0" placeholder="0"></div>
+            <div class="col-6"><label class="form-label" for="newItemThreshold">Branch low-stock threshold</label><input class="form-control" id="newItemThreshold" type="number" min="0" placeholder="5"></div>
+            <div class="col-6"><label class="form-label" for="newItemTarget">Branch restock target</label><input class="form-control" id="newItemTarget" type="number" min="0" placeholder="10"></div>
+            <div class="col-12"><label class="form-label" for="newItemCost">Unit cost (PHP)</label><input class="form-control" id="newItemCost" type="number" min="0" step="0.01" placeholder="0.00"></div>
+          </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="button" data-bs-dismiss="modal">Add item</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div><h2 class="modal-title fs-5" id="editItemModalTitle">Edit item details</h2><p class="small text-secondary mb-0 mt-1">Rice · sacks</p></div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label" for="editItemName">Item name</label><input class="form-control" id="editItemName" value="Rice"></div>
+          <div class="mb-3"><label class="form-label" for="editItemUnit">Unit type</label><input class="form-control" id="editItemUnit" value="sacks"></div>
+          <div><label class="form-label" for="editItemCost">Unit cost (PHP)</label><input class="form-control" id="editItemCost" type="number" min="0" step="0.01" value="1850.00"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="button" data-bs-dismiss="modal">Save changes</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="editBranchSpecsModal" tabindex="-1" aria-labelledby="editBranchSpecsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div><h2 class="modal-title fs-5" id="editBranchSpecsModalTitle">Edit branch settings</h2><p class="small text-secondary mb-0 mt-1">Rice · sacks</p></div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label" for="branchLowThreshold">Low-stock threshold</label><input class="form-control" id="branchLowThreshold" type="number" min="0" value="20"></div>
+          <div><label class="form-label" for="branchRestockTarget">Restock target</label><input class="form-control" id="branchRestockTarget" type="number" min="0" value="30"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="button" data-bs-dismiss="modal">Save settings</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="updateStockModal" tabindex="-1" aria-labelledby="updateStockModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div><h2 class="modal-title fs-5" id="updateStockModalTitle">Update branch stock</h2><p class="small text-secondary mb-0 mt-1">Rice · sacks</p></div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label" for="currentStock">Current quantity</label><input class="form-control" id="currentStock" value="18 sacks" readonly></div>
+          <div class="mb-3"><label class="form-label" for="updatedStock">New quantity on hand</label><input class="form-control" id="updatedStock" type="number" min="0" value="18"></div>
+          <div><label class="form-label" for="stockUpdateReason">Reason for update</label><select class="form-select" id="stockUpdateReason"><option>Delivery received</option><option>Physical count correction</option><option>Damaged or expired stock</option><option>Internal use</option></select></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="button" data-bs-dismiss="modal">Update stock</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bars Loader Script -->
+  <script src="../../js/bars.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
