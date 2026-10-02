@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chick N Pastil</title>
+  
+  <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+  
+  <!-- Custom Layout CSS -->
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+</head>
+<body data-page-header="Unexpected Expenses">
+
+  <!-- Topbar Placeholder -->
+  <div id="topbar-wrapper"></div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <!-- Sidebar Placeholder -->
+    <div id="sidebar-wrapper"></div>
+
+    <!-- Main Page Content -->
+    <main class="main-content">
+      <div class="container-fluid py-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis p-2"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+            <div><h1 class="h4 mb-1">Branch expense requests</h1><p class="small text-secondary mb-0">Review costs and track request status</p></div>
+          </div>
+          <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#newExpenseModal"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Request expense</button>
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-12">
+            <section class="card border-0 shadow-sm h-100" aria-labelledby="requestListHeading" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);">
+              <div class="card-header border-0 bg-transparent d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
+                <div class="d-flex align-items-center gap-2"><span class="badge rounded-pill bg-warning-subtle text-warning-emphasis p-2"><i class="bi bi-receipt" aria-hidden="true"></i></span><div><h2 class="h5 mb-1" id="requestListHeading">Your requests</h2><p class="small text-secondary mb-0">Unexpected purchases submitted by this branch</p></div></div>
+                <span class="badge bg-light text-dark border">3 requests</span>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light"><tr><th scope="col" class="ps-3">Request</th><th scope="col">Date</th><th scope="col">Total cost</th><th scope="col">Status</th><th scope="col" class="text-end pe-3">Action</th></tr></thead>
+                  <tbody>
+                    <tr><th scope="row" class="ps-3 fw-medium">#UE-1048<small class="d-block text-secondary fw-normal">Emergency cooking oil</small></th><td>Oct 2, 2026</td><td>PHP 1,104.00</td><td><span class="badge bg-warning-subtle text-warning-emphasis">Pending</span></td><td class="text-end pe-3"><button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#cancelRequestModal"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel</button></td></tr>
+                    <tr><th scope="row" class="ps-3 fw-medium">#UE-1042<small class="d-block text-secondary fw-normal">Packaging supplies</small></th><td>Oct 1, 2026</td><td>PHP 1,080.00</td><td><span class="badge bg-success-subtle text-success-emphasis">Approved</span> <span class="badge bg-info-subtle text-info-emphasis" title="Request edited after approval"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edited</span></td><td class="text-end pe-3"><button class="btn btn-sm btn-success" type="button" data-bs-toggle="modal" data-bs-target="#completeRequestModal"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Complete</button></td></tr>
+                    <tr><th scope="row" class="ps-3 fw-medium">#UE-1036<small class="d-block text-secondary fw-normal">Replacement kitchen tools</small></th><td>Sep 28, 2026</td><td>PHP 890.00</td><td><span class="badge bg-secondary-subtle text-secondary-emphasis">Complete</span></td><td class="text-end pe-3"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#completedRequestModal"><i class="bi bi-eye me-1" aria-hidden="true"></i>View</button></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <section class="card border-0 shadow-sm" aria-labelledby="approvedItemsHeading" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
+          <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2 py-3"><span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-box-seam" aria-hidden="true"></i></span><div><h2 class="h5 mb-1" id="approvedItemsHeading">Approved request items</h2><p class="small text-secondary mb-0">Purchases are added to inventory when the request is completed</p></div></div>
+          <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th scope="col" class="ps-3">Request</th><th scope="col">Item</th><th scope="col">Requested quantity</th><th scope="col">Unit cost</th><th scope="col" class="text-end pe-3">Line total</th></tr></thead><tbody>
+            <tr><td rowspan="3" class="ps-3 fw-medium">#UE-1042<small class="d-block text-secondary fw-normal">Approved · Oct 1, 2026</small><span class="badge bg-info-subtle text-info-emphasis mt-1" title="Request edited after approval"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edited</span></td><th scope="row" class="fw-medium">Packaging boxes</th><td>6 bundles</td><td>PHP 135.00</td><td class="text-end pe-3">PHP 810.00</td></tr>
+            <tr><th scope="row" class="fw-medium">Food-safe gloves</th><td>3 boxes</td><td>PHP 90.00</td><td class="text-end pe-3">PHP 270.00</td></tr>
+            <tr><td colspan="3" class="text-end fw-semibold">Total cost</td><td class="text-end pe-3 fw-semibold">PHP 1,080.00</td></tr>
+          </tbody></table></div>
+        </section>
+      </div>
+    </main>
+
+  </div>
+
+  <div class="modal fade" id="newExpenseModal" tabindex="-1" aria-labelledby="newExpenseModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+      <div class="modal-header"><div><h2 class="modal-title fs-5" id="newExpenseModalTitle">Request an unexpected expense</h2><p class="small text-secondary mb-0 mt-1">List the items, quantities, and estimated costs</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label" for="expenseReason">Request details</label><textarea class="form-control" id="expenseReason" rows="2" placeholder="Reason for this unexpected purchase"></textarea></div>
+        <div class="table-responsive"><table class="table align-middle"><thead class="table-light"><tr><th>Item</th><th>Quantity</th><th>Unit cost (PHP)</th></tr></thead><tbody>
+          <tr><td><input class="form-control" value="Cooking oil" aria-label="Item name"></td><td><input class="form-control" type="number" min="1" value="8" aria-label="Quantity"></td><td><input class="form-control" type="number" min="0" step="0.01" value="92.00" aria-label="Unit cost"></td></tr>
+          <tr><td><input class="form-control" value="Vinegar" aria-label="Item name"></td><td><input class="form-control" type="number" min="1" value="6" aria-label="Quantity"></td><td><input class="form-control" type="number" min="0" step="0.01" value="38.00" aria-label="Unit cost"></td></tr>
+          <tr><td><input class="form-control" value="Chili flakes" aria-label="Item name"></td><td><input class="form-control" type="number" min="1" value="4" aria-label="Quantity"></td><td><input class="form-control" type="number" min="0" step="0.01" value="35.00" aria-label="Unit cost"></td></tr>
+        </tbody></table></div>
+        <div class="text-end"><span class="text-secondary me-2">Estimated total</span><strong class="fs-5">PHP 1,104.00</strong></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="button" data-bs-dismiss="modal"><i class="bi bi-send me-1" aria-hidden="true"></i>Submit request</button></div>
+    </div></div>
+  </div>
+
+  <div class="modal fade" id="cancelRequestModal" tabindex="-1" aria-labelledby="cancelRequestModalTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h2 class="modal-title fs-5" id="cancelRequestModalTitle">Cancel request #UE-1048?</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body">This pending request includes 3 items with a total cost of PHP 1,104.00.</div><div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Keep request</button><button class="btn btn-danger" type="button" data-bs-dismiss="modal">Cancel request</button></div>
+  </div></div></div>
+
+  <div class="modal fade" id="completeRequestModal" tabindex="-1" aria-labelledby="completeRequestModalTitle" aria-hidden="true"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header"><div><h2 class="modal-title fs-5" id="completeRequestModalTitle">Complete request #UE-1042</h2><p class="small text-secondary mb-0 mt-1">Confirm purchased quantities and add them to inventory</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body"><div class="table-responsive"><table class="table align-middle"><thead class="table-light"><tr><th>Requested item</th><th>Requested</th><th>Bought quantity</th><th>Cost (PHP)</th></tr></thead><tbody>
+      <tr><th scope="row" class="fw-medium">Packaging boxes</th><td>6 bundles</td><td><input class="form-control" type="number" min="0" value="6" aria-label="Packaging boxes bought quantity"></td><td><input class="form-control" type="number" min="0" step="0.01" value="810.00" aria-label="Packaging boxes cost"></td></tr>
+      <tr><th scope="row" class="fw-medium">Food-safe gloves</th><td>3 boxes</td><td><input class="form-control" type="number" min="0" value="3" aria-label="Food-safe gloves bought quantity"></td><td><input class="form-control" type="number" min="0" step="0.01" value="270.00" aria-label="Food-safe gloves cost"></td></tr>
+    </tbody></table></div><div class="d-flex justify-content-between"><span class="text-secondary">Total purchased cost</span><strong>PHP 1,080.00</strong></div><p class="small text-secondary mt-3 mb-0"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Completing the request records the bought items in branch inventory.</p></div>
+    <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="button" data-bs-dismiss="modal"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Complete and add to inventory</button></div>
+  </div></div></div>
+
+  <div class="modal fade" id="completedRequestModal" tabindex="-1" aria-labelledby="completedRequestModalTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h2 class="modal-title fs-5" id="completedRequestModalTitle">Request #UE-1036</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><p class="mb-2">Replacement kitchen tools · Complete</p><div class="d-flex justify-content-between border-bottom py-2"><span>Cutting boards · 2 pieces</span><span>PHP 590.00</span></div><div class="d-flex justify-content-between border-bottom py-2"><span>Chef knives · 2 pieces</span><span>PHP 300.00</span></div><div class="d-flex justify-content-between pt-3"><strong>Total cost</strong><strong>PHP 890.00</strong></div></div><div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button></div>
+  </div></div></div>
+
+  <!-- Bars Loader Script -->
+  <script src="../../js/bars.js"></script>
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
