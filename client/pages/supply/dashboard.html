@@ -14,168 +14,70 @@
 </head>
 <body data-page-header="Supply Dashboard">
 
-  <!-- Topbar Placeholder -->
+  <!-- Shared navigation is injected by bars.js -->
   <div id="topbar-wrapper"></div>
 
   <!-- Main Container -->
   <div class="app-container">
-    <!-- Sidebar Placeholder -->
     <div id="sidebar-wrapper"></div>
 
     <!-- Main Page Content -->
     <main class="main-content">
       <div class="container-fluid py-4">
+        <div id="dashboard-alert" class="alert d-none mb-4" role="alert" aria-live="assertive"></div>
 
-        <div class="row g-4 mb-4">
-          <div class="col-lg-7">
-            <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #fff7ed, #fff1f2);">
-              <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2">
-                <span class="badge rounded-pill bg-danger-subtle text-danger p-2"><i class="bi bi-bell-fill"></i></span>
-                <div>
-                  <h5 class="mb-1 text-dark">Notifications</h5>
-                  <p class="small text-muted mb-0">Updates that may need branch attention</p>
-                </div>
+        <section class="card shadow-sm border-0 mb-4" aria-labelledby="notificationsHeading">
+          <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2">
+            <span class="badge rounded-pill bg-danger-subtle text-danger p-2"><i class="bi bi-bell-fill" aria-hidden="true"></i></span>
+            <h2 class="h5 mb-0 text-dark" id="notificationsHeading">Notifications</h2>
+          </div>
+          <div class="card-body pt-0">
+            <p id="notificationsEmpty" class="small text-muted mb-0">No notifications.</p>
+            <div id="notificationsList" class="d-flex flex-column gap-2" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="card shadow-sm border-0" aria-labelledby="operationsHeading" style="background: linear-gradient(135deg, #f8fafc, #eef2ff);">
+          <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2">
+            <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis p-2"><i class="bi bi-gear-fill" aria-hidden="true"></i></span>
+            <div>
+              <h1 class="h5 mb-1 text-dark" id="operationsHeading">Supply Operations</h1>
+              <p class="small text-muted mb-0">Open a workflow to manage branch supplies.</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6 col-xl-3">
+                <a class="btn btn-outline-primary w-100 h-100 text-start" href="/supply/requisition" style="background: #f0fdf4; border-color: #86efac; color: #166534;">
+                  <i class="bi bi-box-seam me-1" aria-hidden="true"></i>
+                  <span class="fw-semibold">Stock Requisition</span>
+                  <span class="small d-block mt-2">Prepare a supply request.</span>
+                </a>
               </div>
-              <div class="card-body pt-0" style="max-height: 320px; overflow-y: auto;">
-                <div class="d-flex flex-column gap-2">
-                  <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-body py-2">
-                      <strong>Warehouse:</strong> Pending stock verification for the latest rice delivery.
-                    </div>
-                  </div>
-                  
-                  <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-body py-2">
-                      <strong>Procurement:</strong> Requisition approval awaiting branch manager review.
-                    </div>
-                  </div>
-                  <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-body py-2">
-                      <strong>Accounting:</strong> Unexpected expense report pending budget confirmation.
-                    </div>
-                  </div>
-                </div>
+              <div class="col-md-6 col-xl-3">
+                <a class="btn btn-outline-primary w-100 h-100 text-start" href="/supply/manage_fulfillment" style="background: #eff6ff; border-color: #93c5fd; color: #1d4ed8;">
+                  <i class="bi bi-truck me-1" aria-hidden="true"></i>
+                  <span class="fw-semibold">Requisition Fulfillment</span>
+                  <span class="small d-block mt-2">Review and track branch requests.</span>
+                </a>
+              </div>
+              <div class="col-md-6 col-xl-3">
+                <a class="btn btn-outline-primary w-100 h-100 text-start" href="/supply/request_expenses" style="background: #fff7ed; border-color: #fdba74; color: #c2410c;">
+                  <i class="bi bi-cash-stack me-1" aria-hidden="true"></i>
+                  <span class="fw-semibold">Unexpected Expenses</span>
+                  <span class="small d-block mt-2">Submit an urgent purchase request.</span>
+                </a>
+              </div>
+              <div class="col-md-6 col-xl-3">
+                <a class="btn btn-outline-primary w-100 h-100 text-start" href="/supply/inventory" style="background: #f5f3ff; border-color: #c4b5fd; color: #6d28d9;">
+                  <i class="bi bi-clipboard-data me-1" aria-hidden="true"></i>
+                  <span class="fw-semibold">Inventory Manager</span>
+                  <span class="small d-block mt-2">Maintain branch inventory records.</span>
+                </a>
               </div>
             </div>
           </div>
-
-          <div class="col-lg-5">
-            <div class="card shadow-sm border-0 h-100" style="background: linear-gradient(135deg, #f8fafc, #eef2ff);">
-              <div class="card-header border-0 bg-transparent d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis p-2"><i class="bi bi-gear-fill"></i></span>
-                  <div>
-                    <h5 class="mb-1 text-dark">Operations</h5>
-                    <p class="small text-muted mb-0">Shortcuts for daily supply tasks</p>
-                  </div>
-                </div>
-              </div>
-              <div class="card-body">
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <button class="btn btn-outline-primary w-100" style="background: #f0fdf4; border-color: #86efac; color: #166534;">
-                      <i class="bi bi-box-seam me-1"></i>
-                      <span class="fw-semibold">Stock Requisition</span>
-                    </button>
-                    <p class="small text-muted mt-2 mb-0">Prepare tomorrow’s supply request before closing.</p>
-                  </div>
-                  <div class="col-md-6">
-                    <button class="btn btn-outline-primary w-100" style="background: #eff6ff; border-color: #93c5fd; color: #1d4ed8;">
-                      <i class="bi bi-truck me-1"></i>
-                      <span class="fw-semibold">Requisition Fulfillment</span>
-                    </button>
-                    <p class="small text-muted mt-2 mb-0">Review branch requests, track fulfillment, and log incoming deliveries.</p>
-                  </div>
-                  <div class="col-md-6">
-                    <button class="btn btn-outline-primary w-100" style="background: #fff7ed; border-color: #fdba74; color: #c2410c;">
-                      <i class="bi bi-cash-stack me-1"></i>
-                      <span class="fw-semibold">Unexpected Expenses</span>
-                    </button>
-                    <p class="small text-muted mt-2 mb-0">Submit urgent purchase requests to keep essential supplies on hand.</p>
-                  </div>
-                  <div class="col-md-6">
-                    <button class="btn btn-outline-primary w-100" style="background: #f5f3ff; border-color: #c4b5fd; color: #6d28d9;">
-                      <i class="bi bi-clipboard-data me-1"></i>
-                      <span class="fw-semibold">Inventory Manager</span>
-                    </button>
-                    <p class="small text-muted mt-2 mb-0">Maintain item records and keep inventory details up to date.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="row g-4">
-          <div class="col-lg-4">
-            <div class="card h-100 shadow-sm border-0" style="background: linear-gradient(135deg, #ecfeff, #cffafe);">
-              <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2">
-                <span class="badge rounded-pill bg-info-subtle text-info-emphasis p-2"><i class="bi bi-calendar3"></i></span>
-                <div>
-                  <h5 class="mb-1 text-dark">Last Restock Date</h5>
-                  <p class="small text-muted mb-0">Most recent branch stock delivery</p>
-                </div>
-              </div>
-              <div class="card-body">
-                <h3 class="mb-2">September 30, 2026</h3>
-                <p class="text-muted mb-0">No restock has been performed today. Supply should be in transit and will be checked before the next delivery window.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-lg-8">
-            <div class="card h-100 shadow-sm border-0" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);">
-              <div class="card-header border-0 bg-transparent d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis p-2"><i class="bi bi-exclamation-triangle-fill"></i></span>
-                  <div>
-                    <h5 class="mb-1 text-dark">Low Stock Items</h5>
-                    <p class="small text-muted mb-0">Current counts to review for replenishment</p>
-                  </div>
-                </div>
-                <button class="btn btn-sm btn-light border">Threshold Settings</button>
-              </div>
-              <div class="card-body p-0" style="max-height: 320px; overflow-y: auto; position: relative; z-index: 1;">
-                <div class="table-responsive">
-                  <table class="table table-sm mb-0 align-middle">
-                    <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
-                      <tr>
-                        <th>Item</th>
-                        <th>Current Stock</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>Rice</td>
-                        <td>18 sacks</td>
-                      </tr>
-                      <tr>
-                        <td>Cooking Oil</td>
-                        <td>12 bottles</td>
-                      </tr>
-                      <tr>
-                        <td>Chicken</td>
-                        <td>25 packs</td>
-                      </tr>
-                      <tr>
-                        <td>Tomato Paste</td>
-                        <td>9 cans</td>
-                      </tr>
-                      <tr>
-                        <td>Garlic</td>
-                        <td>11 kg</td>
-                      </tr>
-                      <tr>
-                        <td>Onion</td>
-                        <td>7 kg</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </section>
 
       </div>
     </main>
@@ -186,5 +88,60 @@
   <script src="../../js/bars.js"></script>
   <!-- Bootstrap 5 JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+
+    function insertNotification(source, message, url = '') {
+      if (typeof source !== 'string' || !source.trim() || typeof message !== 'string' || !message.trim()) {
+        throw new TypeError('A notification source and message are required.');
+      }
+      if (typeof url !== 'string') {
+        throw new TypeError('Notification URL must be a string.');
+      }
+
+      let notificationUrl = '';
+      if (url.trim()) {
+        const parsedUrl = new URL(url, document.baseURI);
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+          throw new TypeError('Notification URL must use HTTP or HTTPS.');
+        }
+        notificationUrl = parsedUrl.href;
+      }
+
+      const notificationsList = document.getElementById('notificationsList');
+      const emptyState = document.getElementById('notificationsEmpty');
+      const notification = document.createElement('div');
+      const content = document.createElement('div');
+      const notificationText = document.createElement(notificationUrl ? 'a' : 'span');
+      const sourceLabel = document.createElement('strong');
+      const dismissButton = document.createElement('button');
+
+      notification.className = 'card border-0 shadow-sm rounded-3';
+      content.className = 'card-body py-2 d-flex align-items-start justify-content-between gap-3';
+      notificationText.className = notificationUrl ? 'flex-grow-1 text-decoration-none text-body' : 'flex-grow-1';
+      if (notificationUrl) {
+        notificationText.href = notificationUrl;
+      }
+      sourceLabel.textContent = source.trim() + ': ';
+      notificationText.append(sourceLabel, document.createTextNode(message.trim()));
+      content.appendChild(notificationText);
+      dismissButton.type = 'button';
+      dismissButton.className = 'btn-close flex-shrink-0';
+      dismissButton.setAttribute('aria-label', 'Dismiss notification');
+      dismissButton.addEventListener('click', () => {
+        notification.remove();
+        emptyState.hidden = notificationsList.childElementCount > 0;
+      });
+      content.appendChild(dismissButton);
+      notification.appendChild(content);
+      notificationsList.prepend(notification);
+      emptyState.hidden = true;
+    }
+
+    function clearNotifications() {
+      document.getElementById('notificationsList').replaceChildren();
+      document.getElementById('notificationsEmpty').hidden = false;
+    }
+
+  </script>
 </body>
 </html>
