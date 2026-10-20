@@ -33,24 +33,29 @@
   </button>
 
   <!-- Sidebar Links -->
+  <!-- Add <li><a class="nav-link" href="...">...</a></li> inside a subnav to add a dropdown link. -->
   <ul class="sidebar-nav">
     <li class="nav-item">
       <a href="/user" class="nav-link">User</a>
+      <ul class="subnav" id="user-subnav" hidden></ul>
     </li>
     <li class="nav-item">
       <a href="/commissary" class="nav-link">Commissary</a>
+      <ul class="subnav" id="commissary-subnav" hidden></ul>
     </li>
     <li class="nav-item">
       <a href="/sales" class="nav-link">Sales</a>
+      <ul class="subnav" id="sales-subnav" hidden></ul>
     </li>
     <li class="nav-item">
       <a href="/supply" class="nav-link">Supply</a>
+      <ul class="subnav" id="supply-subnav" hidden>
+        <li><a href="/supply/inventory" class="nav-link">Branch Inventory</a></li>
+      </ul>
     </li>
     <li class="nav-item">
       <a href="/schedule" class="nav-link">Schedule</a>
-    </li>
-    <li class="nav-item">
-      <a href="/analytics" class="nav-link">Analytics</a>
+      <ul class="subnav" id="schedule-subnav" hidden></ul>
     </li>
   </ul>
 </aside>

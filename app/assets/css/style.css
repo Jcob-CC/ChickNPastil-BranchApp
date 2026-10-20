@@ -54,36 +54,94 @@ body {
 }
 
 .sidebar-nav {
-  padding: 2rem 1.5rem;
+  box-sizing: border-box;
+  height: 100%;
+  overflow-y: auto;
+  padding: 1.5rem 1rem;
   list-style: none;
   margin: 0;
 }
 
 .sidebar-nav .nav-item {
-  margin-bottom: 0.75rem;
+  margin: 0 0 0.4rem;
 }
 
 .sidebar-nav .nav-link {
+  position: relative;
+  border-radius: 0.65rem;
   color: #ffffff;
-  font-weight: 700;
-  font-size: 1.35rem;
-  text-align: right;
-  padding: 0.4rem 0;
+  font-weight: 600;
+  font-size: 1.05rem;
+  text-align: left;
+  padding: 0.7rem 0.85rem;
   text-decoration: none;
-  display: block;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .sidebar-nav .nav-link:hover,
-.sidebar-nav .nav-link.active {
+.sidebar-nav .nav-link.active,
+.sidebar-nav .nav-item.is-open > .nav-link {
   color: #ffffff;
-  opacity: 1;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  background-color: rgba(255, 255, 255, 0.14);
 }
 
-.sidebar-nav .nav-link:not(.active) {
-  opacity: 0.85;
+.sidebar-nav .nav-link:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.sidebar-nav .nav-item.has-subnav > .nav-link::after {
+  content: "";
+  flex: 0 0 0.45rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin: -0.2rem 0.15rem 0 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.sidebar-nav .nav-item.has-subnav.is-open > .nav-link::after {
+  margin-top: 0.2rem;
+  transform: rotate(225deg);
+}
+
+.sidebar-nav .subnav {
+  list-style: none;
+  margin: 0.3rem 0 0.65rem 0.75rem;
+  padding: 0.15rem 0 0.15rem 0.7rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.sidebar-nav .subnav:not([hidden]) {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.sidebar-nav .subnav[hidden] {
+  display: none;
+}
+
+.sidebar-nav .subnav li {
+  margin: 0;
+}
+
+.sidebar-nav .subnav .nav-link {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.55rem 0.7rem;
+}
+
+.sidebar-nav .subnav .nav-link:hover,
+.sidebar-nav .subnav .nav-link.active {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Toggle Button */

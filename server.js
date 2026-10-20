@@ -6,7 +6,7 @@ const path = require('path');
 const app = express();
 
 // fixes html src paths?
-app.use(express.static(path.join(__dirname, 'client')));
+app.use(express.static(path.join(__dirname, 'app')));
 
 app.use('/supply', require('./routes/supply'))
 
