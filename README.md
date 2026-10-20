@@ -1,7 +1,3 @@
-# ChickNPastil Branch App
-
-A small Express application for the ChickNPastil branch workflow. The server hosts the front-end files from `app/` and serves through the route folder.
-
 ## Requirements
 
 - [Node.js](https://nodejs.org/) (which includes npm)
