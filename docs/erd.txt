@@ -1,0 +1,76 @@
+USER
+- id
+- email
+- hashed password
+- first name
+- last name
+- role
+- status
+
+BRANCH_LOCATION
+- id
+- location name (unique)
+- address
+- status
+
+GENERAL_STOCK_ITEM
+- id
+- name
+- unit type [sacks,cans,bottles,packs]
+- unit cost
+- status
+
+BRANCH_INVENTORY_ITEM
+- id
+- BRANCH_LOCATION id
+- GENERAL_STOCK_ITEM id
+- quantity
+- low quantity threshold
+- restock target quantity
+
+BRANCH_INVENTORY_MANAGER_LOG
+- id 
+- BRANCH_LOCATION id
+- BRANCH_INVENTORY_ITEM id
+- USER id
+- date and time
+- value before
+- value after
+- reason
+
+BRANCH_RESTOCK_REQUEST
+- id
+- BRANCH_LOCATION id
+- USER id
+- date and time
+- note
+- status
+
+BRANCH_RESTOCK_REQUEST_ITEM
+- id
+- BRANCH_RESTOCK_REQUEST id
+- GENERAL_STOCK_ITEM id
+- quantity
+
+BRANCH_STOCK_RECEIVED_LOG
+- id
+- BRANCH_RESTOCK_REQUEST id
+- USER id
+- note
+- date and time
+
+BRANCH_STOCK_RECEIVED_LOG_LOST_ITEM
+- id
+- BRANCH_STOCK_RECEIVED_LOG id
+- BRANCH_RESTOCK_REQUEST_ITEM id
+- quantity
+
+BRANCH_EXPENSE
+-
+-
+-
+
+BRANCH_EXPENSE_ITEM
+-
+-
+-

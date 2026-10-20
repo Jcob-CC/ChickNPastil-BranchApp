@@ -8,7 +8,7 @@ const app = express();
 // fixes html src paths?
 app.use(express.static(path.join(__dirname, 'app')));
 
-app.use('/supply', require('./routes/supply'))
+app.use('/supply', require('./routes/supply/page'))
 
 app.get('/', (req, res) => {
     res.redirect('/supply');
