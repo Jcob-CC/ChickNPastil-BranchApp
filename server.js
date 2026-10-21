@@ -22,8 +22,8 @@ catch (err) {
 
 app.use(express.static(path.join(__dirname, 'app')));
 
-app.use('/supply', require('./routes/supply_router'))
-app.use('/user', require('./routes/user_router'))
+app.use('/supply', require('./routes/supply'))
+app.use('/user', require('./routes/user'))
 
 app.get('/', (req, res) => {
     res.redirect('/user/login');
