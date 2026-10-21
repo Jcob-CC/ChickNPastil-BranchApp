@@ -1,14 +1,15 @@
 const port = 3000;
 
-const Database = require('better-sqlite3');
+require('dotenv').config();
+
+const { randomBytes } = require('crypto');
+const session = require('express-session');
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const db = require('./lib/database');
 
 const app = express();
-const db = new Database('./database.sqlite', { verbose: console.log });
-
-// Read and execute the .sql schema file
 try {
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schemaSql = fs.readFileSync(schemaPath, 'utf8');
@@ -21,9 +22,19 @@ catch (err) {
 }
 
 app.use(express.static(path.join(__dirname, 'app')));
-
-app.use('/supply', require('./routes/supply'))
-app.use('/user', require('./routes/user'))
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(session({
+    secret: process.env.SESSION_SECRET || randomBytes(32).toString('hex'),
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        sameSite: 'lax',
+    },
+}));
+app.use('/supply', require('./routes/supply'));
+app.use('/user', require('./routes/user'));
 
 app.get('/', (req, res) => {
     res.redirect('/user/login');

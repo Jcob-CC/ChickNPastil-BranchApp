@@ -98,16 +98,17 @@
             <p class="text-secondary mb-0">Sign in to manage your branch.</p>
           </header>
 
-          <form>
+          <form id="loginForm">
+            <div class="small text-danger mb-3" id="loginMessage" role="status" aria-live="polite"></div>
             <div class="mb-3">
               <label class="form-label" for="loginEmail">Email address</label>
-              <input class="form-control form-control-lg" id="loginEmail" name="email" type="email" placeholder="you@example.com" autocomplete="email" />
+              <input class="form-control form-control-lg" id="loginEmail" name="email" type="email" placeholder="you@example.com" autocomplete="email" required />
             </div>
             <div class="mb-4">
               <label class="form-label" for="loginPassword">Password</label>
-              <input class="form-control form-control-lg" id="loginPassword" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" />
+              <input class="form-control form-control-lg" id="loginPassword" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required />
             </div>
-            <button class="btn btn-success btn-lg w-100" type="button">
+            <button class="btn btn-success btn-lg w-100" type="submit">
               Sign in <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
             </button>
           </form>
@@ -130,16 +131,17 @@
             <h2 class="modal-title fs-5" id="verificationCodeTitle">Verify your email</h2>
             <p class="small text-secondary mb-0 mt-1">Enter the 6-digit verification code sent to your email.</p>
           </div>
-          <button class="btn-close" type="button" aria-label="Close"></button>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <label class="form-label" for="verificationCode">Verification code</label>
           <input class="form-control form-control-lg verification-code" id="verificationCode" name="verificationCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" />
           <div class="form-text">The code expires after 10 minutes.</div>
+          <div class="small text-danger mt-2" id="verificationMessage" role="status" aria-live="polite"></div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button">Cancel</button>
-          <button class="btn btn-success" type="button">Verify and continue</button>
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-success" id="verifyCodeButton" type="button">Verify and continue</button>
         </div>
       </div>
     </div>
@@ -153,39 +155,15 @@
             <h2 class="modal-title fs-5" id="branchLocationTitle">Choose your branch</h2>
             <p class="small text-secondary mb-0 mt-1">Select the branch you want to access.</p>
           </div>
-          <button class="btn-close" type="button" aria-label="Close"></button>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="d-grid gap-2">
-            <div class="branch-choice selected">
-              <i class="bi bi-record-circle-fill text-success" aria-hidden="true"></i>
-              <span class="flex-grow-1">
-                <span class="d-block fw-semibold">Quezon City</span>
-                <span class="small text-secondary">Commonwealth Avenue</span>
-              </span>
-              <i class="bi bi-geo-alt text-success" aria-hidden="true"></i>
-            </div>
-            <div class="branch-choice">
-              <i class="bi bi-circle text-secondary" aria-hidden="true"></i>
-              <span class="flex-grow-1">
-                <span class="d-block fw-semibold">Manila</span>
-                <span class="small text-secondary">Sampaloc</span>
-              </span>
-              <i class="bi bi-geo-alt text-success" aria-hidden="true"></i>
-            </div>
-            <div class="branch-choice">
-              <i class="bi bi-circle text-secondary" aria-hidden="true"></i>
-              <span class="flex-grow-1">
-                <span class="d-block fw-semibold">Makati</span>
-                <span class="small text-secondary">Poblacion</span>
-              </span>
-              <i class="bi bi-geo-alt text-success" aria-hidden="true"></i>
-            </div>
-          </div>
+          <div class="d-grid gap-2" id="branchChoices"></div>
+          <div class="small text-danger mt-2" id="branchMessage" role="status" aria-live="polite"></div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button">Cancel</button>
-          <button class="btn btn-success" type="button">Continue</button>
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-success" id="continueBranchButton" type="button">Continue</button>
         </div>
       </div>
     </div>
@@ -196,23 +174,24 @@
       <div class="modal-content border-0 shadow">
         <div class="modal-header">
           <h2 class="modal-title fs-5" id="branchConfirmationTitle">Confirm branch</h2>
-          <button class="btn-close" type="button" aria-label="Close"></button>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body text-center">
           <img class="confirmation-logo" src="../../assets/img/logo.png" alt="" />
           <span class="badge rounded-pill bg-success-subtle text-success p-2 mb-3"><i class="bi bi-geo-alt" aria-hidden="true"></i></span>
           <p class="mb-1">You’re signing in to</p>
-          <p class="fw-semibold mb-0">Quezon City · Commonwealth Avenue</p>
+          <p class="fw-semibold mb-0" id="confirmedBranch"></p>
           <p class="small text-secondary mt-2 mb-0">You can switch branches later from your account.</p>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" type="button">Change</button>
-          <button class="btn btn-success" type="button">Confirm branch</button>
+          <button class="btn btn-outline-secondary" id="changeBranchButton" type="button">Change</button>
+          <button class="btn btn-success" id="confirmBranchButton" type="button">Confirm branch</button>
         </div>
       </div>
     </div>
   </div>
 
-  <script></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../js/user/login.js"></script>
 </body>
 </html>
