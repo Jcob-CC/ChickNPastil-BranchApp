@@ -1,8 +1,8 @@
 document.addEventListener("DOMContentLoaded", function () {
-  // 1. Fetch reusable components from components.html
-  fetch("../../assets/html/components.html")
+  // 1. Fetch reusable components from bars.html
+  fetch("../../assets/html/bars.html")
     .then((response) => {
-      if (!response.ok) throw new Error("Failed to load components.html");
+      if (!response.ok) throw new Error("Failed to load bars.html");
       return response.text();
     })
     .then((html) => {
