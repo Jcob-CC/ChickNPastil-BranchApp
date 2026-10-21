@@ -38,7 +38,7 @@ The browser-facing files are under `app/pages/`. Page routes are grouped by feat
 | --- | --- |
 | `app/pages/user/login.html` | `/user/login` |
 | `app/pages/user/profile.html` | `/user/profile` |
-| `app/pages/user/admin.html` | `/user/admin` |
+| `app/pages/user/manager.html` | `/user/manager` |
 | `app/pages/supply/requisition.html` | `/supply/requisition` |
 | `app/pages/supply/inventory.html` | `/supply/inventory` |
 | `app/pages/supply/request_expenses.html` | `/supply/request_expenses` |

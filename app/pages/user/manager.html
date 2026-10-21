@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chick N Pastil</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+</head>
+<body data-page-header="Admin Manager">
+  <div id="topbar-wrapper"></div>
+
+  <div class="app-container">
+    <div id="sidebar-wrapper"></div>
+
+    <main class="main-content">
+      <div class="container-fluid py-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-gear" aria-hidden="true"></i></span>
+            <div>
+              <h1 class="h4 mb-0">System Manager</h1>
+              <p class="text-secondary small mb-0">Manage staff accounts, branch locations, and branch items</p>
+            </div>
+          </div>
+          <button class="btn btn-success" id="addRecordButton" type="button">
+            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i><span id="addRecordLabel">Add staff account</span>
+          </button>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-xl-2">
+            <section class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);" aria-label="Staff accounts">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Staff accounts</div><div class="h3 mb-0" id="userCount">—</div></div>
+                <i class="bi bi-people fs-3 text-success" aria-hidden="true"></i>
+              </div>
+            </section>
+          </div>
+          <div class="col-6 col-xl-2">
+            <section class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);" aria-label="Active accounts">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Active accounts</div><div class="h3 mb-0" id="activeUserCount">—</div></div>
+                <i class="bi bi-person-check fs-3 text-success" aria-hidden="true"></i>
+              </div>
+            </section>
+          </div>
+          <div class="col-6 col-xl-2">
+            <section class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);" aria-label="Branch locations">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Branch locations</div><div class="h3 mb-0" id="branchCount">—</div></div>
+                <i class="bi bi-geo-alt fs-3 text-success" aria-hidden="true"></i>
+              </div>
+            </section>
+          </div>
+          <div class="col-6 col-xl-2">
+            <section class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);" aria-label="Active branches">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Active branches</div><div class="h3 mb-0" id="activeBranchCount">—</div></div>
+                <i class="bi bi-shop fs-3 text-warning-emphasis" aria-hidden="true"></i>
+              </div>
+            </section>
+          </div>
+          <div class="col-6 col-xl-2">
+            <section class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);" aria-label="General stock items">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">General stock items</div><div class="h3 mb-0" id="stockItemCount">—</div></div>
+                <i class="bi bi-box-seam fs-3 text-success" aria-hidden="true"></i>
+              </div>
+            </section>
+          </div>
+          <div class="col-6 col-xl-2">
+            <section class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);" aria-label="Active general stock items">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Active stock items</div><div class="h3 mb-0" id="activeStockItemCount">—</div></div>
+                <i class="bi bi-box-seam-fill fs-3 text-success" aria-hidden="true"></i>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div class="alert d-none" id="adminAlert" role="status" aria-live="polite"></div>
+
+        <section class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);" aria-label="Administration records">
+          <div class="card-header bg-transparent border-0 pt-3">
+            <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-panel" type="button" role="tab" aria-controls="users-panel" aria-selected="true">
+                  <i class="bi bi-people me-1" aria-hidden="true"></i>Staff accounts
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="branches-tab" data-bs-toggle="tab" data-bs-target="#branches-panel" type="button" role="tab" aria-controls="branches-panel" aria-selected="false">
+                  <i class="bi bi-geo-alt me-1" aria-hidden="true"></i>Branch locations
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="stock-items-tab" data-bs-toggle="tab" data-bs-target="#stock-items-panel" type="button" role="tab" aria-controls="stock-items-panel" aria-selected="false">
+                  <i class="bi bi-box-seam me-1" aria-hidden="true"></i>General stock items
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="tab-content">
+            <div class="tab-pane fade show active" id="users-panel" role="tabpanel" aria-labelledby="users-tab" tabindex="0">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 p-3">
+                <div>
+                  <h2 class="h5 mb-1">Staff accounts</h2>
+                  <p class="small text-secondary mb-0">Create accounts, assign roles, and manage sign-in access.</p>
+                </div>
+                <div class="input-group" style="max-width: 320px;">
+                  <span class="input-group-text bg-white"><i class="bi bi-search" aria-hidden="true"></i></span>
+                  <label class="visually-hidden" for="userSearch">Search staff accounts</label>
+                  <input class="form-control" id="userSearch" type="search" placeholder="Search name, email, or role" />
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light"><tr><th class="ps-3" scope="col">Staff member</th><th scope="col">Role</th><th scope="col">Created</th><th scope="col">Status</th><th class="text-end pe-3" scope="col">Actions</th></tr></thead>
+                  <tbody id="usersTableBody"><tr><td class="text-center py-5 text-secondary" colspan="5"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading accounts…</td></tr></tbody>
+                </table>
+              </div>
+              <div class="card-footer bg-white small text-secondary" id="usersSummary" aria-live="polite"></div>
+            </div>
+
+            <div class="tab-pane fade" id="branches-panel" role="tabpanel" aria-labelledby="branches-tab" tabindex="0">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 p-3">
+                <div>
+                  <h2 class="h5 mb-1">Branch locations</h2>
+                  <p class="small text-secondary mb-0">Maintain the locations available during staff sign-in.</p>
+                </div>
+                <div class="input-group" style="max-width: 320px;">
+                  <span class="input-group-text bg-white"><i class="bi bi-search" aria-hidden="true"></i></span>
+                  <label class="visually-hidden" for="branchSearch">Search branch locations</label>
+                  <input class="form-control" id="branchSearch" type="search" placeholder="Search name or address" />
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light"><tr><th class="ps-3" scope="col">Branch</th><th scope="col">Address</th><th scope="col">Status</th><th class="text-end pe-3" scope="col">Actions</th></tr></thead>
+                  <tbody id="branchesTableBody"><tr><td class="text-center py-5 text-secondary" colspan="4"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading branches…</td></tr></tbody>
+                </table>
+              </div>
+              <div class="card-footer bg-white small text-secondary" id="branchesSummary" aria-live="polite"></div>
+            </div>
+
+            <div class="tab-pane fade" id="stock-items-panel" role="tabpanel" aria-labelledby="stock-items-tab" tabindex="0">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 p-3">
+                <div>
+                  <h2 class="h5 mb-1">General stock items</h2>
+                  <p class="small text-secondary mb-0">Manage the shared stock catalog used by branch inventory.</p>
+                </div>
+                <div class="input-group" style="max-width: 320px;">
+                  <span class="input-group-text bg-white"><i class="bi bi-search" aria-hidden="true"></i></span>
+                  <label class="visually-hidden" for="stockItemSearch">Search general stock items</label>
+                  <input class="form-control" id="stockItemSearch" type="search" placeholder="Search item or unit" />
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light"><tr><th class="ps-3" scope="col">Item</th><th scope="col">Unit</th><th scope="col">Unit cost</th><th scope="col">Status</th><th class="text-end pe-3" scope="col">Actions</th></tr></thead>
+                  <tbody id="stockItemsTableBody"><tr><td class="text-center py-5 text-secondary" colspan="5"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading stock items…</td></tr></tbody>
+                </table>
+              </div>
+              <div class="card-footer bg-white small text-secondary" id="stockItemsSummary" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal fade" id="stockItemModal" tabindex="-1" aria-labelledby="stockItemModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="stockItemForm">
+          <div class="modal-header">
+            <div><h2 class="modal-title fs-5" id="stockItemModalTitle">Add general stock item</h2><p class="small text-secondary mb-0 mt-1">Shared item details for branch inventory</p></div>
+            <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input id="stockItemId" type="hidden" />
+            <div class="mb-3"><label class="form-label" for="stockItemName">Item name</label><input class="form-control" id="stockItemName" name="name" maxlength="150" required /></div>
+            <div class="mb-3"><label class="form-label" for="stockItemUnitType">Unit</label><select class="form-select" id="stockItemUnitType" name="unit_type" required><option value="sacks">Sacks</option><option value="cans">Cans</option><option value="bottles">Bottles</option><option value="packs">Packs</option></select></div>
+            <div class="mb-3"><label class="form-label" for="stockItemUnitCost">Unit cost (PHP)</label><input class="form-control" id="stockItemUnitCost" name="unit_cost" type="number" min="0" step="0.01" required /></div>
+            <div><label class="form-label" for="stockItemStatus">Status</label><select class="form-select" id="stockItemStatus" name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select><div class="form-text">Inactive items remain in existing branch inventory records.</div></div>
+            <div class="small text-danger mt-3" id="stockItemFormError" role="alert"></div>
+          </div>
+          <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" id="saveStockItemButton" type="submit">Save item</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="userForm">
+          <div class="modal-header">
+            <div><h2 class="modal-title fs-5" id="userModalTitle">Add staff account</h2><p class="small text-secondary mb-0 mt-1">Account details and sign-in permissions</p></div>
+            <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input id="userId" type="hidden" />
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label" for="firstName">First name</label><input class="form-control" id="firstName" name="first_name" maxlength="100" autocomplete="given-name" /></div>
+              <div class="col-md-6"><label class="form-label" for="lastName">Last name</label><input class="form-control" id="lastName" name="last_name" maxlength="100" autocomplete="family-name" /></div>
+              <div class="col-12"><label class="form-label" for="userEmail">Email address</label><input class="form-control" id="userEmail" name="email" type="email" maxlength="254" autocomplete="email" required /></div>
+              <div class="col-md-6"><label class="form-label" for="userRole">Role</label><select class="form-select" id="userRole" name="role" required><option value="admin">Admin</option><option value="manager">Manager</option><option value="staff" selected>Staff</option></select></div>
+              <div class="col-md-6"><label class="form-label" for="userStatus">Status</label><select class="form-select" id="userStatus" name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+              <div class="col-12"><label class="form-label" for="userPassword">Password <span class="text-secondary" id="passwordHint">(required for new accounts)</span></label><input class="form-control" id="userPassword" name="password" type="password" minlength="8" autocomplete="new-password" /><div class="form-text">Use at least 8 characters. Leave blank when editing to keep the existing password.</div></div>
+            </div>
+            <div class="small text-danger mt-3" id="userFormError" role="alert"></div>
+          </div>
+          <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" id="saveUserButton" type="submit">Save account</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="branchModal" tabindex="-1" aria-labelledby="branchModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="branchForm">
+          <div class="modal-header">
+            <div><h2 class="modal-title fs-5" id="branchModalTitle">Add branch location</h2><p class="small text-secondary mb-0 mt-1">Branch details and sign-in availability</p></div>
+            <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input id="branchId" type="hidden" />
+            <div class="mb-3"><label class="form-label" for="branchName">Location name</label><input class="form-control" id="branchName" name="location_name" maxlength="150" required /></div>
+            <div class="mb-3"><label class="form-label" for="branchAddress">Address</label><textarea class="form-control" id="branchAddress" name="address" rows="3" maxlength="500" required></textarea></div>
+            <div><label class="form-label" for="branchStatus">Status</label><select class="form-select" id="branchStatus" name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select><div class="form-text">Inactive branches are hidden from the sign-in branch list.</div></div>
+            <div class="small text-danger mt-3" id="branchFormError" role="alert"></div>
+          </div>
+          <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" id="saveBranchButton" type="submit">Save branch</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../js/shared/bars.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../js/user/manager.js"></script>
+</body>
+</html>

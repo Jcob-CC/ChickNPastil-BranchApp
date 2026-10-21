@@ -1,13 +1,23 @@
 const express = require('express');
 const path = require('path');
 const login = require('../controllers/user/login');
-const auth = require('../middleware/auth');
+const admin = require('../controllers/user/manager');
 
 const router = express.Router();
 
-router.get('/:filename', auth, (req, res) => {
+router.get('/:filename', (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/user', `${req.params.filename}.html`));
 });
+
+router.get('/manager/users', admin.listUsers);
+router.post('/manager/users', admin.createUser);
+router.put('/manager/users/:id', admin.updateUser);
+router.get('/manager/branches', admin.listBranches);
+router.post('/manager/branches', admin.createBranch);
+router.put('/manager/branches/:id', admin.updateBranch);
+router.get('/manager/stock-items', admin.listStockItems);
+router.post('/manager/stock-items', admin.createStockItem);
+router.put('/manager/stock-items/:id', admin.updateStockItem);
 
 router.post('/check_pass', login.checkPassword);
 router.post('/verify_email', login.verifyEmail);
