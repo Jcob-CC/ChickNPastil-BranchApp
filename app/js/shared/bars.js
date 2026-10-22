@@ -65,6 +65,29 @@ document.addEventListener("DOMContentLoaded", function () {
         titleHeading.textContent = customTitle;
       }
 
+      fetch("/user/session")
+        .then((response) => {
+          if (!response.ok) throw new Error("Failed to load session details");
+          return response.json();
+        })
+        .then((session) => {
+          const userName = document.getElementById("topbar-user-name");
+          const userRole = document.getElementById("topbar-user-role");
+          const branchLocation = document.getElementById("branch-location-name");
+
+          if (userName) {
+            userName.textContent = `${session.firstName} ${session.lastName}`.trim();
+          }
+          if (userRole) {
+            userRole.textContent =
+              session.role.charAt(0).toUpperCase() + session.role.slice(1);
+          }
+          if (branchLocation) {
+            branchLocation.textContent = session.branchLocationName;
+          }
+        })
+        .catch((err) => console.error("Error loading session details:", err));
+
       // 4. Initialize Sidebar Toggle Functionality
       const sidebarToggleBtn = document.getElementById("sidebar-toggle");
       const sidebar = document.getElementById("app-sidebar");

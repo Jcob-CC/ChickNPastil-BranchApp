@@ -12,15 +12,15 @@
     <h4 class="m-0 fw-semibold text-dark fs-5 fs-md-4" id="page-title-heading">Page Header</h4>
     <small class="d-block text-muted mt-1" id="branch-location">
       <i class="bi bi-geo-alt-fill me-1" aria-hidden="true"></i>
-      <span>Branch Location</span>
+      <span id="branch-location-name">Branch Location</span>
     </small>
   </div>
 
   <!-- Right: User Info & Avatar (Hidden on screens smaller than 768px / md breakpoint) -->
   <div class="d-none d-md-flex align-items-center">
     <div class="text-end">
-      <div class="fw-bold text-dark lh-1" style="font-size: 1.05rem;">User Staff Full Name</div>
-      <small class="text-muted" style="font-size: 0.85rem;">User Staff Role</small>
+      <div class="fw-bold text-dark lh-1" style="font-size: 1.05rem;" id="topbar-user-name">User Staff Full Name</div>
+      <small class="text-muted" style="font-size: 0.85rem;" id="topbar-user-role">User Staff Role</small>
     </div>
   </div>
 </header>
@@ -38,7 +38,7 @@
     <li class="nav-item">
       <a href="/user" class="nav-link">User</a>
       <ul class="subnav" id="user-subnav" hidden>
-        <li><a href="/user/profile" class="nav-link">Profile</a></li>
+        <li><a href="/user/profile" class="nav-link">User Profile</a></li>
         <li><a href="/user/manager" class="nav-link">System Manager</a></li>
       </ul>
     </li>
@@ -53,12 +53,12 @@
     <li class="nav-item">
       <a href="/supply" class="nav-link">Supply</a>
       <ul class="subnav" id="supply-subnav" hidden>
-        <li><a href="/supply/inventory" class="nav-link">Branch Inventory</a></li>
+        <li><a href="/supply/inventory" class="nav-link">Inventory</a></li>
       </ul>
     </li>
     <li class="nav-item">
-      <a href="/schedule" class="nav-link">Schedule</a>
-      <ul class="subnav" id="schedule-subnav" hidden></ul>
+      <a href="/analytics" class="nav-link">Analytics</a>
+      <ul class="subnav" id="analytics-subnav" hidden></ul>
     </li>
   </ul>
 </aside>

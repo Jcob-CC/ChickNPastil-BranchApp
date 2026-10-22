@@ -6,6 +6,7 @@ const profile = require('../controllers/user/profile');
 
 const router = express.Router();
 
+router.get('/session', login.getSessionDetails);
 router.get('/:filename', (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/user', `${req.params.filename}.html`));
 });

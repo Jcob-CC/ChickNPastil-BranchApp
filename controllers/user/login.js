@@ -93,6 +93,7 @@ const startSession = (req, res) => {
         lastName: user.last_name,
         role: user.role,
         branchLocationId: branch.id,
+        branchLocationName: branch.location_name,
     };
     delete req.session.pendingUserId;
     delete req.session.emailVerified;
@@ -102,4 +103,16 @@ const startSession = (req, res) => {
     });
 };
 
-module.exports = { checkPassword, verifyEmail, startSession };
+const getSessionDetails = (req, res) => {
+    const user = req.session.user;
+    if (!user) return res.sendStatus(401);
+
+    res.json({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        branchLocationName: user.branchLocationName,
+    });
+};
+
+module.exports = { checkPassword, verifyEmail, startSession, getSessionDetails };
