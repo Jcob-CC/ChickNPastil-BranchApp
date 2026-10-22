@@ -1,5 +1,6 @@
 const loginForm = document.getElementById('loginForm');
 const loginMessage = document.getElementById('loginMessage');
+const loginSubmitButton = loginForm.querySelector('button[type="submit"]');
 const verificationInput = document.getElementById('verificationCode');
 const verificationMessage = document.getElementById('verificationMessage');
 const branchChoices = document.getElementById('branchChoices');
@@ -18,28 +19,40 @@ const confirmationModal = bootstrap.Modal.getOrCreateInstance(
 );
 
 let selectedBranch;
+let isCheckingPassword = false;
 
 loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (isCheckingPassword) return;
+
+    isCheckingPassword = true;
+    loginSubmitButton.disabled = true;
     loginMessage.textContent = '';
 
-    const response = await fetch('/user/check_pass', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            email: loginForm.elements.email.value,
-            password: loginForm.elements.password.value,
-        }),
-    });
+    try {
+        const response = await fetch('/user/check_pass', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: loginForm.elements.email.value,
+                password: loginForm.elements.password.value,
+            }),
+        });
 
-    if (!response.ok) {
-        loginMessage.textContent = 'Email or password is incorrect.';
-        return;
+        if (!response.ok) {
+            loginMessage.textContent = 'Email or password is incorrect.';
+            return;
+        }
+
+        verificationInput.value = '';
+        verificationMessage.textContent = '';
+        verificationModal.show();
+    } catch {
+        loginMessage.textContent = 'Unable to sign in right now. Please try again.';
+    } finally {
+        isCheckingPassword = false;
+        loginSubmitButton.disabled = false;
     }
-
-    verificationInput.value = '';
-    verificationMessage.textContent = '';
-    verificationModal.show();
 });
 
 document.getElementById('verifyCodeButton').addEventListener('click', async () => {
