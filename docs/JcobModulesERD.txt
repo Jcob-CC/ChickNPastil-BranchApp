@@ -16,7 +16,7 @@ BRANCH_LOCATION
 GENERAL_STOCK_ITEM
 - id
 - name
-- unit type [sacks,cans,bottles,packs]
+- unit type
 - unit cost
 - status
 

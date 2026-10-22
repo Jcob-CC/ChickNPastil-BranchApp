@@ -183,7 +183,7 @@
           <div class="modal-body">
             <input id="stockItemId" type="hidden" />
             <div class="mb-3"><label class="form-label" for="stockItemName">Item name</label><input class="form-control" id="stockItemName" name="name" maxlength="150" required /></div>
-            <div class="mb-3"><label class="form-label" for="stockItemUnitType">Unit</label><select class="form-select" id="stockItemUnitType" name="unit_type" required><option value="sacks">Sacks</option><option value="cans">Cans</option><option value="bottles">Bottles</option><option value="packs">Packs</option></select></div>
+            <div class="mb-3"><label class="form-label" for="stockItemUnitType">Unit</label><input class="form-control" id="stockItemUnitType" name="unit_type" maxlength="50" required /><div class="form-text">How this item is counted in inventory, such as kg, bottle, pack, or sack.</div></div>
             <div class="mb-3"><label class="form-label" for="stockItemUnitCost">Unit cost (PHP)</label><input class="form-control" id="stockItemUnitCost" name="unit_cost" type="number" min="0" step="0.01" required /></div>
             <div><label class="form-label" for="stockItemStatus">Status</label><select class="form-select" id="stockItemStatus" name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select><div class="form-text">Inactive items remain in existing branch inventory records.</div></div>
             <div class="small text-danger mt-3" id="stockItemFormError" role="alert"></div>

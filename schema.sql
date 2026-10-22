@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS branch_location (
 CREATE TABLE IF NOT EXISTS general_stock_item (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    unit_type TEXT CHECK (unit_type IN ('sacks', 'cans', 'bottles', 'packs')) NOT NULL,
+    unit_type TEXT NOT NULL,
     unit_cost REAL NOT NULL DEFAULT 0.00,
     status TEXT NOT NULL DEFAULT 'active'
 );

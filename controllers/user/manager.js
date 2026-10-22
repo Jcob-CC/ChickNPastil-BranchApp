@@ -2,7 +2,6 @@ const db = require('../../lib/database');
 const { hashPassword } = require('../../lib/password');
 
 const allowedStatuses = new Set(['active', 'inactive']);
-const allowedStockUnitTypes = new Set(['sacks', 'cans', 'bottles', 'packs']);
 
 const isNonEmptyString = (value, maxLength) =>
     typeof value === 'string' && value.trim().length > 0 && value.trim().length <= maxLength;
@@ -63,13 +62,14 @@ const listStockItems = (req, res) => {
 const getStockItemInput = (body) => {
     const { name, unit_type: unitType, unit_cost: unitCost, status = 'active' } = body || {};
     const normalizedName = typeof name === 'string' ? name.trim() : '';
+    const normalizedUnitType = typeof unitType === 'string' ? unitType.trim() : '';
     const normalizedCost = typeof unitCost === 'string' && unitCost.trim() !== '' ? Number(unitCost) : unitCost;
 
     if (!isNonEmptyString(normalizedName, 150)) {
         return { error: 'Enter an item name of 150 characters or fewer.' };
     }
-    if (!allowedStockUnitTypes.has(unitType)) {
-        return { error: 'Choose a valid unit type.' };
+    if (!isNonEmptyString(normalizedUnitType, 50)) {
+        return { error: 'Enter a unit of 50 characters or fewer.' };
     }
     if (typeof normalizedCost !== 'number' || !Number.isFinite(normalizedCost) || normalizedCost < 0) {
         return { error: 'Enter a valid non-negative unit cost.' };
@@ -78,7 +78,7 @@ const getStockItemInput = (body) => {
         return { error: 'Choose a valid item status.' };
     }
 
-    return { name: normalizedName, unitType, unitCost: normalizedCost, status };
+    return { name: normalizedName, unitType: normalizedUnitType, unitCost: normalizedCost, status };
 };
 
 const createStockItem = (req, res) => {
