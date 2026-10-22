@@ -3,6 +3,7 @@ const path = require('path');
 const inventory = require('../controllers/supply/inventory');
 const requestStock = require('../controllers/supply/request_stock');
 const manageRequest = require('../controllers/supply/manage_request');
+const receiveStock = require('../controllers/supply/receive_stock');
 
 const router = express.Router();
 
@@ -19,6 +20,9 @@ router.get('/inventory', (req, res) => {
 router.get('/request_stock', (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/supply/request_stock.html'));
 });
+router.get('/receive_stock', (req, res) => {
+    res.sendFile(path.join(__dirname, '../app/pages/supply/receive_stock.html'));
+});
 router.get('/manage_request', requireFulfillmentManager, (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/supply/manage_request.html'));
 });
@@ -31,6 +35,10 @@ router.put('/inventory/items/:id/stock', inventory.updateStock);
 router.get('/request_stock/data', requestStock.getRequestData);
 router.put('/request_stock/confirm-inventory', requestStock.confirmInventory);
 router.post('/request_stock', requestStock.createRequest);
+
+router.get('/receive_stock/data', receiveStock.getRequests);
+router.put('/receive_stock/:id/cancel', receiveStock.cancelRequest);
+router.post('/receive_stock/:id/receive', receiveStock.receiveDelivery);
 
 router.get('/manage_request/data', requireFulfillmentManager, manageRequest.getRequests);
 router.put('/manage_request/:id/status', requireFulfillmentManager, manageRequest.updateStatus);

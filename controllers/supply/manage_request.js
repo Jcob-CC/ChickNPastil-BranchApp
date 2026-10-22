@@ -7,12 +7,24 @@ const getRequests = (req, res) => {
                    r.preparation_note, r.transit_note,
                    b.location_name AS branch_name, b.address AS branch_address,
                    u.first_name, u.last_name,
-                   g.id AS item_id, g.name AS item_name, g.unit_type, i.quantity
+                   receipt.id AS receipt_id, receipt.date_and_time AS received_at,
+                   receipt.note AS receiving_note,
+                   receiver.first_name AS receiver_first_name,
+                   receiver.last_name AS receiver_last_name,
+                   g.id AS item_id, g.name AS item_name, g.unit_type, i.quantity,
+                   COALESCE((
+                       SELECT SUM(lost.quantity)
+                       FROM branch_stock_received_log_lost_item lost
+                       WHERE lost.branch_stock_received_log_id = receipt.id
+                           AND lost.branch_restock_request_item_id = i.id
+                   ), 0) AS lost_quantity
             FROM branch_restock_request r
             JOIN branch_location b ON b.id = r.branch_location_id
             JOIN "user" u ON u.id = r.user_id
             LEFT JOIN branch_restock_request_item i ON i.branch_restock_request_id = r.id
             LEFT JOIN general_stock_item g ON g.id = i.general_stock_item_id
+            LEFT JOIN branch_stock_received_log receipt ON receipt.branch_restock_request_id = r.id
+            LEFT JOIN "user" receiver ON receiver.id = receipt.user_id
             ORDER BY datetime(r.date_and_time) DESC, r.id DESC
         `).all();
 
@@ -30,6 +42,12 @@ const getRequests = (req, res) => {
                     branchName: row.branch_name,
                     branchAddress: row.branch_address,
                     requesterName: [row.first_name, row.last_name].filter(Boolean).join(' '),
+                    receipt: row.receipt_id ? {
+                        id: row.receipt_id,
+                        dateAndTime: row.received_at,
+                        note: row.receiving_note,
+                        receivedBy: [row.receiver_first_name, row.receiver_last_name].filter(Boolean).join(' '),
+                    } : null,
                     items: [],
                 });
             }
@@ -40,6 +58,8 @@ const getRequests = (req, res) => {
                     name: row.item_name,
                     unitType: row.unit_type,
                     quantity: row.quantity,
+                    receivedQuantity: row.quantity - row.lost_quantity,
+                    lostQuantity: row.lost_quantity,
                 });
             }
         });
@@ -101,6 +121,9 @@ const updateStatus = (req, res) => {
             SELECT status FROM branch_restock_request WHERE id = ?
         `).get(requestId);
         if (!request) return res.status(404).json({ message: 'Request not found.' });
+        if (request.status === 'cancelled') {
+            return res.status(409).json({ message: 'Cancelled requests cannot be changed.' });
+        }
 
         const noteColumn = statusNoteColumns[status];
         const updateRequest = noteColumn

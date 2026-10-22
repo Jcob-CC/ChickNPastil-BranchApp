@@ -4,108 +4,177 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chick N Pastil</title>
-  
-  <!-- Bootstrap 5 CSS & Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-  
-  <!-- Custom Layout CSS -->
   <link rel="stylesheet" href="../../assets/css/style.css" />
 </head>
-<body data-page-header="Branch Fulfillment">
-
-  <!-- Topbar Placeholder -->
+<body data-page-header="Receive Deliveries">
   <div id="topbar-wrapper"></div>
-
-  <!-- Main Container -->
   <div class="app-container">
-    <!-- Sidebar Placeholder -->
     <div id="sidebar-wrapper"></div>
-
-    <!-- Main Page Content -->
     <main class="main-content">
       <div class="container-fluid py-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
           <div class="d-flex align-items-center gap-2">
             <span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
-            <div><h1 class="h4 mb-0">Requisition fulfillment</h1><p class="small text-secondary mb-0">Branch · requests and deliveries</p></div>
+            <div>
+              <h1 class="h4 mb-0">Requisition fulfillment</h1>
+              <p class="small text-secondary mb-0" id="branchName">Branch requests and deliveries</p>
+            </div>
           </div>
         </div>
 
+        <div class="alert d-none" id="requestMessage" role="alert" aria-live="polite"></div>
+        <section class="row g-3 mb-4" aria-label="Request counts by status" aria-live="polite">
+          <div class="col-6 col-md-4 col-xl-2">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);" aria-label="Pending requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Pending</div><div class="h3 mb-0" id="pendingRequestCount">0</div></div>
+                <i class="bi bi-hourglass-split fs-3 text-warning-emphasis" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #eff6ff, #ecfeff);" aria-label="Preparing requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Preparing</div><div class="h3 mb-0" id="preparingRequestCount">0</div></div>
+                <i class="bi bi-box-seam fs-3 text-primary" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #eff6ff, #ecfeff);" aria-label="In-transit requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">In transit</div><div class="h3 mb-0" id="inTransitRequestCount">0</div></div>
+                <i class="bi bi-truck fs-3 text-primary" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);" aria-label="Received requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Received</div><div class="h3 mb-0" id="receivedRequestCount">0</div></div>
+                <i class="bi bi-check-circle fs-3 text-success" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #fff1f2, #ffe4e6);" aria-label="Rejected requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Rejected</div><div class="h3 mb-0" id="rejectedRequestCount">0</div></div>
+                <i class="bi bi-x-circle fs-3 text-danger" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f8fafc, #e2e8f0);" aria-label="Cancelled requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Cancelled</div><div class="h3 mb-0" id="cancelledRequestCount">0</div></div>
+                <i class="bi bi-slash-circle fs-3 text-secondary" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+        </section>
         <section class="card border-0 shadow-sm" aria-labelledby="branchRequestsHeading" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
           <div class="card-header border-0 bg-transparent d-flex flex-wrap align-items-center justify-content-between gap-2 pt-3">
             <h2 class="h5 mb-0" id="branchRequestsHeading">My requests</h2>
-            <span class="small text-secondary">3 requests</span>
+            <span class="small text-secondary" id="requestCount">Loading requests…</span>
           </div>
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-              <thead class="table-light"><tr><th scope="col" class="ps-3">Request</th><th scope="col">Submitted</th><th scope="col">Items</th><th scope="col">Status</th><th scope="col" class="text-end pe-3">Actions</th></tr></thead>
-              <tbody>
-                <tr><th scope="row" class="ps-3">REQ-1042</th><td class="text-nowrap">Oct 2, 2026</td><td>5 items · 42 units</td><td><span class="badge bg-secondary-subtle text-secondary-emphasis">Pending</span></td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#viewRequestModal">View</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#statusModal">Check status</button> <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#cancelRequestModal">Cancel</button></td></tr>
-                <tr><th scope="row" class="ps-3">REQ-1041</th><td class="text-nowrap">Oct 1, 2026</td><td>4 items · 31 units</td><td><span class="badge bg-info-subtle text-info-emphasis">In transit</span></td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#viewRequestModal">View</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#statusModal">Check status</button> <button class="btn btn-sm btn-success" type="button" data-bs-toggle="modal" data-bs-target="#receiveDeliveryModal"><i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Receive delivery</button></td></tr>
-                <tr><th scope="row" class="ps-3">REQ-1038</th><td class="text-nowrap">Sep 28, 2026</td><td>6 items · 55 units</td><td><span class="badge bg-success-subtle text-success-emphasis">Received</span></td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#viewRequestModal">View</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#statusModal">Check status</button></td></tr>
-              </tbody>
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="ps-3">Request</th>
+                  <th scope="col">Submitted</th>
+                  <th scope="col">Items</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-end pe-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requestsTableBody"></tbody>
             </table>
           </div>
-          <div class="card-footer bg-white"><span class="small text-secondary">Showing 3 requests</span></div>
+          <div class="card-footer bg-white"><span class="small text-secondary" id="showingRequests"></span></div>
         </section>
       </div>
     </main>
-
   </div>
 
   <div class="modal fade" id="viewRequestModal" tabindex="-1" aria-labelledby="viewRequestModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="viewRequestModalTitle">Request details</h2><p class="small text-secondary mb-0 mt-1">REQ-1041 · In transit</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body">
-        <div class="row g-3 mb-3"><div class="col-sm-6"><span class="small text-secondary d-block">Submitted</span><strong>October 1, 2026</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Delivery manifest</span><strong>DM-2026-028</strong></div></div>
-        <div class="table-responsive"><table class="table table-sm table-bordered align-middle mb-0"><thead class="table-light"><tr><th scope="col">Item</th><th scope="col">Unit</th><th scope="col" class="text-end">Requested</th></tr></thead><tbody><tr><th scope="row">Cooking oil</th><td>bottles</td><td class="text-end">12</td></tr><tr><th scope="row">Packaging boxes</th><td>bundles</td><td class="text-end">8</td></tr><tr><th scope="row">Rice</th><td>sacks</td><td class="text-end">5</td></tr><tr><th scope="row">Chicken</th><td>packs</td><td class="text-end">6</td></tr></tbody></table></div>
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div><h2 class="modal-title fs-5" id="viewRequestModalTitle">Request details</h2><p class="small text-secondary mb-0 mt-1" id="viewRequestSubtitle"></p></div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6"><span class="small text-secondary d-block">Submitted</span><strong id="viewRequestDate"></strong></div>
+            <div class="col-sm-6"><span class="small text-secondary d-block">Request note</span><strong id="viewRequestNote"></strong></div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle mb-0">
+              <thead class="table-light"><tr><th scope="col">Item</th><th scope="col">Unit</th><th scope="col" class="text-end">Requested</th></tr></thead>
+              <tbody id="viewRequestItems"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button></div>
       </div>
-      <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button></div>
-    </div></div>
-  </div>
-
-  <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="statusModalTitle">Request status</h2><p class="small text-secondary mb-0 mt-1">REQ-1041 · DM-2026-028</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body">
-        <div class="d-flex align-items-center gap-3 mb-3"><span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-check-lg" aria-hidden="true"></i></span><div><strong>Request submitted</strong><div class="small text-secondary">October 1, 2026</div></div></div>
-        <div class="border-start border-2 ms-3 ps-4 py-2 mb-3"><div class="d-flex align-items-center gap-3"><span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-check-lg" aria-hidden="true"></i></span><div><strong>Preparing</strong><div class="small text-secondary">October 2, 2026</div></div></div></div>
-        <div class="d-flex align-items-center gap-3"><span class="badge rounded-pill bg-info-subtle text-info-emphasis p-2"><i class="bi bi-truck" aria-hidden="true"></i></span><div><strong>In transit</strong><div class="small text-secondary">Current status</div></div></div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button></div>
-    </div></div>
+    </div>
   </div>
 
   <div class="modal fade" id="cancelRequestModal" tabindex="-1" aria-labelledby="cancelRequestModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="cancelRequestModalTitle">Cancel pending request?</h2><p class="small text-secondary mb-0 mt-1">REQ-1042</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body">This request is pending. Cancel it before the commissary begins preparing the order?</div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Keep request</button><button class="btn btn-danger" type="button" data-bs-dismiss="modal">Cancel request</button></div>
-    </div></div>
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div><h2 class="modal-title fs-5" id="cancelRequestModalTitle">Cancel pending request?</h2><p class="small text-secondary mb-0 mt-1" id="cancelRequestSubtitle"></p></div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">This request has not started processing. Are you sure you want to cancel it?</div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Keep request</button>
+          <button class="btn btn-danger" type="button" id="confirmCancelRequest">Cancel request</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="modal fade" id="receiveDeliveryModal" tabindex="-1" aria-labelledby="receiveDeliveryModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="receiveDeliveryModalTitle">Receive delivery</h2><p class="small text-secondary mb-0 mt-1">REQ-1041 · Manifest DM-2026-028</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body">
-        <p class="small text-secondary">Count each item received. Enter missing or damaged quantities to include them in the receiving record.</p>
-        <div class="table-responsive mb-3"><table class="table table-sm table-bordered align-middle"><thead class="table-light"><tr><th scope="col">Requested item</th><th scope="col" class="text-end">Requested</th><th scope="col">Received</th><th scope="col">Missing</th><th scope="col">Damaged</th></tr></thead><tbody>
-          <tr><th scope="row">Cooking oil <small class="text-secondary fw-normal">bottles</small></th><td class="text-end">12</td><td><label class="visually-hidden" for="receivedOil">Cooking oil received</label><input class="form-control form-control-sm" id="receivedOil" type="number" min="0" value="12"></td><td><label class="visually-hidden" for="missingOil">Cooking oil missing</label><input class="form-control form-control-sm" id="missingOil" type="number" min="0" value="0"></td><td><label class="visually-hidden" for="damagedOil">Cooking oil damaged</label><input class="form-control form-control-sm" id="damagedOil" type="number" min="0" value="0"></td></tr>
-          <tr><th scope="row">Packaging boxes <small class="text-secondary fw-normal">bundles</small></th><td class="text-end">8</td><td><label class="visually-hidden" for="receivedBoxes">Packaging boxes received</label><input class="form-control form-control-sm" id="receivedBoxes" type="number" min="0" value="8"></td><td><label class="visually-hidden" for="missingBoxes">Packaging boxes missing</label><input class="form-control form-control-sm" id="missingBoxes" type="number" min="0" value="0"></td><td><label class="visually-hidden" for="damagedBoxes">Packaging boxes damaged</label><input class="form-control form-control-sm" id="damagedBoxes" type="number" min="0" value="0"></td></tr>
-          <tr><th scope="row">Rice <small class="text-secondary fw-normal">sacks</small></th><td class="text-end">5</td><td><label class="visually-hidden" for="receivedRice">Rice received</label><input class="form-control form-control-sm" id="receivedRice" type="number" min="0" value="5"></td><td><label class="visually-hidden" for="missingRice">Rice missing</label><input class="form-control form-control-sm" id="missingRice" type="number" min="0" value="0"></td><td><label class="visually-hidden" for="damagedRice">Rice damaged</label><input class="form-control form-control-sm" id="damagedRice" type="number" min="0" value="0"></td></tr>
-          <tr><th scope="row">Chicken <small class="text-secondary fw-normal">packs</small></th><td class="text-end">6</td><td><label class="visually-hidden" for="receivedChicken">Chicken received</label><input class="form-control form-control-sm" id="receivedChicken" type="number" min="0" value="6"></td><td><label class="visually-hidden" for="missingChicken">Chicken missing</label><input class="form-control form-control-sm" id="missingChicken" type="number" min="0" value="0"></td><td><label class="visually-hidden" for="damagedChicken">Chicken damaged</label><input class="form-control form-control-sm" id="damagedChicken" type="number" min="0" value="0"></td></tr>
-        </tbody></table></div>
-        <div class="row g-3"><div class="col-md-6"><label class="form-label" for="receivingStaff">Received by</label><input class="form-control" id="receivingStaff" value="Branch staff"></div><div class="col-md-6"><label class="form-label" for="receivedAt">Date and time</label><input class="form-control" id="receivedAt" value="October 2, 2026 · 10:30 AM" readonly></div><div class="col-12"><label class="form-label" for="receivingNotes">Receiving notes</label><textarea class="form-control" id="receivingNotes" rows="2" placeholder="Optional notes about this delivery"></textarea></div></div>
-        <div class="alert alert-success d-flex align-items-start gap-2 mt-3 mb-0" role="note"><i class="bi bi-clipboard-check mt-1" aria-hidden="true"></i><span class="small">Saving this receipt records the receiving staff member, adds accepted quantities to inventory, and logs missing or damaged items.</span></div>
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div><h2 class="modal-title fs-5" id="receiveDeliveryModalTitle">Receive delivery</h2><p class="small text-secondary mb-0 mt-1" id="receiveDeliverySubtitle"></p></div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="receiveDeliveryForm">
+          <div class="modal-body">
+            <p class="small text-secondary">Enter either accepted or missing/damaged quantity for each item. The other value updates automatically to match the requested amount.</p>
+            <div class="table-responsive mb-3">
+              <table class="table table-sm table-bordered align-middle">
+                <thead class="table-light"><tr><th scope="col">Requested item</th><th scope="col" class="text-end">Requested</th><th scope="col">Accepted</th><th scope="col">Missing / damaged</th></tr></thead>
+                <tbody id="receiveDeliveryItems"></tbody>
+              </table>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label" for="receivingStaff">Received by</label><input class="form-control" id="receivingStaff" readonly></div>
+              <div class="col-md-6"><label class="form-label" for="receivedAt">Date and time</label><input class="form-control" id="receivedAt" readonly></div>
+              <div class="col-12"><label class="form-label" for="receivingNotes">Receiving notes</label><textarea class="form-control" id="receivingNotes" rows="2" placeholder="Optional notes about this delivery"></textarea></div>
+            </div>
+            <div class="small text-danger mt-3" id="receiveError" role="alert"></div>
+            <div class="alert alert-success d-flex align-items-start gap-2 mt-3 mb-0" role="note"><i class="bi bi-clipboard-check mt-1" aria-hidden="true"></i><span class="small">Accepted quantities are added to branch inventory. Missing and damaged quantities are saved with the receiving record.</span></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-success" type="submit" id="saveReceipt"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Save receipt to inventory</button>
+          </div>
+        </form>
       </div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="button" data-bs-dismiss="modal"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Save receipt to inventory</button></div>
-    </div></div>
+    </div>
   </div>
 
-  <!-- Bars Loader Script -->
   <script src="../../js/shared/bars.js"></script>
-  <!-- Bootstrap 5 JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../js/supply/receive_stock.js"></script>
 </body>
 </html>

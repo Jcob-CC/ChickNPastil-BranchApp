@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const message = document.getElementById('requestMessage');
     const statusActionModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('statusActionModal'));
     const requestItemsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('requestItemsModal'));
+    const receiptDetailsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('receiptDetailsModal'));
 
     const formatQuantity = (quantity) =>
         Number(quantity).toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         in_transit: 'In transit',
         rejected: 'Rejected',
         received: 'Received',
+        cancelled: 'Cancelled',
     };
 
     const showMessage = (text, type = 'danger') => {
@@ -147,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 in_transit: 'bg-info-subtle text-info-emphasis',
                 rejected: 'bg-danger-subtle text-danger-emphasis',
                 received: 'bg-success-subtle text-success-emphasis',
+                cancelled: 'bg-secondary-subtle text-secondary-emphasis',
             };
             const statusCell = appendCell(row, '');
             const badge = document.createElement('span');
@@ -157,7 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const actions = appendCell(row, '', 'text-end pe-3 text-nowrap');
             actions.appendChild(createActionButton('Items', 'bi-list-ul', 'btn-outline-primary me-1', 'items', request));
             actions.appendChild(createActionButton('Print manifest', 'bi-printer', 'btn-outline-secondary me-1', 'manifest', request));
-            actions.appendChild(createActionButton('Change status', 'bi-arrow-left-right', 'btn-outline-success', 'status', request));
+            if (status === 'received') {
+                actions.appendChild(createActionButton('Receipt details', 'bi-clipboard-check', 'btn-outline-info', 'receipt', request));
+            } else if (status !== 'cancelled') {
+                actions.appendChild(createActionButton('Change status', 'bi-arrow-left-right', 'btn-outline-success', 'status', request));
+            }
             tableBody.appendChild(row);
         });
     };
@@ -246,6 +253,39 @@ document.addEventListener('DOMContentLoaded', () => {
         requestItemsModal.show();
     };
 
+    const showReceiptDetails = (request) => {
+        const receipt = request.receipt;
+        document.getElementById('receiptDetailsSubtitle').textContent =
+            `Request ${request.id} · ${request.branchName}`;
+        document.getElementById('receiptDetailsId').textContent = receipt ? receipt.id : 'No receipt log found';
+        document.getElementById('receiptDetailsReceivedAt').textContent =
+            receipt ? formatDate(receipt.dateAndTime) : '—';
+        document.getElementById('receiptDetailsReceivedBy').textContent =
+            receipt && receipt.receivedBy ? receipt.receivedBy : '—';
+        document.getElementById('receiptDetailsNote').textContent =
+            receipt && receipt.note ? receipt.note : 'No receiving notes or discrepancies recorded.';
+
+        const itemsBody = document.getElementById('receiptDetailsItems');
+        itemsBody.replaceChildren();
+        if (!receipt) {
+            showEmptyRow(itemsBody, 5, 'There is no receiving log for this request.');
+        } else {
+            request.items.forEach((item) => {
+                const row = document.createElement('tr');
+                const name = document.createElement('th');
+                name.scope = 'row';
+                name.textContent = item.name;
+                row.appendChild(name);
+                appendCell(row, item.unitType);
+                appendCell(row, formatQuantity(item.quantity), 'text-end');
+                appendCell(row, formatQuantity(item.receivedQuantity), 'text-end');
+                appendCell(row, formatQuantity(item.lostQuantity), 'text-end');
+                itemsBody.appendChild(row);
+            });
+        }
+        receiptDetailsModal.show();
+    };
+
     const openStatusAction = (request, selectedStatus) => {
         state.activeRequestId = request.id;
         document.getElementById('statusActionTitle').textContent = 'Change request status';
@@ -286,8 +326,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!request) return;
         if (button.dataset.action === 'items') {
             showRequestItems(request);
-        } else if (button.dataset.action !== 'manifest') {
+        } else if (button.dataset.action === 'receipt') {
+            showReceiptDetails(request);
+        } else if (button.dataset.action === 'status') {
             openStatusAction(request, null);
+        } else if (button.dataset.action !== 'manifest') {
+            return;
         }
     });
 

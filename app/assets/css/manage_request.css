@@ -1,0 +1,108 @@
+#printReport {
+      display: none;
+    }
+
+    @media print {
+      @page {
+        size: A4;
+        margin: 16mm;
+      }
+
+      body > :not(#printReport) {
+        display: none !important;
+      }
+
+      #printReport {
+        display: block !important;
+        color: #212529;
+        font-family: Arial, sans-serif;
+        font-size: 10pt;
+      }
+
+      #printReport h1 {
+        font-size: 20pt;
+      }
+
+      #printReport .print-logo {
+        display: block;
+        width: 90px;
+        height: auto;
+        margin: 0 auto 12px;
+      }
+
+      #printReport h2 {
+        font-size: 15pt;
+      }
+
+      #printReport table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      #printReport th,
+      #printReport td {
+        border: 1px solid #adb5bd;
+        padding: 6px 8px;
+        text-align: left;
+      }
+
+      #printReport thead {
+        display: table-header-group;
+      }
+
+      #printReport tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      #printReport .print-request {
+        margin-top: 18px;
+      }
+
+      #printReport .manifest-title {
+        text-align: center;
+      }
+
+      #printReport .manifest-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px 24px;
+        margin: 18px 0;
+      }
+
+      #printReport .manifest-field {
+        min-height: 42px;
+      }
+
+      #printReport .manifest-field span {
+        display: block;
+        color: #495057;
+        font-size: 9pt;
+      }
+
+      #printReport .manifest-field::after {
+        content: "";
+        display: block;
+        height: 18px;
+        margin-top: 12px;
+        border-bottom: 1px solid #495057;
+      }
+
+      #printReport .manifest-items td {
+        height: 34px;
+      }
+
+      #printReport .manifest-signatures {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        margin-top: 36px;
+      }
+
+      #printReport .manifest-signature {
+        padding-top: 24px;
+        border-top: 1px solid #495057;
+        text-align: center;
+      }
+
+    }
