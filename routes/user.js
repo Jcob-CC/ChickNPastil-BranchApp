@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const login = require('../controllers/user/login');
 const admin = require('../controllers/user/manager');
+const profile = require('../controllers/user/profile');
 
 const router = express.Router();
 
@@ -22,5 +23,9 @@ router.put('/manager/stock-items/:id', admin.updateStockItem);
 router.post('/check_pass', login.checkPassword);
 router.post('/verify_email', login.verifyEmail);
 router.post('/start_session', login.startSession);
+router.get('/profile/details', profile.getDetails);
+router.post('/profile/password', profile.updatePassword);
+router.post('/profile/deactivate', profile.deactivate);
+router.post('/logout', profile.logout);
 
 module.exports = router;
