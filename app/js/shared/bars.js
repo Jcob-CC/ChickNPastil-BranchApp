@@ -74,6 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
           const userName = document.getElementById("topbar-user-name");
           const userRole = document.getElementById("topbar-user-role");
           const branchLocation = document.getElementById("branch-location-name");
+          const manageRequestsLink = document.querySelector('a[href="/supply/manage_request"]');
 
           if (userName) {
             userName.textContent = `${session.firstName} ${session.lastName}`.trim();
@@ -84,6 +85,9 @@ document.addEventListener("DOMContentLoaded", function () {
           }
           if (branchLocation) {
             branchLocation.textContent = session.branchLocationName;
+          }
+          if (manageRequestsLink && session.role !== "admin" && session.role !== "manager") {
+            manageRequestsLink.closest("li").hidden = true;
           }
         })
         .catch((err) => console.error("Error loading session details:", err));

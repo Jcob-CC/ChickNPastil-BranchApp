@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const showRequestReceipt = (requestId, items, note) => {
-        document.getElementById('receiptRequestId').textContent = `REQ-${requestId}`;
+        document.getElementById('receiptRequestId').textContent = requestId;
         document.getElementById('receiptSubmittedAt').textContent = new Date().toLocaleString();
         document.getElementById('receiptBranch').textContent = document.getElementById('requestLocation').value;
         document.getElementById('receiptStaff').textContent = document.getElementById('requestStaff').value;

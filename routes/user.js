@@ -6,13 +6,20 @@ const profile = require('../controllers/user/profile');
 
 const router = express.Router();
 
+const requireAdminORManager = (req, res, next) => {
+    if (req.session.user.role !== 'admin' && req.session.user.role !== 'manager') {
+        return res.sendStatus(403);
+    }
+    next();
+};
+
 router.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/user/login.html'));
 });
 router.get('/profile', (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/user/profile.html'));
 });
-router.get('/manager', (req, res) => {
+router.get('/manager', requireAdminORManager, (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/user/manager.html'));
 });
 

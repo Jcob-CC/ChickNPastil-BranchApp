@@ -53,6 +53,9 @@ CREATE TABLE IF NOT EXISTS branch_restock_request (
     user_id INTEGER NOT NULL REFERENCES "user"(id),
     date_and_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     note TEXT,
+    rejection_note TEXT,
+    preparation_note TEXT,
+    transit_note TEXT,
     status TEXT NOT NULL DEFAULT 'pending'
 );
 

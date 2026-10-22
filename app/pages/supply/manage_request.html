@@ -4,130 +4,344 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chick N Pastil</title>
-  
-  <!-- Bootstrap 5 CSS & Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-  
-  <!-- Custom Layout CSS -->
   <link rel="stylesheet" href="../../assets/css/style.css" />
-</head>
-<body data-page-header="Fulfillment Manager">
+  <style>
+    #printReport {
+      display: none;
+    }
 
-  <!-- Topbar Placeholder -->
+    @media print {
+      @page {
+        size: A4;
+        margin: 16mm;
+      }
+
+      body > :not(#printReport) {
+        display: none !important;
+      }
+
+      #printReport {
+        display: block !important;
+        color: #212529;
+        font-family: Arial, sans-serif;
+        font-size: 10pt;
+      }
+
+      #printReport h1 {
+        font-size: 20pt;
+      }
+
+      #printReport .print-logo {
+        display: block;
+        width: 90px;
+        height: auto;
+        margin: 0 auto 12px;
+      }
+
+      #printReport h2 {
+        font-size: 15pt;
+      }
+
+      #printReport table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      #printReport th,
+      #printReport td {
+        border: 1px solid #adb5bd;
+        padding: 6px 8px;
+        text-align: left;
+      }
+
+      #printReport thead {
+        display: table-header-group;
+      }
+
+      #printReport tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      #printReport .print-request {
+        margin-top: 18px;
+      }
+
+      #printReport .manifest-title {
+        text-align: center;
+      }
+
+      #printReport .manifest-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px 24px;
+        margin: 18px 0;
+      }
+
+      #printReport .manifest-field {
+        min-height: 42px;
+      }
+
+      #printReport .manifest-field span {
+        display: block;
+        color: #495057;
+        font-size: 9pt;
+      }
+
+      #printReport .manifest-field::after {
+        content: "";
+        display: block;
+        height: 18px;
+        margin-top: 12px;
+        border-bottom: 1px solid #495057;
+      }
+
+      #printReport .manifest-items td {
+        height: 34px;
+      }
+
+      #printReport .manifest-signatures {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        margin-top: 36px;
+      }
+
+      #printReport .manifest-signature {
+        padding-top: 24px;
+        border-top: 1px solid #495057;
+        text-align: center;
+      }
+
+    }
+  </style>
+</head>
+<body data-page-header="Requests Manager">
   <div id="topbar-wrapper"></div>
 
-  <!-- Main Container -->
   <div class="app-container">
-    <!-- Sidebar Placeholder -->
     <div id="sidebar-wrapper"></div>
-
-    <!-- Main Page Content -->
     <main class="main-content">
       <div class="container-fluid py-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
           <div class="d-flex align-items-center gap-2">
             <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis p-2"><i class="bi bi-truck" aria-hidden="true"></i></span>
-            <div><h1 class="h4 mb-0">Requisition fulfillment</h1><p class="small text-secondary mb-0">Commissary · branch requests</p></div>
+            <div>
+              <h1 class="h4 mb-0">Requisition fulfillment</h1>
+              <p class="small text-secondary mb-0">Commissary · branch requests</p>
+            </div>
           </div>
-          <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#consolidatedItemsModal"><i class="bi bi-list-check me-1" aria-hidden="true"></i>Consolidated items</button>
-          </div>
+          <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#consolidatedItemsModal">
+            <i class="bi bi-list-check me-1" aria-hidden="true"></i>Consolidated items
+          </button>
         </div>
 
+        <div id="requestMessage" class="alert d-none" role="alert"></div>
+        <section class="row g-3 mb-4" aria-label="Request counts by status" aria-live="polite">
+          <div class="col-6 col-lg">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);" aria-label="Pending requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Pending</div><div class="h3 mb-0" id="pendingRequestCount">0</div></div>
+                <i class="bi bi-hourglass-split fs-3 text-warning-emphasis" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+          <div class="col-6 col-lg">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);" aria-label="Preparing requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Preparing</div><div class="h3 mb-0" id="preparingRequestCount">0</div></div>
+                <i class="bi bi-box-seam fs-3 text-success" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+          <div class="col-6 col-lg">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);" aria-label="In-transit requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">In transit</div><div class="h3 mb-0" id="inTransitRequestCount">0</div></div>
+                <i class="bi bi-truck fs-3 text-success" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+          <div class="col-6 col-lg">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #fff1f2, #ffe4e6);" aria-label="Rejected requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Rejected</div><div class="h3 mb-0" id="rejectedRequestCount">0</div></div>
+                <i class="bi bi-x-circle fs-3 text-danger" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+          <div class="col-6 col-lg">
+            <article class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);" aria-label="Received requests">
+              <div class="card-body d-flex align-items-center justify-content-between">
+                <div><div class="small text-secondary">Received</div><div class="h3 mb-0" id="receivedRequestCount">0</div></div>
+                <i class="bi bi-check-circle fs-3 text-success" aria-hidden="true"></i>
+              </div>
+            </article>
+          </div>
+        </section>
         <section class="card border-0 shadow-sm" aria-labelledby="requestsHeading" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
           <div class="card-header border-0 bg-transparent pt-3">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
               <h2 class="h5 mb-0" id="requestsHeading">Branch requests</h2>
-              <span class="small text-secondary">4 requests</span>
+              <span class="small text-secondary" id="requestCount">Loading requests…</span>
             </div>
             <div class="row g-2 pb-2">
-              <div class="col-12 col-md-4"><label class="visually-hidden" for="requestSearch">Search requests</label><div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search" aria-hidden="true"></i></span><input class="form-control" id="requestSearch" type="search" placeholder="Search request, branch, or staff"></div></div>
-              <div class="col-6 col-md-3"><label class="visually-hidden" for="statusFilter">Filter by status</label><select class="form-select" id="statusFilter"><option>All statuses</option><option>Pending</option><option>Preparing</option><option>In transit</option></select></div>
-              <div class="col-6 col-md-2"><label class="visually-hidden" for="branchFilter">Filter by branch</label><select class="form-select" id="branchFilter"><option>All branches</option><option>North Branch</option><option>Downtown Branch</option><option>Riverside Branch</option></select></div>
-              <div class="col-12 col-md-3"><label class="visually-hidden" for="requestSort">Sort requests</label><select class="form-select" id="requestSort"><option>Newest first</option><option>Oldest first</option><option>Branch A to Z</option><option>Status</option></select></div>
+              <div class="col-12 col-md-4">
+                <label class="visually-hidden" for="requestSearch">Search requests</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white"><i class="bi bi-search" aria-hidden="true"></i></span>
+                  <input class="form-control" id="requestSearch" type="search" placeholder="Search request, branch, or staff">
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="visually-hidden" for="statusFilter">Filter by status</label>
+                <select class="form-select" id="statusFilter">
+                  <option value="">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="preparing">Preparing</option>
+                  <option value="in_transit">In transit</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="visually-hidden" for="branchFilter">Filter by branch</label>
+                <select class="form-select" id="branchFilter"><option value="">All branches</option></select>
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="visually-hidden" for="requestSort">Sort requests</label>
+                <select class="form-select" id="requestSort">
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="branch">Branch A to Z</option>
+                  <option value="status">Status</option>
+                </select>
+              </div>
             </div>
           </div>
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-              <thead class="table-light"><tr><th scope="col" class="ps-3">Request</th><th scope="col">Branch</th><th scope="col">Requested by</th><th scope="col">Submitted</th><th scope="col">Requested items</th><th scope="col">Status</th><th scope="col" class="text-end pe-3">Actions</th></tr></thead>
-              <tbody>
-                <tr><th scope="row" class="ps-3">REQ-1042</th><td>North Branch</td><td>Mia Santos</td><td class="text-nowrap">Oct 2, 2026</td><td>Rice, chicken + 3 items</td><td><span class="badge bg-secondary-subtle text-secondary-emphasis">Pending</span></td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#manifest1042Modal"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Manifest</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#preparingModal"><i class="bi bi-box-seam me-1" aria-hidden="true"></i>Mark preparing</button></td></tr>
-                <tr><th scope="row" class="ps-3">REQ-1041</th><td>Downtown Branch</td><td>Carlo Reyes</td><td class="text-nowrap">Oct 1, 2026</td><td>Cooking oil, packaging + 2 items</td><td><span class="badge bg-warning-subtle text-warning-emphasis">Preparing</span></td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#manifest1041Modal"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Manifest</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#transitModal"><i class="bi bi-truck me-1" aria-hidden="true"></i>Mark in transit</button></td></tr>
-                <tr><th scope="row" class="ps-3">REQ-1040</th><td>Riverside Branch</td><td>Angela Cruz</td><td class="text-nowrap">Sep 30, 2026</td><td>Chicken, coconut milk + 4 items</td><td><span class="badge bg-info-subtle text-info-emphasis">In transit</span></td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#manifest1040Modal"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Manifest</button> <span class="small text-secondary">Awaiting receipt</span></td></tr>
-                <tr><th scope="row" class="ps-3">REQ-1039</th><td>North Branch</td><td>Josef Dela Cruz</td><td class="text-nowrap">Sep 29, 2026</td><td>Rice, tomato paste + 2 items</td><td><span class="badge bg-secondary-subtle text-secondary-emphasis">Pending</span></td><td class="text-end pe-3 text-nowrap"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#manifest1039Modal"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Manifest</button> <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#preparingModal"><i class="bi bi-box-seam me-1" aria-hidden="true"></i>Mark preparing</button></td></tr>
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="ps-3">Request ID</th>
+                  <th scope="col">Branch</th>
+                  <th scope="col">Requested by</th>
+                  <th scope="col">Submitted</th>
+                  <th scope="col">Requested items</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-end pe-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requestsTableBody">
+                <tr><td colspan="7" class="text-center text-secondary py-4">Loading requests…</td></tr>
               </tbody>
             </table>
           </div>
-          <div class="card-footer bg-white"><span class="small text-secondary">Showing 4 requests</span></div>
+          <div class="card-footer bg-white"><span class="small text-secondary" id="showingRequests">Loading requests…</span></div>
         </section>
       </div>
     </main>
-
   </div>
 
-  <div class="modal fade" id="preparingModal" tabindex="-1" aria-labelledby="preparingModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="preparingModalTitle">Set request to preparing</h2><p class="small text-secondary mb-0 mt-1">REQ-1042 · North Branch</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body"><label class="form-label" for="preparingNote">Preparation note <span class="text-secondary">(optional)</span></label><textarea class="form-control" id="preparingNote" rows="2" placeholder="Add a note for this request"></textarea></div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="button" data-bs-dismiss="modal">Set to preparing</button></div>
-    </div></div>
-  </div>
-
-  <div class="modal fade" id="transitModal" tabindex="-1" aria-labelledby="transitModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="transitModalTitle">Set request in transit</h2><p class="small text-secondary mb-0 mt-1">REQ-1041 · Downtown Branch</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body"><div class="mb-3"><label class="form-label" for="manifestNumber">Delivery manifest number</label><input class="form-control" id="manifestNumber" value="DM-2026-028" readonly></div><label class="form-label" for="transitNote">Transit note <span class="text-secondary">(optional)</span></label><textarea class="form-control" id="transitNote" rows="2" placeholder="Add a delivery note"></textarea></div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="button" data-bs-dismiss="modal">Set in transit</button></div>
-    </div></div>
-  </div>
-
-  <div class="modal fade" id="manifest1042Modal" tabindex="-1" aria-labelledby="manifest1042ModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="manifest1042ModalTitle">Delivery manifest</h2><p class="small text-secondary mb-0 mt-1">Preview · DM-2026-029</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body">
-        <div class="row g-3 mb-3"><div class="col-sm-6"><span class="small text-secondary d-block">Deliver to</span><strong>North Branch</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Request</span><strong>REQ-1042</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Requested by</span><strong>Mia Santos</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Dispatch date</span><strong>October 2, 2026</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Prepared by</span><strong>Commissary</strong></div></div>
-        <div class="table-responsive"><table class="table table-sm table-bordered align-middle mb-0"><thead class="table-light"><tr><th scope="col">Item</th><th scope="col">Unit</th><th scope="col" class="text-end">Quantity</th></tr></thead><tbody><tr><th scope="row">Rice</th><td>sacks</td><td class="text-end">8</td></tr><tr><th scope="row">Chicken</th><td>packs</td><td class="text-end">12</td></tr><tr><th scope="row">Cooking oil</th><td>bottles</td><td class="text-end">6</td></tr></tbody></table></div>
+  <div class="modal fade" id="requestItemsModal" tabindex="-1" aria-labelledby="requestItemsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title fs-5" id="requestItemsModalTitle">Request details</h2>
+            <p class="small text-secondary mb-0 mt-1" id="requestItemsSubtitle"></p>
+          </div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6"><span class="small text-secondary d-block">Requested by</span><strong id="requestItemsRequester"></strong></div>
+            <div class="col-sm-6"><span class="small text-secondary d-block">Submitted</span><strong id="requestItemsDate"></strong></div>
+            <div class="col-12" id="requestNoteWrap"><span class="small text-secondary d-block">Request note</span><p class="mb-0" id="requestItemsNote"></p></div>
+            <div class="col-12 d-none" id="requestStatusNoteWrap"><span class="small text-secondary d-block" id="requestStatusNoteLabel"></span><p class="mb-0" id="requestStatusNote"></p></div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle mb-0">
+              <thead class="table-light"><tr><th scope="col">Item</th><th scope="col">Unit</th><th scope="col" class="text-end">Quantity</th></tr></thead>
+              <tbody id="requestItemsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-primary d-none" id="markPreparingFromItems" type="button">
+            <i class="bi bi-box-seam me-1" aria-hidden="true"></i>Mark preparing
+          </button>
+        </div>
       </div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button><button class="btn btn-primary" type="button" data-bs-dismiss="modal"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Generate PDF</button></div>
-    </div></div>
+    </div>
   </div>
 
-  <div class="modal fade" id="manifest1041Modal" tabindex="-1" aria-labelledby="manifest1041ModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="manifest1041ModalTitle">Delivery manifest</h2><p class="small text-secondary mb-0 mt-1">Preview · DM-2026-028</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body"><div class="row g-3 mb-3"><div class="col-sm-6"><span class="small text-secondary d-block">Deliver to</span><strong>Downtown Branch</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Request</span><strong>REQ-1041</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Requested by</span><strong>Carlo Reyes</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Dispatch date</span><strong>October 2, 2026</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Prepared by</span><strong>Commissary</strong></div></div><div class="table-responsive"><table class="table table-sm table-bordered align-middle mb-0"><thead class="table-light"><tr><th scope="col">Item</th><th scope="col">Unit</th><th scope="col" class="text-end">Quantity</th></tr></thead><tbody><tr><th scope="row">Cooking oil</th><td>bottles</td><td class="text-end">12</td></tr><tr><th scope="row">Packaging boxes</th><td>bundles</td><td class="text-end">8</td></tr><tr><th scope="row">Rice</th><td>sacks</td><td class="text-end">5</td></tr></tbody></table></div></div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button><button class="btn btn-primary" type="button" data-bs-dismiss="modal"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Generate PDF</button></div>
-    </div></div>
-  </div>
-
-  <div class="modal fade" id="manifest1040Modal" tabindex="-1" aria-labelledby="manifest1040ModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="manifest1040ModalTitle">Delivery manifest</h2><p class="small text-secondary mb-0 mt-1">Preview · DM-2026-027</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body"><div class="row g-3 mb-3"><div class="col-sm-6"><span class="small text-secondary d-block">Deliver to</span><strong>Riverside Branch</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Request</span><strong>REQ-1040</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Requested by</span><strong>Angela Cruz</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Dispatch date</span><strong>October 1, 2026</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Prepared by</span><strong>Commissary</strong></div></div><div class="table-responsive"><table class="table table-sm table-bordered align-middle mb-0"><thead class="table-light"><tr><th scope="col">Item</th><th scope="col">Unit</th><th scope="col" class="text-end">Quantity</th></tr></thead><tbody><tr><th scope="row">Chicken</th><td>packs</td><td class="text-end">15</td></tr><tr><th scope="row">Coconut milk</th><td>cans</td><td class="text-end">12</td></tr><tr><th scope="row">Rice</th><td>sacks</td><td class="text-end">4</td></tr></tbody></table></div></div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button><button class="btn btn-primary" type="button" data-bs-dismiss="modal"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Generate PDF</button></div>
-    </div></div>
-  </div>
-
-  <div class="modal fade" id="manifest1039Modal" tabindex="-1" aria-labelledby="manifest1039ModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="manifest1039ModalTitle">Delivery manifest</h2><p class="small text-secondary mb-0 mt-1">Preview · DM-2026-026</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body"><div class="row g-3 mb-3"><div class="col-sm-6"><span class="small text-secondary d-block">Deliver to</span><strong>North Branch</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Request</span><strong>REQ-1039</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Requested by</span><strong>Josef Dela Cruz</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Dispatch date</span><strong>October 2, 2026</strong></div><div class="col-sm-6"><span class="small text-secondary d-block">Prepared by</span><strong>Commissary</strong></div></div><div class="table-responsive"><table class="table table-sm table-bordered align-middle mb-0"><thead class="table-light"><tr><th scope="col">Item</th><th scope="col">Unit</th><th scope="col" class="text-end">Quantity</th></tr></thead><tbody><tr><th scope="row">Rice</th><td>sacks</td><td class="text-end">10</td></tr><tr><th scope="row">Tomato paste</th><td>cans</td><td class="text-end">8</td></tr><tr><th scope="row">Chicken</th><td>packs</td><td class="text-end">6</td></tr></tbody></table></div></div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button><button class="btn btn-primary" type="button" data-bs-dismiss="modal"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Generate PDF</button></div>
-    </div></div>
+  <div class="modal fade" id="statusActionModal" tabindex="-1" aria-labelledby="statusActionTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title fs-5" id="statusActionTitle"></h2>
+            <p class="small text-secondary mb-0 mt-1" id="statusActionSubtitle"></p>
+          </div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label" for="statusActionStatus">Request status</label>
+            <select class="form-select" id="statusActionStatus">
+              <option value="pending">Pending</option>
+              <option value="preparing">Preparing</option>
+              <option value="in_transit">In transit</option>
+              <option value="rejected">Rejected</option>
+              <option value="received">Received</option>
+            </select>
+          </div>
+          <label class="form-label" for="statusActionNote">Status note <span class="text-secondary">(optional)</span></label>
+          <textarea class="form-control" id="statusActionNote" rows="3" placeholder="Add a note for this status"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn" id="confirmStatusAction" type="button"></button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="modal fade" id="consolidatedItemsModal" tabindex="-1" aria-labelledby="consolidatedItemsModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="consolidatedItemsModalTitle">Consolidated requested items</h2><p class="small text-secondary mb-0 mt-1">All pending and preparing requests</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th scope="col">Item</th><th scope="col">Unit</th><th scope="col" class="text-end">Total requested</th><th scope="col">Requests</th></tr></thead><tbody><tr><th scope="row">Rice</th><td>sacks</td><td class="text-end">18</td><td>2</td></tr><tr><th scope="row">Chicken</th><td>packs</td><td class="text-end">32</td><td>2</td></tr><tr><th scope="row">Cooking oil</th><td>bottles</td><td class="text-end">12</td><td>1</td></tr><tr><th scope="row">Packaging boxes</th><td>bundles</td><td class="text-end">8</td><td>1</td></tr></tbody></table></div></div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button><button class="btn btn-success" type="button" data-bs-dismiss="modal"><i class="bi bi-download me-1" aria-hidden="true"></i>Export list</button></div>
-    </div></div>
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title fs-5" id="consolidatedItemsModalTitle">Consolidated requested items</h2>
+            <p class="small text-secondary mb-0 mt-1">Items from preparing requests only</p>
+          </div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light"><tr><th scope="col">Item</th><th scope="col">Unit</th><th scope="col" class="text-end">Total requested</th><th scope="col">Requests</th></tr></thead>
+              <tbody id="consolidatedItemsTableBody"><tr><td colspan="4" class="text-center text-secondary py-4">Loading items…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-success" id="printConsolidatedList" type="button">
+            <i class="bi bi-printer me-1" aria-hidden="true"></i>Print list and requests
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Bars Loader Script -->
+  <div id="printReport" aria-hidden="true"></div>
   <script src="../../js/shared/bars.js"></script>
-  <!-- Bootstrap 5 JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../js/supply/print_request.js"></script>
+  <script src="../../js/supply/manage_request.js"></script>
 </body>
 </html>
