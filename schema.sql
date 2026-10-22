@@ -28,9 +28,11 @@ CREATE TABLE IF NOT EXISTS branch_inventory_item (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     branch_location_id INTEGER NOT NULL REFERENCES branch_location(id) ON DELETE CASCADE,
     general_stock_item_id INTEGER NOT NULL REFERENCES general_stock_item(id) ON DELETE CASCADE,
-    quantity REAL NOT NULL DEFAULT 0.00,
-    low_quantity_threshold REAL NOT NULL DEFAULT 0.00,
-    restock_target_quantity REAL NOT NULL DEFAULT 0.00,
+    quantity REAL NOT NULL DEFAULT 0.00 CHECK (quantity >= 0),
+    low_quantity_threshold REAL NOT NULL DEFAULT 0.00 CHECK (low_quantity_threshold >= 0),
+    restock_target_quantity REAL NOT NULL DEFAULT 0.00 CHECK (
+        restock_target_quantity >= low_quantity_threshold
+    ),
     CONSTRAINT unique_branch_stock_item UNIQUE (branch_location_id, general_stock_item_id)
 );
 
