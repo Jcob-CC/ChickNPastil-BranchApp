@@ -3,7 +3,7 @@ const auth = (req, res, next) => {
     const isPublicAsset = req.path.startsWith('/assets/') || req.path.startsWith('/js/');
     const isAuthenticated = Boolean(req.session.user);
     const isLoginPage = req.path === '/user/login';
-    const isAdminRoute = req.path === '/user/manager' || req.path.startsWith('/user/manager/') || req.path === '/pages/user/manager.html';
+    const isManagerOrAdminRoute = req.path === '/user/manager' || req.path.startsWith('/user/manager/') || req.path === '/pages/user/manager.html';
 
     if (isAuthenticationEndpoint || isPublicAsset) {
         return next();
@@ -11,7 +11,7 @@ const auth = (req, res, next) => {
     else if (!isAuthenticated && !isLoginPage) {
         return res.redirect('/user/login');
     }
-    else if (isAdminRoute && req.session.user.role !== 'admin') {
+    else if (isManagerOrAdminRoute && req.session.user.role !== 'admin' && req.session.user.role !== 'manager') {
         return res.sendStatus(403);
     }
     else if (isAuthenticated && isLoginPage) {
