@@ -277,9 +277,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let searchTimeout;
     document.getElementById('inventorySearch').addEventListener('input', (event) => {
+        const search = event.currentTarget.value.trim();
         window.clearTimeout(searchTimeout);
         searchTimeout = window.setTimeout(() => {
-            state.search = event.currentTarget.value.trim();
+            state.search = search;
             state.page = 1;
             loadInventory();
         }, 250);
