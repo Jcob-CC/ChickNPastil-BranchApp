@@ -65,6 +65,21 @@ document.addEventListener("DOMContentLoaded", function () {
         titleHeading.textContent = customTitle;
       }
 
+      const applyRoleVisibility = (role) => {
+        document.querySelectorAll('[class*="role-"]').forEach((element) => {
+          const allowedRoles = Array.from(element.classList)
+            .filter((className) => className.startsWith("role-"))
+            .map((className) => className.slice("role-".length));
+
+          if (allowedRoles.length === 0) return;
+
+          const navItem = element.matches(".nav-link") && element.closest("li");
+          (navItem || element).hidden = !allowedRoles.includes(role);
+        });
+      };
+
+      applyRoleVisibility(null);
+
       fetch("/user/session")
         .then((response) => {
           if (!response.ok) throw new Error("Failed to load session details");
@@ -74,7 +89,6 @@ document.addEventListener("DOMContentLoaded", function () {
           const userName = document.getElementById("topbar-user-name");
           const userRole = document.getElementById("topbar-user-role");
           const branchLocation = document.getElementById("branch-location-name");
-          const manageRequestsLink = document.querySelector('a[href="/supply/manage_request"]');
 
           if (userName) {
             userName.textContent = `${session.firstName} ${session.lastName}`.trim();
@@ -86,9 +100,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if (branchLocation) {
             branchLocation.textContent = session.branchLocationName;
           }
-          if (manageRequestsLink && session.role !== "admin" && session.role !== "manager") {
-            manageRequestsLink.closest("li").hidden = true;
-          }
+          applyRoleVisibility(session.role);
         })
         .catch((err) => console.error("Error loading session details:", err));
 
