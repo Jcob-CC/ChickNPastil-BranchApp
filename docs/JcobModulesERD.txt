@@ -65,12 +65,27 @@ BRANCH_STOCK_RECEIVED_LOG_LOST_ITEM
 - BRANCH_RESTOCK_REQUEST_ITEM id
 - quantity
 
-BRANCH_EXPENSE
--
--
--
+BRANCH_EXPENSE_REQUEST
+- id
+- USER id
+- request note
+- rejection note
+- approved note
+- date and time
+- total price
+- status
 
 BRANCH_EXPENSE_ITEM
--
--
--
+- id
+- BRANCH_EXPENSE_REQUEST id
+- GENERAL_STOCK_ITEM id
+- quantity
+- total price
+
+BRANCH_EXPENSE_OTHER_ITEM
+- id
+- BRANCH_EXPENSE_REQUEST id
+- item
+- unit type
+- quantity
+- total price

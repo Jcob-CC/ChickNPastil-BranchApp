@@ -27,82 +27,302 @@
       <div class="container-fluid py-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
           <div class="d-flex align-items-center gap-2">
-            <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis p-2"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
-            <div><h1 class="h4 mb-1">Branch expense requests</h1><p class="small text-secondary mb-0">Review costs and track request status</p></div>
+            <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis p-2"><i class="bi bi-receipt" aria-hidden="true"></i></span>
+            <div>
+              <h1 class="h4 mb-0">Unexpected expenses</h1>
+              <p class="small text-secondary mb-0">View and submit branch expense requests</p>
+            </div>
           </div>
-          <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#newExpenseModal"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Request expense</button>
+          <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#expenseRequestModal">
+            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Request expense
+          </button>
         </div>
 
-        <div class="row g-4 mb-4">
-          <div class="col-12">
-            <section class="card border-0 shadow-sm h-100" aria-labelledby="requestListHeading" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);">
-              <div class="card-header border-0 bg-transparent d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
-                <div class="d-flex align-items-center gap-2"><span class="badge rounded-pill bg-warning-subtle text-warning-emphasis p-2"><i class="bi bi-receipt" aria-hidden="true"></i></span><div><h2 class="h5 mb-1" id="requestListHeading">Your requests</h2><p class="small text-secondary mb-0">Unexpected purchases submitted by this branch</p></div></div>
-                <span class="badge bg-light text-dark border">3 requests</span>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead class="table-light"><tr><th scope="col" class="ps-3">Request</th><th scope="col">Date</th><th scope="col">Total cost</th><th scope="col">Status</th><th scope="col" class="text-end pe-3">Action</th></tr></thead>
-                  <tbody>
-                    <tr><th scope="row" class="ps-3 fw-medium">#UE-1048<small class="d-block text-secondary fw-normal">Emergency cooking oil</small></th><td>Oct 2, 2026</td><td>PHP 1,104.00</td><td><span class="badge bg-warning-subtle text-warning-emphasis">Pending</span></td><td class="text-end pe-3"><button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#cancelRequestModal"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel</button></td></tr>
-                    <tr><th scope="row" class="ps-3 fw-medium">#UE-1042<small class="d-block text-secondary fw-normal">Packaging supplies</small></th><td>Oct 1, 2026</td><td>PHP 1,080.00</td><td><span class="badge bg-success-subtle text-success-emphasis">Approved</span> <span class="badge bg-info-subtle text-info-emphasis" title="Request edited after approval"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edited</span></td><td class="text-end pe-3"><button class="btn btn-sm btn-success" type="button" data-bs-toggle="modal" data-bs-target="#completeRequestModal"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Complete</button></td></tr>
-                    <tr><th scope="row" class="ps-3 fw-medium">#UE-1036<small class="d-block text-secondary fw-normal">Replacement kitchen tools</small></th><td>Sep 28, 2026</td><td>PHP 890.00</td><td><span class="badge bg-secondary-subtle text-secondary-emphasis">Complete</span></td><td class="text-end pe-3"><button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#completedRequestModal"><i class="bi bi-eye me-1" aria-hidden="true"></i>View</button></td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
+        <div class="alert d-none" id="expenseMessage" role="alert" aria-live="polite"></div>
+        <section class="card border-0 shadow-sm mb-4" aria-labelledby="expenseRequestsHeading">
+          <div class="card-header border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);">
+            <div>
+              <h2 class="h5 mb-1" id="expenseRequestsHeading">Pending and other requests</h2>
+              <p class="small text-secondary mb-0" id="expenseRequestCount">Loading requests…</p>
+            </div>
           </div>
-        </div>
-
-        <section class="card border-0 shadow-sm" aria-labelledby="approvedItemsHeading" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
-          <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2 py-3"><span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-box-seam" aria-hidden="true"></i></span><div><h2 class="h5 mb-1" id="approvedItemsHeading">Approved request items</h2><p class="small text-secondary mb-0">Purchases are added to inventory when the request is completed</p></div></div>
-          <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th scope="col" class="ps-3">Request</th><th scope="col">Item</th><th scope="col">Requested quantity</th><th scope="col">Unit cost</th><th scope="col" class="text-end pe-3">Line total</th></tr></thead><tbody>
-            <tr><td rowspan="3" class="ps-3 fw-medium">#UE-1042<small class="d-block text-secondary fw-normal">Approved · Oct 1, 2026</small><span class="badge bg-info-subtle text-info-emphasis mt-1" title="Request edited after approval"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edited</span></td><th scope="row" class="fw-medium">Packaging boxes</th><td>6 bundles</td><td>PHP 135.00</td><td class="text-end pe-3">PHP 810.00</td></tr>
-            <tr><th scope="row" class="fw-medium">Food-safe gloves</th><td>3 boxes</td><td>PHP 90.00</td><td class="text-end pe-3">PHP 270.00</td></tr>
-            <tr><td colspan="3" class="text-end fw-semibold">Total cost</td><td class="text-end pe-3 fw-semibold">PHP 1,080.00</td></tr>
-          </tbody></table></div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="ps-3">Request</th>
+                  <th scope="col">Branch</th>
+                  <th scope="col">Date submitted</th>
+                  <th scope="col">Note</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-end pe-3">Total</th>
+                  <th scope="col"><span class="visually-hidden">View request</span></th>
+                </tr>
+              </thead>
+              <tbody id="expenseRequestRows">
+                <tr><td colspan="7" class="text-center text-secondary py-4">Loading expense requests…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section class="card border-0 shadow-sm" aria-labelledby="approvedExpenseRequestsHeading">
+          <div class="card-header border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
+            <div>
+              <h2 class="h5 mb-1" id="approvedExpenseRequestsHeading">Approved requests</h2>
+              <p class="small text-secondary mb-0" id="approvedExpenseRequestCount">Loading approved requests…</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="ps-3">Request</th>
+                  <th scope="col">Branch</th>
+                  <th scope="col">Date submitted</th>
+                  <th scope="col">Note</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-end pe-3">Total</th>
+                  <th scope="col"><span class="visually-hidden">View request</span></th>
+                </tr>
+              </thead>
+              <tbody id="approvedExpenseRequestRows">
+                <tr><td colspan="7" class="text-center text-secondary py-4">Loading approved requests…</td></tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
     </main>
 
   </div>
 
-  <div class="modal fade" id="newExpenseModal" tabindex="-1" aria-labelledby="newExpenseModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
-      <div class="modal-header"><div><h2 class="modal-title fs-5" id="newExpenseModalTitle">Request an unexpected expense</h2><p class="small text-secondary mb-0 mt-1">List the items, quantities, and estimated costs</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-      <div class="modal-body">
-        <div class="mb-3"><label class="form-label" for="expenseReason">Request details</label><textarea class="form-control" id="expenseReason" rows="2" placeholder="Reason for this unexpected purchase"></textarea></div>
-        <div class="table-responsive"><table class="table align-middle"><thead class="table-light"><tr><th>Item</th><th>Quantity</th><th>Unit cost (PHP)</th></tr></thead><tbody>
-          <tr><td><input class="form-control" value="Cooking oil" aria-label="Item name"></td><td><input class="form-control" type="number" min="1" value="8" aria-label="Quantity"></td><td><input class="form-control" type="number" min="0" step="0.01" value="92.00" aria-label="Unit cost"></td></tr>
-          <tr><td><input class="form-control" value="Vinegar" aria-label="Item name"></td><td><input class="form-control" type="number" min="1" value="6" aria-label="Quantity"></td><td><input class="form-control" type="number" min="0" step="0.01" value="38.00" aria-label="Unit cost"></td></tr>
-          <tr><td><input class="form-control" value="Chili flakes" aria-label="Item name"></td><td><input class="form-control" type="number" min="1" value="4" aria-label="Quantity"></td><td><input class="form-control" type="number" min="0" step="0.01" value="35.00" aria-label="Unit cost"></td></tr>
-        </tbody></table></div>
-        <div class="text-end"><span class="text-secondary me-2">Estimated total</span><strong class="fs-5">PHP 1,104.00</strong></div>
+  <div class="modal fade" id="expenseRequestModal" tabindex="-1" aria-labelledby="expenseRequestModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title fs-5" id="expenseRequestModalTitle">New expense request</h2>
+            <p class="small text-secondary mb-0 mt-1">Add requested items and submit them for approval.</p>
+          </div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="expenseForm">
+          <div class="modal-body">
+            <div class="row g-4">
+              <div class="col-xl-8">
+                <section class="card border-0 shadow-sm" aria-labelledby="expenseItemsHeading">
+                  <div class="card-header border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);">
+                    <div>
+                      <h3 class="h5 mb-1" id="expenseItemsHeading">Expense items</h3>
+                      <p class="small text-secondary mb-0" id="expenseItemCount">Loading stock catalog…</p>
+                    </div>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th scope="col" class="ps-3">Item</th>
+                          <th scope="col">Quantity</th>
+                          <th scope="col" style="min-width: 150px;">Total price (PHP)</th>
+                          <th scope="col"><span class="visually-hidden">Remove item</span></th>
+                        </tr>
+                      </thead>
+                      <tbody id="expenseItems"></tbody>
+                    </table>
+                  </div>
+                  <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+                    <span class="fw-semibold">Request total</span>
+                    <span class="fs-5 fw-semibold" id="expenseTotal">PHP 0.00</span>
+                  </div>
+                </section>
+              </div>
+
+              <div class="col-xl-4">
+                <div class="d-flex flex-column gap-4">
+                  <section class="card border-0 shadow-sm" aria-label="Add items">
+                    <div class="card-body d-grid gap-2">
+                      <button class="btn btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#catalogPanel" aria-expanded="false" aria-controls="catalogPanel">
+                        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add stock item
+                      </button>
+                      <button class="btn btn-outline-warning" type="button" data-bs-toggle="collapse" data-bs-target="#otherItemPanel" aria-expanded="false" aria-controls="otherItemPanel">
+                        <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Add other expense
+                      </button>
+                    </div>
+                  </section>
+
+                  <div class="collapse" id="catalogPanel">
+                    <section class="card border-success-subtle">
+                      <div class="card-header bg-success-subtle d-flex justify-content-between align-items-center">
+                        <h3 class="h6 mb-0">Select a stock item</h3>
+                        <button class="btn-close" type="button" data-bs-toggle="collapse" data-bs-target="#catalogPanel" aria-label="Close stock catalog"></button>
+                      </div>
+                      <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+                          <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light"><tr><th scope="col" class="ps-3">Item</th><th scope="col">Unit cost</th><th scope="col"><span class="visually-hidden">Add item</span></th></tr></thead>
+                            <tbody id="catalogItems"></tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+
+                  <div class="collapse" id="otherItemPanel">
+                    <section class="card border-warning-subtle">
+                      <div class="card-header bg-warning-subtle d-flex justify-content-between align-items-center">
+                        <h3 class="h6 mb-0">Add another expense</h3>
+                        <button class="btn-close" type="button" data-bs-toggle="collapse" data-bs-target="#otherItemPanel" aria-label="Close other expense form"></button>
+                      </div>
+                      <fieldset class="card-body" id="otherItemFields" disabled>
+                        <div class="mb-3">
+                          <label class="form-label" for="otherItemName">Item name</label>
+                          <input class="form-control" id="otherItemName" maxlength="120" required>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label" for="otherItemUnit">Unit type</label>
+                          <input class="form-control" id="otherItemUnit" maxlength="40" placeholder="e.g. piece, pack" required>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label" for="otherItemQuantity">Quantity</label>
+                          <input class="form-control" id="otherItemQuantity" type="number" min="0.01" step="0.01" value="1" required>
+                        </div>
+                        <div>
+                          <label class="form-label" for="otherItemPrice">Total price (PHP)</label>
+                          <input class="form-control" id="otherItemPrice" type="number" min="0.01" step="0.01" required>
+                        </div>
+                        <button class="btn btn-success mt-3" id="addOtherItem" type="button">Add expense item</button>
+                      </fieldset>
+                    </section>
+                  </div>
+
+                  <section class="card border-0 shadow-sm" aria-labelledby="expenseDetailsHeading" style="background: linear-gradient(135deg, #eff6ff, #ecfeff);">
+                    <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2 py-3">
+                      <span class="badge rounded-pill bg-primary-subtle text-primary p-2"><i class="bi bi-geo-alt" aria-hidden="true"></i></span>
+                      <div>
+                        <h3 class="h5 mb-1" id="expenseDetailsHeading">Request details</h3>
+                        <p class="small text-secondary mb-0">Branch and staff information</p>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      <div class="mb-3">
+                        <span class="form-label d-block mb-1">Branch location</span>
+                        <div class="fw-medium" id="expenseRequestBranch">Loading…</div>
+                      </div>
+                      <div>
+                        <span class="form-label d-block mb-1">Prepared by</span>
+                        <div class="fw-medium" id="expenseRequestStaff">Loading…</div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="card border-0 shadow-sm" aria-labelledby="expenseNoteHeading" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
+                    <div class="card-header border-0 bg-transparent d-flex align-items-center gap-2 py-3">
+                      <span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-sticky" aria-hidden="true"></i></span>
+                      <div>
+                        <h3 class="h5 mb-1" id="expenseNoteHeading">Request note</h3>
+                        <p class="small text-secondary mb-0">Explain why these expenses are needed</p>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      <label class="visually-hidden" for="expenseNote">Expense request note</label>
+                      <textarea class="form-control" id="expenseNote" rows="4" placeholder="Add a note for the approver"></textarea>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-success" id="submitExpense" type="submit">
+              <i class="bi bi-send me-2" aria-hidden="true"></i>Submit expense request
+            </button>
+          </div>
+        </form>
       </div>
-      <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="button" data-bs-dismiss="modal"><i class="bi bi-send me-1" aria-hidden="true"></i>Submit request</button></div>
-    </div></div>
+    </div>
   </div>
 
-  <div class="modal fade" id="cancelRequestModal" tabindex="-1" aria-labelledby="cancelRequestModalTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header"><h2 class="modal-title fs-5" id="cancelRequestModalTitle">Cancel request #UE-1048?</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body">This pending request includes 3 items with a total cost of PHP 1,104.00.</div><div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Keep request</button><button class="btn btn-danger" type="button" data-bs-dismiss="modal">Cancel request</button></div>
-  </div></div></div>
+  <div class="modal fade" id="expenseDetailsModal" tabindex="-1" aria-labelledby="expenseDetailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title fs-5" id="expenseDetailsTitle">Expense request</h2>
+            <p class="small text-secondary mb-0 mt-1" id="expenseDetailsMeta"></p>
+            <p class="small text-secondary mb-0" id="expenseDetailsSubmittedBy"></p>
+          </div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <section class="mb-4" aria-labelledby="expenseDetailsNotesHeading">
+            <h3 class="h6" id="expenseDetailsNotesHeading">Request notes</h3>
+            <dl class="row mb-0">
+              <dt class="col-sm-4">Request note</dt>
+              <dd class="col-sm-8" id="expenseDetailsRequestNote"></dd>
+              <dt class="col-sm-4" id="expenseDetailsStatusNoteLabel"></dt>
+              <dd class="col-sm-8" id="expenseDetailsStatusNote"></dd>
+            </dl>
+          </section>
+          <section aria-labelledby="expenseDetailsItemsHeading">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h3 class="h6 mb-0" id="expenseDetailsItemsHeading">Requested items</h3>
+              <span class="fw-semibold" id="expenseDetailsTotal"></span>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm table-striped align-middle">
+                <thead><tr><th scope="col">Item</th><th scope="col">Quantity</th><th scope="col" class="text-end">Total price</th></tr></thead>
+                <tbody id="expenseDetailsItems"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div class="modal fade" id="completeRequestModal" tabindex="-1" aria-labelledby="completeRequestModalTitle" aria-hidden="true"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
-    <div class="modal-header"><div><h2 class="modal-title fs-5" id="completeRequestModalTitle">Complete request #UE-1042</h2><p class="small text-secondary mb-0 mt-1">Confirm purchased quantities and add them to inventory</p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
-    <div class="modal-body"><div class="table-responsive"><table class="table align-middle"><thead class="table-light"><tr><th>Requested item</th><th>Requested</th><th>Bought quantity</th><th>Cost (PHP)</th></tr></thead><tbody>
-      <tr><th scope="row" class="fw-medium">Packaging boxes</th><td>6 bundles</td><td><input class="form-control" type="number" min="0" value="6" aria-label="Packaging boxes bought quantity"></td><td><input class="form-control" type="number" min="0" step="0.01" value="810.00" aria-label="Packaging boxes cost"></td></tr>
-      <tr><th scope="row" class="fw-medium">Food-safe gloves</th><td>3 boxes</td><td><input class="form-control" type="number" min="0" value="3" aria-label="Food-safe gloves bought quantity"></td><td><input class="form-control" type="number" min="0" step="0.01" value="270.00" aria-label="Food-safe gloves cost"></td></tr>
-    </tbody></table></div><div class="d-flex justify-content-between"><span class="text-secondary">Total purchased cost</span><strong>PHP 1,080.00</strong></div><p class="small text-secondary mt-3 mb-0"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Completing the request records the bought items in branch inventory.</p></div>
-    <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="button" data-bs-dismiss="modal"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Complete and add to inventory</button></div>
-  </div></div></div>
-
-  <div class="modal fade" id="completedRequestModal" tabindex="-1" aria-labelledby="completedRequestModalTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header"><h2 class="modal-title fs-5" id="completedRequestModalTitle">Request #UE-1036</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><p class="mb-2">Replacement kitchen tools · Complete</p><div class="d-flex justify-content-between border-bottom py-2"><span>Cutting boards · 2 pieces</span><span>PHP 590.00</span></div><div class="d-flex justify-content-between border-bottom py-2"><span>Chef knives · 2 pieces</span><span>PHP 300.00</span></div><div class="d-flex justify-content-between pt-3"><strong>Total cost</strong><strong>PHP 890.00</strong></div></div><div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button></div>
-  </div></div></div>
+  <div class="modal fade" id="completeExpenseModal" tabindex="-1" aria-labelledby="completeExpenseTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="completeExpenseTitle">Complete expense request?</h2>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert d-none" id="completionMessage" role="alert" aria-live="polite"></div>
+          <p>Complete request <strong id="completionRequestId"></strong>?</p>
+          <p class="mb-1" id="completionSubmittedBy"></p>
+          <p><strong>Request note:</strong> <span id="completionRequestNote">Loading request details…</span></p>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h3 class="h6 mb-0">Requested items</h3>
+            <span class="fw-semibold" id="completionTotal"></span>
+          </div>
+          <p class="small text-secondary mb-2">Stock catalog items will be added to inventory. Other items will not be added.</p>
+          <div id="completionLoading" class="small text-secondary mb-2" role="status">Loading request details…</div>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle mb-0">
+              <thead>
+                <tr><th scope="col">Item</th><th scope="col">Inventory</th><th scope="col">Quantity</th><th scope="col" class="text-end">Total price</th></tr>
+              </thead>
+              <tbody id="completionItems"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-success" id="confirmExpenseCompletion" type="button">Complete request</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Bars Loader Script -->
   <script src="../../js/shared/bars.js"></script>
   <!-- Bootstrap 5 JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../js/supply/request_expenses.js"></script>
 </body>
 </html>

@@ -81,6 +81,46 @@ CREATE TABLE IF NOT EXISTS branch_stock_received_log_lost_item (
     quantity REAL NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS branch_expense_request (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES "user"(id),
+    branch_location_id INTEGER NOT NULL REFERENCES branch_location(id),
+    request_note TEXT,
+    rejection_note TEXT,
+    approved_note TEXT,
+    date_and_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    total_price REAL NOT NULL DEFAULT 0.00 CHECK (total_price >= 0),
+    status TEXT NOT NULL DEFAULT 'pending'
+);
+
+CREATE TABLE IF NOT EXISTS expense_auto_approval_setting (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    max_total_price REAL NOT NULL DEFAULT 0 CHECK (max_total_price >= 0)
+);
+
+INSERT OR IGNORE INTO expense_auto_approval_setting (id, max_total_price)
+VALUES (1, 0);
+
+CREATE INDEX IF NOT EXISTS idx_branch_expense_request_branch_date
+    ON branch_expense_request (branch_location_id, date_and_time DESC, id DESC);
+
+CREATE TABLE IF NOT EXISTS branch_expense_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    branch_expense_request_id INTEGER NOT NULL REFERENCES branch_expense_request(id) ON DELETE CASCADE,
+    general_stock_item_id INTEGER NOT NULL REFERENCES general_stock_item(id),
+    quantity REAL NOT NULL CHECK (quantity > 0),
+    total_price REAL NOT NULL CHECK (total_price >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS branch_expense_other_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    branch_expense_request_id INTEGER NOT NULL REFERENCES branch_expense_request(id) ON DELETE CASCADE,
+    item TEXT NOT NULL,
+    unit_type TEXT NOT NULL,
+    quantity REAL NOT NULL CHECK (quantity > 0),
+    total_price REAL NOT NULL CHECK (total_price > 0)
+);
+
 CREATE TABLE IF NOT EXISTS menu_section (
     section_id INTEGER PRIMARY KEY AUTOINCREMENT,
     section_name TEXT NOT NULL,
