@@ -3,6 +3,7 @@ const path = require('path');
 const inventory = require('../controllers/supply/inventory');
 const requestStock = require('../controllers/supply/request_stock');
 const requestExpenses = require('../controllers/supply/request_expenses');
+const manageExpenses = require('../controllers/supply/manage_expenses');
 const manageRequest = require('../controllers/supply/manage_request');
 const receiveStock = require('../controllers/supply/receive_stock');
 
@@ -55,10 +56,11 @@ router.post('/receive_stock/:id/receive', receiveStock.receiveDelivery);
 
 router.get('/manage_request/data', requireFulfillmentManager, manageRequest.getRequests);
 router.put('/manage_request/:id/status', requireFulfillmentManager, manageRequest.updateStatus);
-router.get('/manage_expenses/data', requireFulfillmentManager, requestExpenses.getAllRequests);
-router.get('/manage_expenses/auto-approval', requireFulfillmentManager, requestExpenses.getAutoApprovalSetting);
-router.put('/manage_expenses/auto-approval', requireFulfillmentManager, requestExpenses.updateAutoApprovalSetting);
-router.get('/manage_expenses/requests/:id', requireFulfillmentManager, requestExpenses.getManagedRequestDetails);
-router.put('/manage_expenses/requests/:id/status', requireFulfillmentManager, requestExpenses.updateManagedRequestStatus);
+
+router.get('/manage_expenses/data', requireFulfillmentManager, manageExpenses.getAllRequests);
+router.get('/manage_expenses/auto-approval', requireFulfillmentManager, manageExpenses.getAutoApprovalSetting);
+router.put('/manage_expenses/auto-approval', requireFulfillmentManager, manageExpenses.updateAutoApprovalSetting);
+router.get('/manage_expenses/requests/:id', requireFulfillmentManager, manageExpenses.getManagedRequestDetails);
+router.put('/manage_expenses/requests/:id/status', requireFulfillmentManager, manageExpenses.updateManagedRequestStatus);
 
 module.exports = router;
