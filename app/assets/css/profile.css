@@ -1,0 +1,22 @@
+.profile-card {
+    border-radius: 1rem;
+}
+
+.profile-danger-card {
+    background-color: #fffafa;
+}
+
+.profile-section-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.2rem;
+}
+
+.profile-detail {
+    background-color: #f8faf9;
+    border: 1px solid #edf1ee;
+}
+
+.modal-content {
+    border-radius: 1rem;
+}

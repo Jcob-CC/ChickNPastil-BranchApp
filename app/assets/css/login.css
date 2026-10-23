@@ -1,0 +1,72 @@
+body {
+    min-height: 100vh;
+    background:
+    radial-gradient(ellipse at 12% 15%, rgba(34, 197, 94, 0.12), transparent 35%),
+    radial-gradient(ellipse at 88% 85%, rgba(6, 182, 212, 0.12), transparent 35%),
+    #f8f9fa;
+}
+
+.login-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 2.5rem 1rem;
+}
+
+.login-content {
+    width: min(100%, 1080px);
+}
+
+.login-card,
+.modal-content {
+    overflow: hidden;
+    border-radius: 1rem;
+    background: linear-gradient(145deg, #f0fdf4, #ecfeff 72%, #ffffff);
+}
+
+.login-card {
+    width: min(100%, 460px);
+    margin-inline: auto;
+}
+
+.login-logo {
+    display: block;
+    width: min(100%, 250px);
+    height: 110px;
+    margin: 0 auto 1rem;
+    object-fit: contain;
+}
+
+.confirmation-logo {
+    display: block;
+    width: min(100%, 220px);
+    height: 85px;
+    margin: 0 auto 1rem;
+    object-fit: contain;
+}
+
+.verification-code {
+    letter-spacing: 0.7rem;
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.branch-choice {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.65rem;
+    background-color: #fff;
+}
+
+.branch-choice.selected {
+    border-color: #198754;
+    background-color: #f0fdf4;
+}
+
+.modal.show {
+    background-color: rgba(0, 0, 0, 0.5);
+}
