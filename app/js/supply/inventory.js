@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const pageSize = 6;
     const logPageSize = 3;
-    const state = { page: 1, logPage: 1, search: '', items: [] };
+    const state = { page: 1, logPage: 1, search: '', logSearch: '', logSort: 'desc', items: [] };
     const errorMessage = document.getElementById('inventoryError');
     const inventoryRows = document.getElementById('inventoryRows');
     const inventoryLogRows = document.getElementById('inventoryLogRows');
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.logs.length === 0) {
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 6;
+            cell.colSpan = 5;
             cell.className = 'text-center text-secondary py-4';
             cell.textContent = 'No quantity updates recorded yet.';
             row.appendChild(cell);
@@ -165,8 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nameCell.className = 'fw-medium';
             nameCell.textContent = log.name;
             row.appendChild(nameCell);
-            appendCell(row, `${formatQuantity(log.value_before)} ${log.unit_type}`);
-            appendCell(row, `${formatQuantity(log.value_after)} ${log.unit_type}`);
+            appendCell(row, log.user_name || 'Unknown user');
             const difference = Number(log.value_after) - Number(log.value_before);
             appendCell(
                 row,
@@ -189,6 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
             page: state.page,
             logPage: state.logPage,
             search: state.search,
+            logSearch: state.logSearch,
+            logSort: state.logSort,
         });
         try {
             const data = await request(`/supply/inventory/data?${params}`);
@@ -284,6 +285,23 @@ document.addEventListener('DOMContentLoaded', () => {
             state.page = 1;
             loadInventory();
         }, 250);
+    });
+
+    let logSearchTimeout;
+    document.getElementById('inventoryLogSearch').addEventListener('input', (event) => {
+        const search = event.currentTarget.value.trim();
+        window.clearTimeout(logSearchTimeout);
+        logSearchTimeout = window.setTimeout(() => {
+            state.logSearch = search;
+            state.logPage = 1;
+            loadInventory();
+        }, 250);
+    });
+
+    document.getElementById('inventoryLogSort').addEventListener('change', (event) => {
+        state.logSort = event.currentTarget.value;
+        state.logPage = 1;
+        loadInventory();
     });
 
     loadInventory();

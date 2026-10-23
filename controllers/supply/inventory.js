@@ -33,8 +33,11 @@ const getInventory = (req, res) => {
     const page = getPage(req.query.page);
     const logPage = getPage(req.query.logPage);
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const logSearch = typeof req.query.logSearch === 'string' ? req.query.logSearch.trim() : '';
+    const logSort = req.query.logSort === 'asc' ? 'ASC' : 'DESC';
     const offset = (page - 1) * pageSize;
     const logOffset = (logPage - 1) * logPageSize;
+    const logSearchPattern = `%${logSearch}%`;
 
     try {
         const total = db.prepare(`
@@ -45,9 +48,18 @@ const getInventory = (req, res) => {
         `).get(branchId, `%${search}%`).count;
         const logTotal = db.prepare(`
             SELECT COUNT(*) AS count
-            FROM branch_inventory_manager_log
-            WHERE branch_location_id = ?
-        `).get(branchId).count;
+            FROM branch_inventory_manager_log bil
+            JOIN branch_inventory_item bii ON bii.id = bil.branch_inventory_item_id
+            JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
+            JOIN "user" u ON u.id = bil.user_id
+            WHERE bil.branch_location_id = ?
+              AND (
+                  gsi.name LIKE ?
+                  OR trim(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) LIKE ?
+                  OR COALESCE(bil.reason, '') LIKE ?
+                  OR bil.date_and_time LIKE ?
+              )
+        `).get(branchId, logSearchPattern, logSearchPattern, logSearchPattern, logSearchPattern).count;
         const items = db.prepare(`
             SELECT bii.id, gsi.id AS general_stock_item_id, gsi.name, gsi.unit_type,
                    bii.quantity, bii.low_quantity_threshold, bii.restock_target_quantity, gsi.unit_cost
@@ -68,14 +80,30 @@ const getInventory = (req, res) => {
             ORDER BY gsi.name COLLATE NOCASE
         `).all(branchId);
         const logs = db.prepare(`
-            SELECT bil.date_and_time, gsi.name, gsi.unit_type, bil.value_before, bil.value_after, bil.reason
+            SELECT bil.date_and_time, gsi.name, gsi.unit_type, bil.value_before, bil.value_after, bil.reason,
+                   trim(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) AS user_name
             FROM branch_inventory_manager_log bil
             JOIN branch_inventory_item bii ON bii.id = bil.branch_inventory_item_id
             JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
+            JOIN "user" u ON u.id = bil.user_id
             WHERE bil.branch_location_id = ?
-            ORDER BY bil.date_and_time DESC, bil.id DESC
+              AND (
+                  gsi.name LIKE ?
+                  OR trim(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) LIKE ?
+                  OR COALESCE(bil.reason, '') LIKE ?
+                  OR bil.date_and_time LIKE ?
+              )
+            ORDER BY bil.date_and_time ${logSort}, bil.id ${logSort}
             LIMIT ? OFFSET ?
-        `).all(branchId, logPageSize, logOffset);
+        `).all(
+            branchId,
+            logSearchPattern,
+            logSearchPattern,
+            logSearchPattern,
+            logSearchPattern,
+            logPageSize,
+            logOffset,
+        );
 
         res.json({
             items,

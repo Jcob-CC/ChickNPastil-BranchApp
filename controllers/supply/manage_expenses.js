@@ -1,4 +1,5 @@
 const db = require('../../lib/database');
+const sendExpenseApprovalEmail = require('../../lib/expense_notifications');
 
 const roundMoney = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
 
@@ -142,6 +143,30 @@ const updateManagedRequestStatus = (req, res) => {
             const request = db.prepare('SELECT id FROM branch_expense_request WHERE id = ?').get(requestId);
             if (!request) return res.status(404).json({ message: 'Expense request not found.' });
             return res.status(409).json({ message: 'This request has already been reviewed. Refresh and try again.' });
+        }
+        if (status === 'approved') {
+            try {
+                const requester = db.prepare(`
+                    SELECT u.email, b.location_name AS branch_name, r.total_price, r.approved_note
+                    FROM branch_expense_request r
+                    JOIN "user" u ON u.id = r.user_id
+                    JOIN branch_location b ON b.id = r.branch_location_id
+                    WHERE r.id = ?
+                `).get(requestId);
+                if (requester) {
+                    sendExpenseApprovalEmail({
+                        to: requester.email,
+                        requestId,
+                        branchName: requester.branch_name,
+                        totalPrice: requester.total_price,
+                        approvedNote: requester.approved_note,
+                    }).catch((error) => {
+                        console.error('Unable to send expense approval email:', error);
+                    });
+                }
+            } catch (error) {
+                console.error('Unable to prepare expense approval email:', error);
+            }
         }
         res.json({ message: `Expense request ${status}.` });
     } catch (error) {
