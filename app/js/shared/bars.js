@@ -110,7 +110,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (sidebarToggleBtn && sidebar) {
         sidebarToggleBtn.addEventListener("click", function () {
-          sidebar.classList.toggle("collapsed");
+          const isCollapsed = sidebar.classList.toggle("collapsed");
+          sidebarToggleBtn.setAttribute("aria-expanded", String(!isCollapsed));
         });
       }
     })

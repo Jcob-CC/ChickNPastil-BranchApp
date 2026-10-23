@@ -204,7 +204,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderRequestedItems();
         renderAvailableItems();
         renderInventory();
-        if (initializePage) inventoryModal.show();
     };
 
     requestRows.addEventListener('click', (event) => {
