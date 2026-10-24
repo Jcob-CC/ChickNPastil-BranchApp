@@ -12,16 +12,11 @@ const auth = require('./middleware/auth');
 
 const app = express();
 
-try {
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-
-    db.exec(schemaSql);
-    console.log('Database schema initialized successfully.');
-} 
-catch (err) {
-    console.error('Error initializing schema:', err.message);
-}
+const schemaPath = path.join(__dirname, 'schema.sql');
+const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+db.exec(schemaSql);
+require('./lib/sales_schema').migrate(db);
+console.log('Database schema initialized successfully.');
 
 app.use(express.static(path.join(__dirname, 'app')));
 app.use(express.json());
@@ -40,6 +35,9 @@ app.use(session({
 app.use(auth);
 app.use('/supply', require('./routes/supply'));
 app.use('/user', require('./routes/user'));
+const sales = require('./routes/sales');
+app.use('/sales', sales.pages);
+app.use('/api', sales.api);
 
 app.get('/', (req, res) => {
     res.redirect('/user/login');

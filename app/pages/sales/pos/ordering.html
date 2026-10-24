@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Selection - Chick N Pastil</title>
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/sales/shared/style.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .pos-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 991.98px) {
+      .pos-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .menu-products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .product-img {
+      height: 70px;
+      object-fit: contain;
+      margin: 0 auto 8px auto;
+      display: block;
+    }
+
+    .order-summary-box {
+      position: sticky;
+      top: 80px;
+    }
+  </style>
+</head>
+
+<body data-page-header="Order Selection">
+
+  <div id="topbar-wrapper"></div>
+  <div class="app-container">
+    <div id="sidebar-wrapper"></div>
+
+  <!-- Main Content Area (left-aligned) -->
+  <main class="main-content">
+
+    <div class="pos-layout">
+
+      <!-- LEFT SECTION: Menu Categories & Product Cards Grid -->
+      <div class="menu-selection-section">
+
+        <!-- Category Filter Pills -->
+        <div class="category-pills mb-3" id="category-pills-list">
+          <button class="cat-pill active" onclick="filterCategory('All')">All Items</button>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="menu-products-grid" id="products-grid-container">
+          <div class="text-center py-5 col-12 text-muted">
+            <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+            Loading menu items...
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT SECTION: Current Order / Cart Panel -->
+      <div class="cart-panel order-summary-box">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="fw-bold mb-0 text-dark">Current Order</h5>
+          <button class="btn btn-sm btn-link text-danger p-0 text-decoration-none fw-semibold" onclick="clearCart()">
+            <i class="bi bi-trash3 me-1"></i>Clear
+          </button>
+        </div>
+
+        <!-- Order Type Buttons -->
+        <div class="d-flex gap-2 mb-3">
+          <button type="button" class="order-type-btn flex-fill active"
+            onclick="setOrderType(this, 'Dine-In')">Dine-in</button>
+          <button type="button" class="order-type-btn flex-fill"
+            onclick="setOrderType(this, 'Take-Out')">Take-out</button>
+          <button type="button" class="order-type-btn flex-fill" onclick="setOrderType(this, 'Phone')">Phone</button>
+          <button type="button" class="order-type-btn flex-fill" onclick="setOrderType(this, 'Online')">Online</button>
+        </div>
+
+        <!-- Customer Inputs (Optional) -->
+        <div class="row g-2 mb-3">
+          <div class="col-12">
+            <input type="text" id="cust_name" class="form-control form-control-sm"
+              placeholder="Customer name (optional)">
+          </div>
+          <div class="col-sm-6">
+            <input type="text" id="contact_number" class="form-control form-control-sm"
+              placeholder="Contact number (optional)">
+          </div>
+          <div class="col-sm-6">
+            <input type="text" id="other_contact" class="form-control form-control-sm"
+              placeholder="Other contact / notes">
+          </div>
+        </div>
+
+        <!-- Cart Items List -->
+        <div id="cart-items-container" class="mb-3" style="max-height: 280px; overflow-y: auto;">
+          <div class="text-center py-4 text-muted small">
+            <i class="bi bi-basket3 fs-2 d-block mb-1 text-secondary opacity-50"></i>
+            No items in order yet.<br>Click any menu item on the left to add.
+          </div>
+        </div>
+
+        <!-- Order Totals -->
+        <div class="border-top pt-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center fs-5 fw-bold">
+            <span class="text-dark">Total Amount</span>
+            <span class="text-success" id="cart-total-val">Php 0.00</span>
+          </div>
+        </div>
+
+        <!-- Order Action Buttons -->
+        <div class="d-grid gap-2">
+          <button class="btn btn-success py-2 fw-semibold fs-6 shadow-sm" id="btn-charge" onclick="openPaymentModal()"
+            style="background-color: var(--primary-green); border-color: var(--primary-green);" disabled>
+            <i class="bi bi-credit-card me-2"></i>Charge (Pay Now)
+          </button>
+          <button class="btn btn-outline-secondary py-2 fw-semibold small" id="btn-save-order"
+            onclick="saveOrderPending()" disabled>
+            <i class="bi bi-save me-1"></i>Save order – pay later
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+  </div>
+
+  <!-- SAVE ORDER CONFIRMATION MODAL -->
+  <div class="modal fade" id="saveOrderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+      <div class="modal-content border-0 p-3 shadow-lg">
+        <div class="modal-header border-0 pb-1">
+          <div>
+            <h5 class="modal-title fw-bold text-dark">Save Order for Later</h5>
+            <small class="text-muted">Customer will pay at the counter when ready.</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body py-2">
+          <!-- Order summary preview -->
+          <div class="p-3 bg-light rounded-3 border mb-3">
+            <div class="fw-bold text-dark small text-uppercase mb-2">Order Summary</div>
+            <div id="save-modal-items-preview" class="small"></div>
+            <div class="d-flex justify-content-between fw-bold border-top pt-2 mt-2">
+              <span>Total Amount:</span>
+              <span class="text-success" id="save-modal-total">Php 0.00</span>
+            </div>
+          </div>
+
+          <!-- Customer info (read-only preview) -->
+          <div class="p-3 bg-light rounded-3 border mb-3">
+            <div class="fw-bold text-dark small text-uppercase mb-2">Customer Info</div>
+            <div class="small d-flex justify-content-between mb-1">
+              <span class="text-muted">Name:</span>
+              <span class="fw-semibold" id="save-modal-cust-name">Walk-in Customer</span>
+            </div>
+            <div class="small d-flex justify-content-between mb-1">
+              <span class="text-muted">Contact:</span>
+              <span class="fw-semibold" id="save-modal-cust-contact">—</span>
+            </div>
+            <div class="small d-flex justify-content-between">
+              <span class="text-muted">Order Type:</span>
+              <span class="fw-semibold" id="save-modal-order-type">Dine-In</span>
+            </div>
+          </div>
+
+          <div class="alert alert-warning py-2 small mb-0">
+            <i class="bi bi-clock-history me-1"></i>
+            Order will be saved as <strong>Pending</strong>. Staff can collect payment later via the transactions list.
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-2">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+            data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold"
+            style="background-color: var(--primary-green); border-color: var(--primary-green);"
+            onclick="confirmSaveOrder()">
+            <i class="bi bi-save me-1"></i> Confirm Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCT CUSTOMIZATION MODAL -->
+  <div class="modal fade responsive-order-modal" id="customizeProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 p-3">
+        <div class="modal-header border-0 pb-1">
+          <div>
+            <h5 class="modal-title fw-bold text-dark" id="modal-product-name">Small Pastil</h5>
+            <div class="text-success fw-bold fs-5" id="modal-product-base-price">Php 30.00</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body py-2">
+
+          <!-- Flavor Selection -->
+          <div class="mb-3" id="flavor-group-wrapper">
+            <label class="form-label small fw-bold text-dark text-uppercase mb-2">Flavor</label>
+            <div class="option-pill-group">
+              <button type="button" class="option-pill active"
+                onclick="selectOptionPill(this, 'flavor', 'Original', 0)">Original</button>
+              <button type="button" class="option-pill"
+                onclick="selectOptionPill(this, 'flavor', 'Spicy', 0)">Spicy</button>
+            </div>
+          </div>
+
+          <!-- Rice Selection -->
+          <div class="mb-3" id="rice-group-wrapper">
+            <label class="form-label small fw-bold text-dark text-uppercase mb-2">Rice Choice</label>
+            <div class="option-pill-group">
+              <button type="button" class="option-pill active"
+                onclick="selectOptionPill(this, 'rice', 'Plain', 0)">Plain</button>
+              <button type="button" class="option-pill" onclick="selectOptionPill(this, 'rice', 'Garlic', 5)">Garlic
+                +Php 5.00</button>
+            </div>
+          </div>
+
+          <!-- Quantity Stepper -->
+          <div class="d-flex align-items-center justify-content-between pt-2 border-top" id="quantity-stepper-wrapper">
+            <span class="fw-bold text-dark small">Quantity</span>
+            <div class="d-flex align-items-center gap-2">
+              <button type="button" class="qty-btn" onclick="adjustModalQty(-1)"><i class="bi bi-dash"></i></button>
+              <span class="fw-bold px-2 fs-5" id="modal-item-qty">1</span>
+              <button type="button" class="qty-btn" onclick="adjustModalQty(1)"><i class="bi bi-plus"></i></button>
+            </div>
+          </div>
+
+          <!-- Item Subtotal Preview -->
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <span class="text-muted fw-semibold">Item Total:</span>
+            <span class="fw-bold fs-5 text-dark" id="modal-item-total-preview">Php 30.00</span>
+          </div>
+
+        </div>
+        <div class="modal-footer border-0 pt-2">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+            data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold flex-fill"
+            style="background-color: var(--primary-green); border-color: var(--primary-green);"
+            onclick="confirmAddToCart()">
+            Add to order
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT MODAL -->
+  <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+      <div class="modal-content border-0 p-3 shadow-lg">
+        <div class="modal-header border-0 pb-1">
+          <h5 class="modal-title fw-bold text-dark">Checkout & Payment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body py-2">
+
+          <div class="d-flex justify-content-between p-3 rounded-3 mb-3"
+            style="background: var(--primary-green-light); border: 1px solid #c8decb;">
+            <span class="text-dark fw-semibold">Total Amount Due:</span>
+            <span class="fw-bold fs-4 text-success" id="pay-modal-amount-due">Php 0.00</span>
+          </div>
+
+          <!-- Payment Method Toggle -->
+          <label class="form-label small fw-bold text-dark text-uppercase mb-2">Payment Method</label>
+          <div class="d-flex gap-2 mb-3">
+            <button type="button" class="btn btn-outline-success flex-fill active fw-semibold" id="btn-pay-cash"
+              onclick="setPaymentMethod('Cash')">
+              <i class="bi bi-cash-stack me-1"></i> Cash
+            </button>
+            <button type="button" class="btn btn-outline-success flex-fill fw-semibold" id="btn-pay-gcash"
+              onclick="setPaymentMethod('GCash')">
+              <i class="bi bi-wallet2 me-1"></i> GCash (PayMongo)
+            </button>
+          </div>
+
+          <!-- Cash Payment Section -->
+          <div id="cash-payment-section">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-muted">Amount Tendered / Paid (Php)</label>
+              <input type="number" step="1" id="cash-amount-paid" class="form-control form-control-lg fw-bold"
+                placeholder="0.00" oninput="calculateChange()">
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickCash('exact')">Exact</button>
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickCash(50)">50</button>
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickCash(100)">100</button>
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickCash(200)">200</button>
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickCash(500)">500</button>
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickCash(1000)">1000</button>
+            </div>
+
+            <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center border mb-3">
+              <span class="text-muted fw-semibold">Change:</span>
+              <span class="fw-bold fs-4 text-dark" id="cash-change-val">Php 0.00</span>
+            </div>
+          </div>
+
+          <!-- GCash PayMongo Bridge Section -->
+          <div id="gcash-payment-section" style="display: none;">
+            <div class="p-3 rounded-3 bg-light border mb-3 text-center">
+              <div class="badge bg-primary px-3 py-1 mb-2">PayMongo GCash Gateway</div>
+              <p class="small text-muted mb-2">Generate a verified PayMongo payment link or scan the QR code to complete
+                payment via GCash.</p>
+
+              <div id="paymongo-link-area" class="d-grid gap-2 mb-2">
+                <button type="button" class="btn btn-primary fw-semibold" id="btn-create-paymongo"
+                  onclick="generatePayMongoLink()">
+                  <i class="bi bi-link-45deg me-1"></i> Generate PayMongo Payment Link
+                </button>
+              </div>
+
+              <div id="paymongo-active-details" style="display: none;">
+                <div class="p-2 bg-white rounded border mb-2">
+                  <a href="#" target="_blank" id="paymongo-checkout-btn"
+                    class="btn btn-sm btn-outline-primary w-100 fw-bold">
+                    <i class="bi bi-box-arrow-up-right me-1"></i> Open PayMongo Checkout
+                  </a>
+                  <small class="d-block text-muted mt-1" id="paymongo-ref-text">Reference: Loading...</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-success w-100 mb-2" onclick="checkPayMongoStatus()">
+                  <i class="bi bi-arrow-repeat me-1"></i> Check Payment Status
+                </button>
+                <div id="paymongo-status-badge" class="small fw-semibold text-warning">
+                  <i class="bi bi-hourglass-split me-1"></i> Waiting for customer payment...
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-muted">GCash Reference / Approval Code</label>
+              <input type="text" id="gcash-ref-number" class="form-control"
+                placeholder="e.g. GCX-20261023-001 or PayMongo Ref">
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer border-0 pt-1">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-3"
+            data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold flex-fill"
+            id="btn-complete-payment"
+            style="background-color: var(--primary-green); border-color: var(--primary-green);"
+            onclick="processFinalPayment()">
+            Complete Payment & Receipt
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STANDARD RECEIPT MODAL -->
+  <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+      <div class="modal-content border-0 p-3 shadow-lg">
+        <div class="modal-header border-0 pb-0 no-print">
+          <h6 class="modal-title fw-bold text-dark">Transaction Receipt</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+            onclick="resetAfterReceipt()"></button>
+        </div>
+        <div class="modal-body py-2">
+
+          <div class="receipt-paper" id="printableReceipt">
+            <div class="text-center mb-2">
+              <img src="/assets/sales/img/logo.png" alt="Logo" style="height: 48px; max-width: 160px; object-fit: contain;">
+              <div class="fw-bold text-uppercase mt-1" style="font-size: 13px;">Tine's Kitchen Chick Pastil</div>
+              <div style="font-size: 11px;" id="receipt-branch-name">Balagtas Branch</div>
+              <div style="font-size: 10px; color: #555;">Business Process Automation POS</div>
+            </div>
+
+            <div class="receipt-divider"></div>
+
+            <div style="font-size: 11px;">
+              <div class="d-flex justify-content-between">
+                <span>Date:</span>
+                <span id="receipt-date-time">2026-10-23 08:30</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Transaction #:</span>
+                <span class="fw-bold" id="receipt-txn-no">TXN-0000</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Order #:</span>
+                <span id="receipt-order-id">#0000</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Type:</span>
+                <span id="receipt-order-type">Dine-In</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Cashier / Staff:</span>
+                <span id="receipt-cashier">Staff</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Customer:</span>
+                <span id="receipt-cust-name">Walk-in</span>
+              </div>
+            </div>
+
+            <div class="receipt-divider"></div>
+
+            <div id="receipt-items-list" style="font-size: 11px;"></div>
+
+            <div class="receipt-double-divider"></div>
+
+            <div style="font-size: 12px;">
+              <div class="d-flex justify-content-between fw-bold">
+                <span>TOTAL DUE:</span>
+                <span id="receipt-total-due">Php 0.00</span>
+              </div>
+              <div class="d-flex justify-content-between mt-1">
+                <span>Payment Method:</span>
+                <span id="receipt-pay-method">Cash</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Amount Tendered:</span>
+                <span id="receipt-amount-paid">Php 0.00</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Change:</span>
+                <span id="receipt-change">Php 0.00</span>
+              </div>
+              <div class="d-flex justify-content-between" id="receipt-ref-row" style="display: none;">
+                <span>Reference #:</span>
+                <span id="receipt-ref-val">-</span>
+              </div>
+            </div>
+
+            <div class="receipt-divider"></div>
+
+            <div class="text-center mt-3" style="font-size: 11px;">
+              <div class="fw-bold">THANK YOU FOR DINING WITH US!</div>
+              <div style="font-size: 10px; color: #666;">Please come again.</div>
+              <div class="mt-2" style="font-size: 9px; letter-spacing: 2px;">*** OFFICIAL RECEIPT ***</div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer border-0 pt-2 no-print">
+          <button type="button" class="btn btn-outline-secondary rounded-pill" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Print Receipt
+          </button>
+          <button type="button" class="btn btn-success rounded-pill flex-fill"
+            style="background-color: var(--primary-green); border-color: var(--primary-green);"
+            onclick="resetAfterReceipt()">
+            <i class="bi bi-plus-circle me-1"></i> New Order
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Shared Components -->
+  <script src="../../js/shared/bars.js"></script>
+
+  <script>
+    let menuData = { sections: [], addons: [] };
+    let currentCategory = 'All';
+    let cart = [];
+    let selectedOrderType = 'Dine-In';
+
+    let activeProduct = null;
+    let modalFlavor = 'Original';
+    let modalRice = 'Plain';
+    let modalRicePrice = 0;
+    let modalQty = 1;
+
+    let currentOrderId = null;
+    let currentPaymentMethod = 'Cash';
+    let activePayMongoLink = null;
+
+    async function fetchMenu() {
+      try {
+        const res = await fetch('/api/menu');
+        const data = await res.json();
+        if (data.success) {
+          menuData = data;
+          renderCategoryPills();
+          renderProducts();
+        }
+      } catch (err) {
+        console.error('Error fetching menu:', err);
+      }
+    }
+
+    function renderCategoryPills() {
+      const container = document.getElementById('category-pills-list');
+      let html = `<button class="cat-pill ${currentCategory === 'All' ? 'active' : ''}" onclick="filterCategory('All')">All Items</button>`;
+
+      menuData.sections.forEach(sec => {
+        html += `<button class="cat-pill ${currentCategory === sec.section_name ? 'active' : ''}" onclick="filterCategory('${sec.section_name}')">${sec.section_name}</button>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function filterCategory(cat) {
+      currentCategory = cat;
+      renderCategoryPills();
+      renderProducts();
+    }
+
+    function findProduct(productId) {
+      for (const s of menuData.sections) {
+        const found = s.products.find(p => p.product_id === productId);
+        if (found) {
+          return { ...found, section_name: s.section_name };
+        }
+      }
+      return null;
+    }
+
+    // No popup for item order except frm pastil size
+    function isCustomizableProduct(p) {
+      const secName = (p.section_name || '').toLowerCase();
+      return secName.includes('pastil');
+    }
+
+
+    // increment if same item prodcut details in order summary
+    function getAddonsSignature(addons) {
+      if (!addons || addons.length === 0) return '';
+      return addons
+        .map(a => `${(a.addon_name || '').trim()}@${Number(a.addon_price || 0).toFixed(2)}x${a.quantity || 1}`)
+        .sort()
+        .join(';;');
+    }
+
+    function findCartItemIndex(productId, addons = []) {
+      const targetSig = getAddonsSignature(addons);
+      return cart.findIndex(item => item.product_id === productId && getAddonsSignature(item.addons) === targetSig);
+    }
+
+    function getDirectItemCartQty(productId) {
+      const idx = findCartItemIndex(productId, []);
+      return idx !== -1 ? cart[idx].quantity : 0;
+    }
+
+    function quickAddDirectItem(productId) {
+      const product = findProduct(productId);
+      if (!product || !product.is_available) return;
+
+      const idx = findCartItemIndex(productId, []);
+      if (idx !== -1) {
+        cart[idx].quantity += 1;
+        cart[idx].subtotal = cart[idx].unit_price * cart[idx].quantity;
+      } else {
+        cart.push({
+          product_id: product.product_id,
+          item_name: product.product_name,
+          unit_price: Number(product.price),
+          quantity: 1,
+          addons: [],
+          subtotal: Number(product.price)
+        });
+      }
+      renderCart();
+    }
+
+    function quickAdjustDirectItem(productId, change) {
+      const idx = findCartItemIndex(productId, []);
+      if (idx === -1) {
+        if (change > 0) quickAddDirectItem(productId);
+        return;
+      }
+
+      const newQty = cart[idx].quantity + change;
+      if (newQty <= 0) {
+        cart.splice(idx, 1);
+      } else {
+        cart[idx].quantity = newQty;
+        cart[idx].subtotal = cart[idx].unit_price * newQty;
+      }
+      renderCart();
+    }
+
+    function renderProducts() {
+      const container = document.getElementById('products-grid-container');
+      let productsToDisplay = [];
+
+      menuData.sections.forEach(sec => {
+        if (currentCategory === 'All' || currentCategory === sec.section_name) {
+          sec.products.forEach(p => {
+            productsToDisplay.push({ ...p, section_name: sec.section_name });
+          });
+        }
+      });
+
+      if (productsToDisplay.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-muted col-12">No products found in this section.</div>`;
+        return;
+      }
+
+      container.innerHTML = productsToDisplay.map(p => {
+        const isUnavailable = !p.is_available;
+        const isCustomizable = isCustomizableProduct(p);
+        const inCartQty = !isCustomizable ? getDirectItemCartQty(p.product_id) : 0;
+        const hasItemsClass = inCartQty > 0 ? 'has-items' : '';
+
+        let actionHtml = '';
+        if (isUnavailable) {
+          actionHtml = `<span class="text-muted small"><i class="bi bi-slash-circle"></i></span>`;
+        } else if (isCustomizable) {
+          actionHtml = `
+            <div class="product-add-circle" title="Customize & Add">
+              <i class="bi bi-plus"></i>
+            </div>
+          `;
+        } else if (inCartQty > 0) {
+          actionHtml = `
+            <div class="card-qty-stepper" onclick="event.stopPropagation()">
+              <button type="button" class="card-qty-btn" onclick="quickAdjustDirectItem(${p.product_id}, -1)" title="Decrease">
+                <i class="bi bi-dash"></i>
+              </button>
+              <span class="card-qty-count">${inCartQty}</span>
+              <button type="button" class="card-qty-btn" onclick="quickAdjustDirectItem(${p.product_id}, 1)" title="Increase">
+                <i class="bi bi-plus"></i>
+              </button>
+            </div>
+          `;
+        } else {
+          actionHtml = `
+            <div class="product-add-circle" onclick="event.stopPropagation(); quickAddDirectItem(${p.product_id})" title="Add item">
+              <i class="bi bi-plus"></i>
+            </div>
+          `;
+        }
+
+        const clickHandler = isUnavailable
+          ? ''
+          : (isCustomizable
+            ? `openCustomizeModal(${p.product_id})`
+            : (inCartQty === 0 ? `quickAddDirectItem(${p.product_id})` : ''));
+
+        return `
+          <div class="product-card ${isUnavailable ? 'is-unavailable' : ''} ${hasItemsClass}" ${clickHandler ? `onclick="${clickHandler}"` : ''}>
+            <div>
+              ${isUnavailable ? '<span class="badge bg-secondary mb-2">Unavailable</span>' : ''}
+              <div class="product-title">${p.product_name}</div>
+              <div class="text-muted small">${p.description || ''}</div>
+            </div>
+            <div class="d-flex align-items-center justify-content-between mt-3">
+              <div class="product-price">Php ${Number(p.price).toFixed(2)}</div>
+              ${actionHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openCustomizeModal(productId) {
+      const found = findProduct(productId);
+      if (!found) return;
+
+      activeProduct = found;
+      modalFlavor = 'Original';
+      modalRice = 'Plain';
+      modalRicePrice = 0;
+      modalQty = 1;
+
+      document.getElementById('modal-product-name').textContent = activeProduct.product_name;
+      document.getElementById('modal-product-base-price').textContent = `Php ${Number(activeProduct.price).toFixed(2)}`;
+      document.getElementById('modal-item-qty').textContent = '1';
+
+      // Reset flavor and rice option pills UI to default first option
+      const flavorWrapper = document.getElementById('flavor-group-wrapper');
+      const riceWrapper = document.getElementById('rice-group-wrapper');
+      if (flavorWrapper) {
+        flavorWrapper.querySelectorAll('.option-pill').forEach((btn, i) => {
+          btn.classList.toggle('active', i === 0);
+        });
+      }
+      if (riceWrapper) {
+        riceWrapper.querySelectorAll('.option-pill').forEach((btn, i) => {
+          btn.classList.toggle('active', i === 0);
+        });
+      }
+
+      const isPastil = isCustomizableProduct(activeProduct);
+      if (flavorWrapper) flavorWrapper.style.display = isPastil ? 'block' : 'none';
+      if (riceWrapper) riceWrapper.style.display = isPastil ? 'block' : 'none';
+
+      updateModalTotal();
+
+      const modalEl = document.getElementById('customizeProductModal');
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+
+    function selectOptionPill(btn, group, value, extraPrice) {
+      const parent = btn.closest('.option-pill-group');
+      parent.querySelectorAll('.option-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      if (group === 'flavor') modalFlavor = value;
+      if (group === 'rice') {
+        modalRice = value;
+        const addonName = `${value} Rice`;
+        const addon = menuData.addons.find(item =>
+          item.addon_category === 'rice' && item.addon_name.toLowerCase() === addonName.toLowerCase()
+        );
+        modalRicePrice = addon ? Number(addon.addon_price) : extraPrice;
+      }
+
+      updateModalTotal();
+    }
+
+    function adjustModalQty(change) {
+      modalQty = Math.max(1, modalQty + change);
+      document.getElementById('modal-item-qty').textContent = modalQty;
+      updateModalTotal();
+    }
+
+    function updateModalTotal() {
+      if (!activeProduct) return;
+      const isPastil = isCustomizableProduct(activeProduct);
+      let base = Number(activeProduct.price);
+      if (isPastil) {
+        base += modalRicePrice;
+      }
+      const total = base * modalQty;
+      document.getElementById('modal-item-total-preview').textContent = `Php ${total.toFixed(2)}`;
+    }
+
+    function confirmAddToCart() {
+      if (!activeProduct) return;
+      const isPastil = isCustomizableProduct(activeProduct);
+
+      let configuredAddons = [];
+      if (isPastil) {
+        configuredAddons.push({ addon_id: null, addon_name: `Flavor: ${modalFlavor}`, addon_price: 0, quantity: 1 });
+        if (modalRicePrice > 0) {
+          configuredAddons.push({ addon_id: null, addon_name: `Garlic Rice`, addon_price: modalRicePrice, quantity: 1 });
+        } else {
+          configuredAddons.push({ addon_id: null, addon_name: `Plain Rice`, addon_price: 0, quantity: 1 });
+        }
+      }
+
+      const unitPrice = Number(activeProduct.price);
+      const addonsUnitCost = configuredAddons.reduce((s, a) => s + (Number(a.addon_price) * (a.quantity || 1)), 0);
+      const singleItemCost = unitPrice + addonsUnitCost;
+
+      // Check if EXACT SAME product + addons already exists in cart
+      const existingIdx = findCartItemIndex(activeProduct.product_id, configuredAddons);
+      if (existingIdx !== -1) {
+        cart[existingIdx].quantity += modalQty;
+        cart[existingIdx].subtotal = singleItemCost * cart[existingIdx].quantity;
+      } else {
+        cart.push({
+          product_id: activeProduct.product_id,
+          item_name: activeProduct.product_name,
+          unit_price: unitPrice,
+          quantity: modalQty,
+          addons: configuredAddons,
+          subtotal: singleItemCost * modalQty
+        });
+      }
+
+      renderCart();
+
+      const modalEl = document.getElementById('customizeProductModal');
+      const modalInstance = bootstrap.Modal.getInstance(modalEl);
+      if (modalInstance) modalInstance.hide();
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cart-items-container');
+      const btnCharge = document.getElementById('btn-charge');
+      const btnSave = document.getElementById('btn-save-order');
+
+      if (cart.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-4 text-muted small">
+            <i class="bi bi-basket3 fs-2 d-block mb-1 text-secondary opacity-50"></i>
+            No items in order yet.<br>Click any menu item on the left to add.
+          </div>
+        `;
+        document.getElementById('cart-total-val').textContent = 'Php 0.00';
+        btnCharge.disabled = true;
+        btnSave.disabled = true;
+        renderProducts();
+        return;
+      }
+
+      let grandTotal = 0;
+      container.innerHTML = cart.map((item, idx) => {
+        grandTotal += item.subtotal;
+        const addonsText = item.addons && item.addons.length > 0
+          ? `<div class="text-muted small" style="font-size: 0.8rem;">${item.addons.map(a => a.addon_name + (a.addon_price > 0 ? ` (+${a.addon_price})` : '')).join(', ')}</div>`
+          : '';
+
+        return `
+          <div class="cart-item d-flex align-items-center justify-content-between">
+            <div style="flex: 1; padding-right: 8px;">
+              <div class="fw-bold text-dark small">${item.item_name}</div>
+              ${addonsText}
+              <div class="text-success small fw-semibold">Php ${item.subtotal.toFixed(2)}</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button class="qty-btn" onclick="adjustCartItemQty(${idx}, -1)"><i class="bi bi-dash"></i></button>
+              <span class="small fw-bold px-1">${item.quantity}</span>
+              <button class="qty-btn" onclick="adjustCartItemQty(${idx}, 1)"><i class="bi bi-plus"></i></button>
+              <button class="btn btn-sm text-danger p-0 ms-1" onclick="removeCartItem(${idx})"><i class="bi bi-x-circle"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('cart-total-val').textContent = `Php ${grandTotal.toFixed(2)}`;
+
+      btnCharge.disabled = false;
+      btnSave.disabled = false;
+      renderProducts();
+    }
+
+    function adjustCartItemQty(index, change) {
+      const item = cart[index];
+      const newQty = item.quantity + change;
+      if (newQty <= 0) {
+        cart.splice(index, 1);
+      } else {
+        const singleItemTotal = item.subtotal / item.quantity;
+        item.quantity = newQty;
+        item.subtotal = singleItemTotal * newQty;
+      }
+      renderCart();
+    }
+
+    function removeCartItem(index) {
+      cart.splice(index, 1);
+      renderCart();
+    }
+
+    function clearCart() {
+      cart = [];
+      renderCart();
+    }
+
+    function setOrderType(btn, type) {
+      document.querySelectorAll('.order-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedOrderType = type;
+    }
+
+    async function saveOrderPending() {
+      if (cart.length === 0) return;
+
+      // Populate save modal preview
+      let grandTotal = 0;
+      const itemsHtml = cart.map(item => {
+        grandTotal += item.subtotal;
+        const addonsText = item.addons && item.addons.length
+          ? `<div class="text-muted" style="font-size:0.78rem;padding-left:10px;">+ ${item.addons.map(a => a.addon_name).join(', ')}</div>`
+          : '';
+        return `<div class="d-flex justify-content-between py-1 border-bottom">
+          <div><span class="fw-semibold">${item.quantity}x ${item.item_name}</span>${addonsText}</div>
+          <span>Php ${item.subtotal.toFixed(2)}</span>
+        </div>`;
+      }).join('');
+
+      document.getElementById('save-modal-items-preview').innerHTML = itemsHtml;
+      document.getElementById('save-modal-total').textContent = `Php ${grandTotal.toFixed(2)}`;
+      document.getElementById('save-modal-cust-name').textContent = document.getElementById('cust_name').value.trim() || 'Walk-in Customer';
+      document.getElementById('save-modal-cust-contact').textContent = document.getElementById('contact_number').value.trim() || '—';
+      document.getElementById('save-modal-order-type').textContent = selectedOrderType;
+
+      new bootstrap.Modal(document.getElementById('saveOrderModal')).show();
+    }
+
+    async function confirmSaveOrder() {
+      const user = window.getCurrentUser ? window.getCurrentUser() : { branch: 'Balagtas' };
+      const payload = {
+        cust_name: document.getElementById('cust_name').value.trim() || 'Walk-in Customer',
+        contact_number: document.getElementById('contact_number').value.trim(),
+        other_contact: document.getElementById('other_contact').value.trim(),
+        branch_name: user.branch || 'Balagtas',
+        order_type: selectedOrderType,
+        order_status: 'Pending',
+        items: cart
+      };
+
+      const btn = document.querySelector('#saveOrderModal .btn-success');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Saving...`;
+
+      try {
+        const isExistingOrder = Boolean(currentOrderId);
+        const endpoint = isExistingOrder
+          ? `/api/orders/${currentOrderId}`
+          : '/api/orders';
+        const method = isExistingOrder ? 'PATCH' : 'POST';
+        const requestBody = isExistingOrder
+          ? {
+              cust_name: payload.cust_name,
+              contact_number: payload.contact_number,
+              other_contact: payload.other_contact,
+              order_type: payload.order_type,
+              order_status: 'Pending'
+            }
+          : payload;
+
+        const res = await fetch(endpoint, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('saveOrderModal')).hide();
+          const savedOrderId = currentOrderId || data.order_id;
+          currentOrderId = null;
+          clearCart();
+          document.getElementById('cust_name').value = '';
+          document.getElementById('contact_number').value = '';
+          document.getElementById('other_contact').value = '';
+          showToast(`Order #${savedOrderId} saved as Pending. Customer can pay at the counter.`, 'success');
+        } else {
+          showToast('Error saving order: ' + data.error, 'danger');
+        }
+      } catch (err) {
+        showToast('Failed to connect to server: ' + err.message, 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="bi bi-save me-1"></i> Confirm Save`;
+      }
+    }
+
+    function showToast(msg, type = 'success') {
+      alert(msg);
+    }
+
+    async function openPaymentModal() {
+      if (cart.length === 0) return;
+
+
+      if (currentOrderId) {
+        const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        modal.show();
+        return;
+      }
+
+
+      const user = window.getCurrentUser ? window.getCurrentUser() : { branch: 'Balagtas' };
+
+      const payload = {
+        cust_name: document.getElementById('cust_name').value.trim() || 'Walk-in Customer',
+        contact_number: document.getElementById('contact_number').value.trim(),
+        other_contact: document.getElementById('other_contact').value.trim(),
+        branch_name: user.branch || 'Balagtas',
+        order_type: selectedOrderType,
+        order_status: 'Preparing',
+        items: cart
+      };
+
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentOrderId = data.order_id;
+          const totalAmount = data.order_total;
+
+          document.getElementById('pay-modal-amount-due').textContent = `Php ${Number(totalAmount).toFixed(2)}`;
+          document.getElementById('cash-amount-paid').value = totalAmount;
+          calculateChange();
+
+          setPaymentMethod('Cash');
+          const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+          modal.show();
+        } else {
+          alert('Error initializing order payment: ' + data.error);
+        }
+      } catch (err) {
+        alert('Server communication error: ' + err.message);
+      }
+    }
+
+    function setPaymentMethod(method) {
+      currentPaymentMethod = method;
+      const btnCash = document.getElementById('btn-pay-cash');
+      const btnGCash = document.getElementById('btn-pay-gcash');
+      const cashSec = document.getElementById('cash-payment-section');
+      const gcashSec = document.getElementById('gcash-payment-section');
+
+      if (method === 'Cash') {
+        btnCash.classList.add('active');
+        btnGCash.classList.remove('active');
+        cashSec.style.display = 'block';
+        gcashSec.style.display = 'none';
+      } else {
+        btnGCash.classList.add('active');
+        btnCash.classList.remove('active');
+        cashSec.style.display = 'none';
+        gcashSec.style.display = 'block';
+      }
+    }
+
+    function calculateChange() {
+      const dueText = document.getElementById('pay-modal-amount-due').textContent.replace('Php ', '');
+      const due = parseFloat(dueText) || 0;
+      const paid = parseFloat(document.getElementById('cash-amount-paid').value) || 0;
+      const change = Math.max(0, paid - due);
+      document.getElementById('cash-change-val').textContent = `Php ${change.toFixed(2)}`;
+    }
+
+    function quickCash(val) {
+      const dueText = document.getElementById('pay-modal-amount-due').textContent.replace('Php ', '');
+      const due = parseFloat(dueText) || 0;
+      if (val === 'exact') {
+        document.getElementById('cash-amount-paid').value = due;
+      } else {
+        document.getElementById('cash-amount-paid').value = val;
+      }
+      calculateChange();
+    }
+
+    async function generatePayMongoLink() {
+      if (!currentOrderId) return;
+      const dueText = document.getElementById('pay-modal-amount-due').textContent.replace('Php ', '');
+      const user = window.getCurrentUser ? window.getCurrentUser() : { branch: 'Balagtas' };
+
+      const btn = document.getElementById('btn-create-paymongo');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Connecting to PayMongo...`;
+
+      try {
+        const res = await fetch('/api/paymongo/create-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_id: currentOrderId,
+            amount: dueText,
+            branch_name: user.branch
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          activePayMongoLink = data;
+          document.getElementById('paymongo-active-details').style.display = 'block';
+          document.getElementById('paymongo-checkout-btn').href = data.checkoutUrl;
+          document.getElementById('paymongo-ref-text').textContent = `Reference: ${data.referenceNumber || data.linkId}`;
+          document.getElementById('gcash-ref-number').value = data.referenceNumber || `GCX-${data.linkId.slice(-6)}`;
+          btn.innerHTML = `<i class="bi bi-check-circle me-1"></i> Link Active`;
+        } else {
+          alert('PayMongo Error: ' + data.error);
+          btn.disabled = false;
+          btn.innerHTML = `<i class="bi bi-link-45deg me-1"></i> Retry Link`;
+        }
+      } catch (err) {
+        alert('Failed to connect to PayMongo API: ' + err.message);
+        btn.disabled = false;
+      }
+    }
+
+    async function checkPayMongoStatus() {
+      if (!activePayMongoLink?.linkId) return;
+      try {
+        const res = await fetch(`/api/paymongo/check-status/${activePayMongoLink.linkId}`);
+        const data = await res.json();
+        const badge = document.getElementById('paymongo-status-badge');
+
+        if (data.isPaid) {
+          badge.className = 'small fw-bold text-success';
+          badge.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Paid Verified on PayMongo!`;
+          if (data.referenceNumber) {
+            document.getElementById('gcash-ref-number').value = data.referenceNumber;
+          }
+        } else {
+          badge.className = 'small fw-semibold text-warning';
+          badge.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> Status: ${data.status || 'unpaid'}. Customer has not finalized payment yet.`;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function processFinalPayment() {
+      const dueText = document.getElementById('pay-modal-amount-due').textContent.replace('Php ', '');
+      const due = parseFloat(dueText) || 0;
+      let paid = due;
+      let change = 0;
+      let gcashRef = null;
+
+      if (currentPaymentMethod === 'Cash') {
+        paid = parseFloat(document.getElementById('cash-amount-paid').value) || 0;
+        if (paid < due) {
+          alert('Amount tendered is less than total amount due!');
+          return;
+        }
+        change = paid - due;
+      } else {
+        gcashRef = document.getElementById('gcash-ref-number').value.trim() || `GCX-${Date.now().toString().slice(-6)}`;
+      }
+
+      try {
+        const res = await fetch(`/api/orders/${currentOrderId}/pay`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payment_method: currentPaymentMethod,
+            amount_due: due,
+            amount_paid: paid,
+            change_amount: change,
+            gcash_reference_number: gcashRef,
+            paymongo_link_id: currentPaymentMethod === 'GCash' ? activePayMongoLink?.linkId : null
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+          renderReceipt({
+            order_id: currentOrderId,
+            txn_number: data.transaction_number,
+            payment_method: currentPaymentMethod,
+            amount_due: due,
+            amount_paid: paid,
+            change: change,
+            gcash_ref: gcashRef,
+            items: cart
+          });
+        } else {
+          alert('Error completing payment: ' + data.error);
+        }
+      } catch (err) {
+        alert('Server communication error: ' + err.message);
+      }
+    }
+
+    function renderReceipt(info) {
+      const user = window.getCurrentUser ? window.getCurrentUser() : { name: 'Staff', branch: 'Balagtas' };
+
+      document.getElementById('receipt-branch-name').textContent = `${user.branch || 'Balagtas'} Branch`;
+      document.getElementById('receipt-date-time').textContent = new Date().toLocaleString();
+      document.getElementById('receipt-txn-no').textContent = info.txn_number;
+      document.getElementById('receipt-order-id').textContent = `#${String(info.order_id).padStart(4, '0')}`;
+      document.getElementById('receipt-order-type').textContent = selectedOrderType;
+      document.getElementById('receipt-cashier').textContent = user.name || 'Staff User';
+      document.getElementById('receipt-cust-name').textContent = document.getElementById('cust_name').value.trim() || 'Walk-in';
+
+      const listEl = document.getElementById('receipt-items-list');
+      listEl.innerHTML = info.items.map(i => `
+        <div class="mb-1">
+          <div class="d-flex justify-content-between fw-bold">
+            <span>${i.quantity}x ${i.item_name}</span>
+            <span>Php ${i.subtotal.toFixed(2)}</span>
+          </div>
+          ${i.addons && i.addons.length ? `<div style="font-size: 10px; color: #555; padding-left: 12px;">+ ${i.addons.map(a => a.addon_name).join(', ')}</div>` : ''}
+        </div>
+      `).join('');
+
+      document.getElementById('receipt-total-due').textContent = `Php ${info.amount_due.toFixed(2)}`;
+      document.getElementById('receipt-pay-method').textContent = info.payment_method;
+      document.getElementById('receipt-amount-paid').textContent = `Php ${info.amount_paid.toFixed(2)}`;
+      document.getElementById('receipt-change').textContent = `Php ${info.change.toFixed(2)}`;
+
+      const refRow = document.getElementById('receipt-ref-row');
+      if (info.payment_method === 'GCash') {
+        refRow.style.display = 'flex';
+        document.getElementById('receipt-ref-val').textContent = info.gcash_ref;
+      } else {
+        refRow.style.display = 'none';
+      }
+
+      const receiptModal = new bootstrap.Modal(document.getElementById('receiptModal'));
+      receiptModal.show();
+    }
+
+    function resetAfterReceipt() {
+      const modalEl = document.getElementById('receiptModal');
+      const inst = bootstrap.Modal.getInstance(modalEl);
+      if (inst) inst.hide();
+
+      clearCart();
+      document.getElementById('cust_name').value = '';
+      document.getElementById('contact_number').value = '';
+      document.getElementById('other_contact').value = '';
+      currentOrderId = null;
+      activePayMongoLink = null;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchMenu();
+      const urlParams = new URLSearchParams(window.location.search);
+      const receiptId = urlParams.get('receiptOrder');
+      if (receiptId) {
+        fetch(`/api/orders/${receiptId}`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.success && data.order) {
+              renderReceipt({
+                order_id: data.order.order_id,
+                txn_number: data.order.transaction_number || 'TXN-PENDING',
+                payment_method: data.order.payment_method || 'Unpaid',
+                amount_due: Number(data.order.order_total),
+                amount_paid: Number(data.order.amount_paid || 0),
+                change: Number(data.order.change_amount || 0),
+                gcash_ref: data.order.gcash_reference_number,
+                items: data.order.items || []
+              });
+            }
+          })
+          .catch(e => console.warn(e));
+      }
+    });
+  </script>
+</body>
+
+</html>

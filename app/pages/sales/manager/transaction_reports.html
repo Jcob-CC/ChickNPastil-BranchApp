@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction History & Reports - Chick N Pastil</title>
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/sales/shared/style.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <!-- jsPDF & autoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    .reports-container {
+      max-width: 1220px;
+      margin-left: 0;
+    }
+    .filter-card {
+      background: #ffffff;
+      border: 1.5px solid var(--border-color);
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .badge-status {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .badge-completed { background-color: #e6f6ec; color: #1e5631; }
+    .badge-preparing { background-color: #e8f0fe; color: #1a73e8; }
+    .badge-pending   { background-color: #fff8e6; color: #b7791f; }
+    .badge-cancelled { background-color: #fde8e8; color: #c53030; }
+    .badge-pay-verified { background-color: #e6f6ec; color: #1e5631; }
+    .badge-pay-pending  { background-color: #fff8e6; color: #b7791f; }
+    .badge-pay-failed   { background-color: #fde8e8; color: #c53030; }
+    .badge-pay-refunded { background-color: #f0ebff; color: #6c35de; }
+
+    @media print {
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 80mm;
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+      }
+
+      body > * {
+        display: none !important;
+      }
+
+      #receiptModal {
+        display: block !important;
+        position: static !important;
+        width: 80mm !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        visibility: visible !important;
+      }
+
+      #receiptModal .modal-dialog,
+      #receiptModal .modal-content,
+      #receiptModal .modal-body {
+        display: block !important;
+        position: static !important;
+        width: 80mm !important;
+        max-width: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        visibility: visible !important;
+      }
+
+      #printableReceipt {
+        display: block !important;
+        position: static !important;
+        width: 80mm !important;
+        max-width: 80mm !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 4mm !important;
+        box-sizing: border-box;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+        page-break-before: avoid;
+        page-break-after: avoid;
+        page-break-inside: avoid;
+        break-before: avoid-page;
+        break-after: avoid-page;
+        break-inside: avoid;
+        visibility: visible !important;
+      }
+
+      #printableReceipt * {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body data-page-header="Transaction History">
+
+  <div id="topbar-wrapper"></div>
+  <div class="app-container">
+    <div id="sidebar-wrapper"></div>
+
+  <!-- Main Content Area (left-aligned) -->
+  <main class="main-content">
+    <div class="reports-container">
+      
+      <!-- Top Title & Export Action -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+          <h4 class="fw-bold text-dark mb-1">Transaction History & Reports</h4>
+          <p class="text-muted small mb-0">Manager audit center: view all historical records, edit customer & order statuses, collect payments, and export audits.</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success rounded-pill px-4 fw-semibold" style="background-color: var(--primary-green); border-color: var(--primary-green);" onclick="openExportModal()">
+            <i class="bi bi-file-earmark-arrow-down me-1"></i> Export Report
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters Card -->
+      <div class="filter-card mb-4">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold text-muted">Search Transactions</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" id="filter-search" class="form-control border-start-0" placeholder="Customer, order #, ref..." oninput="debounceFetch()">
+            </div>
+          </div>
+          <div class="col-md-2 col-6">
+            <label class="form-label small fw-semibold text-muted">From Date</label>
+            <input type="date" id="filter-from-date" class="form-control form-control-sm" onchange="fetchTransactions()">
+          </div>
+          <div class="col-md-2 col-6">
+            <label class="form-label small fw-semibold text-muted">To Date</label>
+            <input type="date" id="filter-to-date" class="form-control form-control-sm" onchange="fetchTransactions()">
+          </div>
+          <div class="col-md-2 col-6">
+            <label class="form-label small fw-semibold text-muted">Order Status</label>
+            <select id="filter-status" class="form-select form-select-sm" onchange="fetchTransactions()">
+              <option value="All">All Statuses</option>
+              <option value="Pending">Pending (Unpaid)</option>
+              <option value="Preparing">Preparing</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="col-md-2 col-6">
+            <label class="form-label small fw-semibold text-muted">Payment Method</label>
+            <select id="filter-payment-method" class="form-select form-select-sm" onchange="fetchTransactions()">
+              <option value="All">All Methods</option>
+              <option value="Cash">Cash</option>
+              <option value="GCash">GCash</option>
+            </select>
+          </div>
+          <div class="col-md-1">
+            <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetFilters()" title="Reset All Filters">Reset</button>
+          </div>
+        </div>
+
+        <!-- Quick Date Range Chips -->
+        <div class="d-flex flex-wrap gap-2 mt-3 pt-2 border-top align-items-center">
+          <span class="small text-muted fw-semibold me-1">Quick Ranges:</span>
+          <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-0" onclick="setDateRange('today')">Today</button>
+          <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-0" onclick="setDateRange('week')">This Week</button>
+          <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-0" onclick="setDateRange('month')">This Month</button>
+          <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-0" onclick="setDateRange('all')">All Historical Data</button>
+        </div>
+      </div>
+
+      <!-- Transactions Table -->
+      <div class="bg-white rounded-3 border overflow-hidden shadow-sm mb-4">
+        <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+          <span class="fw-bold text-dark small text-uppercase">Transactions Log (<span id="results-count">0</span> records)</span>
+          <span class="badge bg-white text-dark border fw-bold" id="total-revenue-summary">Total: Php 0.00</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table custom-table mb-0">
+            <thead>
+              <tr>
+                <th>Order / Txn #</th>
+                <th>Customer</th>
+                <th>Order Amount</th>
+                <th>Order Status</th>
+                <th>Payment Status</th>
+                <th>Date and Time</th>
+                <th style="width: 140px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="transactions-table-body">
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                  <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                  Loading transaction history...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+  </div>
+
+  <!-- MANAGER TRANSACTION DETAILS & EDIT MODAL -->
+  <div class="modal fade" id="transactionDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 620px;">
+      <div class="modal-content border-0 p-3 shadow-lg">
+        <div class="modal-header border-0 pb-1">
+          <div class="d-flex align-items-center gap-2">
+            <div class="badge bg-success p-2 rounded-circle"><i class="bi bi-shield-check"></i></div>
+            <div>
+              <h5 class="modal-title fw-bold text-dark mb-0">Order Details & Management</h5>
+              <small class="text-muted">Manager can edit customer info and update statuses anytime.</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body py-2">
+          
+          <!-- Order Metadata Bar -->
+          <div class="p-2 px-3 bg-light rounded-3 border mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <span class="text-muted small">Order #: </span>
+              <span class="fw-bold text-dark" id="modal-detail-order-id">#0000</span>
+            </div>
+            <div>
+              <span class="text-muted small">Txn #: </span>
+              <span class="fw-bold text-dark" id="modal-detail-txn-no">TXN-0000</span>
+            </div>
+            <div>
+              <span class="text-muted small">Branch: </span>
+              <span class="fw-semibold text-dark" id="modal-detail-branch">Balagtas</span>
+            </div>
+            <div>
+              <span class="text-muted small">Date: </span>
+              <span class="fw-semibold text-dark" id="modal-detail-datetime">-</span>
+            </div>
+          </div>
+
+          <!-- Editable Customer & Order Settings Form -->
+          <div class="card border rounded-3 p-3 mb-3 bg-white">
+            <div class="fw-bold text-dark small text-uppercase mb-2 text-success">
+              <i class="bi bi-pencil-square me-1"></i> Editable Details
+            </div>
+            <div class="row g-2">
+              <div class="col-sm-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Customer Name</label>
+                <input type="text" id="edit-cust-name" class="form-control form-control-sm" placeholder="Customer name">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Contact Number</label>
+                <input type="text" id="edit-contact-no" class="form-control form-control-sm" placeholder="09xxxxxxxxx">
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label small fw-semibold text-muted mb-1">Order Type</label>
+                <select id="edit-order-type" class="form-select form-select-sm">
+                  <option value="Dine-In">Dine-In</option>
+                  <option value="Take-Out">Take-Out</option>
+                  <option value="Phone">Phone</option>
+                  <option value="Online">Online</option>
+                </select>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label small fw-semibold text-muted mb-1">Order Status</label>
+                <select id="edit-order-status" class="form-select form-select-sm">
+                  <option value="Pending">Pending (Unpaid)</option>
+                  <option value="Preparing">Preparing</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label small fw-semibold text-muted mb-1">Payment Status</label>
+                <select id="edit-payment-status" class="form-select form-select-sm">
+                  <option value="Pending">Pending</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Failed">Failed</option>
+                  <option value="Refunded">Refunded</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-semibold text-muted mb-1">Order Notes</label>
+                <input type="text" id="edit-notes" class="form-control form-control-sm" placeholder="Special instructions / notes">
+              </div>
+            </div>
+            <div class="d-flex justify-content-end mt-2">
+              <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="saveManagerOrderChanges()">
+                <i class="bi bi-check2 me-1"></i> Save Changes
+              </button>
+            </div>
+          </div>
+
+          <!-- Order Items Summary (Read-Only) -->
+          <div class="p-3 bg-light rounded-3 border mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-bold text-dark small text-uppercase">Order Items Summary</span>
+              <span class="text-muted small" style="font-size: 0.75rem;">(Financial items are immutable)</span>
+            </div>
+            <div id="modal-detail-items-list" class="small"></div>
+            <div class="d-flex justify-content-between fw-bold border-top pt-2 mt-2">
+              <span>Total Amount:</span>
+              <span class="text-success fs-6" id="modal-detail-total">Php 0.00</span>
+            </div>
+          </div>
+
+          <!-- Payment Info Summary -->
+          <div class="p-3 bg-light rounded-3 border">
+            <div class="fw-bold text-dark small text-uppercase mb-2">Payment Details</div>
+            <div class="row g-2 small">
+              <div class="col-6">
+                <span class="text-muted">Payment Method:</span>
+                <span class="fw-semibold text-dark ms-1" id="modal-detail-pay-method">Cash</span>
+              </div>
+              <div class="col-6">
+                <span class="text-muted">Amount Paid:</span>
+                <span class="fw-semibold text-dark ms-1" id="modal-detail-amount-paid">Php 0.00</span>
+              </div>
+              <div class="col-6">
+                <span class="text-muted">Change Given:</span>
+                <span class="fw-semibold text-dark ms-1" id="modal-detail-change">Php 0.00</span>
+              </div>
+              <div class="col-6">
+                <span class="text-muted">GCash / PayMongo Ref:</span>
+                <span class="fw-semibold text-dark ms-1" id="modal-detail-ref">—</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer border-0 pt-2 d-flex justify-content-between">
+          <div class="d-flex gap-2 align-items-center">
+            <div class="dropdown">
+              <button class="btn btn-outline-primary rounded-pill px-3 dropdown-toggle fw-semibold" type="button" id="managerStatusDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-tag me-1"></i> <span id="mgr-status-btn-text">Status: Pending</span>
+              </button>
+              <ul class="dropdown-menu shadow-sm" id="mgr-status-dropdown-menu">
+                <li><a class="dropdown-item py-2 fw-semibold" href="javascript:void(0)" onclick="managerQuickSetStatus('Pending')"><i class="bi bi-hourglass-split me-2 text-warning"></i>Mark as Pending</a></li>
+                <li><a class="dropdown-item py-2 fw-semibold" href="javascript:void(0)" onclick="managerQuickSetStatus('Preparing')"><i class="bi bi-egg-fried me-2 text-primary"></i>Mark as Preparing</a></li>
+                <li><a class="dropdown-item py-2 fw-semibold" href="javascript:void(0)" onclick="managerQuickSetStatus('Completed')"><i class="bi bi-check-circle me-2 text-success"></i>Mark as Completed</a></li>
+                <li><hr class="dropdown-divider my-1"></li>
+                <li><a class="dropdown-item py-2 text-danger fw-semibold" href="javascript:void(0)" onclick="managerQuickSetStatus('Cancelled')"><i class="bi bi-x-circle me-2"></i>Cancel Order</a></li>
+              </ul>
+            </div>
+            <button type="button" class="btn btn-success rounded-pill px-3 fw-semibold" style="background-color: var(--primary-green);" id="btn-modal-collect-pay" onclick="openPaymentFromManagerModal()">
+              <i class="bi bi-cash-stack me-1"></i> Pay Order
+            </button>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT COLLECTION MODAL (INLINE, NEVER REDIRECTS) -->
+  <div class="modal fade" id="managerPaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+      <div class="modal-content border-0 p-3 shadow-lg">
+        <div class="modal-header border-0 pb-1">
+          <div>
+            <h5 class="modal-title fw-bold text-dark mb-0">Collect Payment</h5>
+            <small class="text-muted" id="manager-pay-order-label">Order #0000</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body py-2">
+          
+          <div class="d-flex justify-content-between p-3 rounded-3 mb-3" style="background: var(--primary-green-light); border: 1px solid #c8decb;">
+            <span class="text-dark fw-semibold">Total Amount Due:</span>
+            <span class="fw-bold fs-4 text-success" id="manager-pay-amount-due">Php 0.00</span>
+          </div>
+
+          <!-- Method Selection -->
+          <label class="form-label small fw-bold text-dark text-uppercase mb-2">Payment Method</label>
+          <div class="d-flex gap-2 mb-3">
+            <button type="button" class="btn btn-outline-success flex-fill active fw-semibold" id="btn-mgr-pay-cash" onclick="setManagerPayMethod('Cash')">
+              <i class="bi bi-cash-stack me-1"></i> Cash
+            </button>
+            <button type="button" class="btn btn-outline-success flex-fill fw-semibold" id="btn-mgr-pay-gcash" onclick="setManagerPayMethod('GCash')">
+              <i class="bi bi-wallet2 me-1"></i> GCash (PayMongo)
+            </button>
+          </div>
+
+          <!-- Cash Section -->
+          <div id="mgr-cash-section">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-muted">Amount Tendered (Php)</label>
+              <input type="number" step="1" id="mgr-cash-paid" class="form-control form-control-lg fw-bold" placeholder="0.00" oninput="calculateManagerChange()">
+            </div>
+            
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickManagerCash('exact')">Exact</button>
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickManagerCash(50)">50</button>
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickManagerCash(100)">100</button>
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickManagerCash(200)">200</button>
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickManagerCash(500)">500</button>
+              <button type="button" class="btn btn-sm btn-light border" onclick="quickManagerCash(1000)">1000</button>
+            </div>
+
+            <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center border mb-3">
+              <span class="text-muted fw-semibold">Change:</span>
+              <span class="fw-bold fs-4 text-dark" id="mgr-cash-change">Php 0.00</span>
+            </div>
+          </div>
+
+          <!-- GCash Section -->
+          <div id="mgr-gcash-section" style="display: none;">
+            <div class="p-3 rounded-3 bg-light border mb-3 text-center">
+              <div class="badge bg-primary px-3 py-1 mb-2">PayMongo GCash Gateway</div>
+              <p class="small text-muted mb-2">Create a verified PayMongo payment link or enter approval reference number.</p>
+              
+              <button type="button" class="btn btn-primary btn-sm fw-semibold w-100 mb-2" id="btn-mgr-create-link" onclick="generateManagerPayMongoLink()">
+                <i class="bi bi-link-45deg me-1"></i> Generate PayMongo Link
+              </button>
+
+              <div id="mgr-paymongo-details" style="display: none;">
+                <a href="#" target="_blank" id="mgr-paymongo-checkout" class="btn btn-sm btn-outline-primary w-100 fw-bold mb-2">
+                  <i class="bi bi-box-arrow-up-right me-1"></i> Open PayMongo Checkout
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-success w-100 mb-2" onclick="checkManagerPayMongoStatus()">
+                  <i class="bi bi-arrow-repeat me-1"></i> Check Status
+                </button>
+                <div id="mgr-paymongo-badge" class="small fw-semibold text-warning">
+                  <i class="bi bi-hourglass-split me-1"></i> Waiting for customer payment...
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-muted">GCash Reference Number</label>
+              <input type="text" id="mgr-gcash-ref" class="form-control" placeholder="e.g. GCX-20261023-001 or PayMongo Ref">
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer border-0 pt-1">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold flex-fill" style="background-color: var(--primary-green);" onclick="submitManagerPayment()">
+            Complete Payment & Verify
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THERMAL RECEIPT / SLIP MODAL (INLINE, NEVER REDIRECTS) -->
+  <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+      <div class="modal-content border-0 p-3 shadow-lg">
+        <div class="modal-header border-0 pb-0 no-print">
+          <h6 class="modal-title fw-bold text-dark">Order Document</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body py-2">
+          
+          <div class="receipt-paper" id="printableReceipt">
+            <div class="text-center mb-2">
+              <img src="/assets/sales/img/logo.png" alt="Logo" style="height: 48px; max-width: 160px; object-fit: contain;">
+              <div class="fw-bold text-uppercase mt-1" style="font-size: 13px;">Tine's Kitchen Chick Pastil</div>
+              <div style="font-size: 11px;" id="receipt-branch-name">Balagtas Branch</div>
+              <div style="font-size: 10px; color: #555;">Business Process Automation POS</div>
+            </div>
+
+            <div class="receipt-divider"></div>
+
+            <div class="text-center my-1">
+              <div class="fw-bold" style="font-size: 12px;" id="receipt-doc-title">*** OFFICIAL RECEIPT ***</div>
+              <div class="small fw-semibold mt-1" id="receipt-status-banner">STATUS: VERIFIED</div>
+            </div>
+
+            <div class="receipt-divider"></div>
+
+            <div style="font-size: 11px;">
+              <div class="d-flex justify-content-between">
+                <span>Date & Time:</span>
+                <span id="receipt-date-time">-</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Transaction #:</span>
+                <span class="fw-bold" id="receipt-txn-no">TXN-0000</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Order #:</span>
+                <span class="fw-bold" id="receipt-order-id">#0000</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Order Type:</span>
+                <span id="receipt-order-type">Dine-In</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Customer:</span>
+                <span id="receipt-cust-name">Walk-in</span>
+              </div>
+              <div class="d-flex justify-content-between" id="receipt-contact-row">
+                <span>Contact:</span>
+                <span id="receipt-contact-val">-</span>
+              </div>
+            </div>
+
+            <div class="receipt-divider"></div>
+
+            <div id="receipt-items-list" style="font-size: 11px;"></div>
+
+            <div class="receipt-double-divider"></div>
+
+            <div style="font-size: 12px;">
+              <div class="d-flex justify-content-between fw-bold">
+                <span>TOTAL DUE:</span>
+                <span id="receipt-total-due">Php 0.00</span>
+              </div>
+              <div class="d-flex justify-content-between mt-1">
+                <span>Payment Method:</span>
+                <span id="receipt-pay-method">Cash</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Payment Status:</span>
+                <span class="fw-bold" id="receipt-pay-status">Verified</span>
+              </div>
+              <div class="d-flex justify-content-between" id="receipt-tendered-row">
+                <span>Amount Tendered:</span>
+                <span id="receipt-amount-paid">Php 0.00</span>
+              </div>
+              <div class="d-flex justify-content-between" id="receipt-change-row">
+                <span>Change:</span>
+                <span id="receipt-change">Php 0.00</span>
+              </div>
+              <div class="d-flex justify-content-between" id="receipt-ref-row" style="display: none;">
+                <span>Reference #:</span>
+                <span id="receipt-ref-val">-</span>
+              </div>
+            </div>
+
+            <div class="receipt-divider"></div>
+
+            <div class="text-center mt-3" style="font-size: 11px;">
+              <div class="fw-bold" id="receipt-footer-title">THANK YOU FOR DINING WITH US!</div>
+              <div style="font-size: 10px; color: #666;" id="receipt-footer-sub">Please come again.</div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer border-0 pt-2 no-print d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold" style="background-color: var(--primary-green);" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Print
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT DATA MODAL -->
+  <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+      <div class="modal-content border-0 p-3 shadow-lg">
+        <div class="modal-header border-0 pb-1">
+          <h5 class="modal-title fw-bold text-dark">Export Transaction Data</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body py-2">
+          <p class="text-muted small mb-3">Choose the export file format and date range for reporting and audit.</p>
+          
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-muted">Export File Format</label>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-success flex-fill active" id="btn-export-csv" onclick="selectExportFormat('CSV')">
+                <i class="bi bi-filetype-csv me-1"></i> CSV Spreadsheet (.csv)
+              </button>
+              <button type="button" class="btn btn-outline-success flex-fill" id="btn-export-pdf" onclick="selectExportFormat('PDF')">
+                <i class="bi bi-filetype-pdf me-1"></i> PDF Document (.pdf)
+              </button>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted">From</label>
+              <input type="date" id="export-from-date" class="form-control form-control-sm">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted">To</label>
+              <input type="date" id="export-to-date" class="form-control form-control-sm">
+            </div>
+          </div>
+
+          <div class="p-2 bg-light rounded border text-muted small">
+            <i class="bi bi-info-circle me-1"></i> Reports include order IDs, customer details, line item counts, totals, payment status, and order status.
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-2">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold" style="background-color: var(--primary-green);" onclick="executeExport()">
+            <i class="bi bi-download me-1"></i> Export
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Shared Components -->
+  <script src="../../js/shared/bars.js"></script>
+
+  <script>
+    let transactions = [];
+    let selectedExportFormat = 'CSV';
+    let activeDetailOrder = null;
+    let debounceTimer = null;
+
+    let mgrPayMethod = 'Cash';
+    let mgrPayMongoLink = null;
+
+    function debounceFetch() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(fetchTransactions, 300);
+    }
+
+    function setDateRange(range) {
+      const today = new Date();
+      const formatDate = (d) => d.toISOString().slice(0, 10);
+
+      if (range === 'today') {
+        const str = formatDate(today);
+        document.getElementById('filter-from-date').value = str;
+        document.getElementById('filter-to-date').value = str;
+      } else if (range === 'week') {
+        const firstDay = new Date(today);
+        firstDay.setDate(today.getDate() - today.getDay());
+        document.getElementById('filter-from-date').value = formatDate(firstDay);
+        document.getElementById('filter-to-date').value = formatDate(today);
+      } else if (range === 'month') {
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        document.getElementById('filter-from-date').value = formatDate(firstDay);
+        document.getElementById('filter-to-date').value = formatDate(today);
+      } else if (range === 'all') {
+        document.getElementById('filter-from-date').value = '';
+        document.getElementById('filter-to-date').value = '';
+      }
+      fetchTransactions();
+    }
+
+    async function fetchTransactions() {
+      const search = document.getElementById('filter-search').value;
+      const startDate = document.getElementById('filter-from-date').value;
+      const endDate = document.getElementById('filter-to-date').value;
+      const paymentMethod = document.getElementById('filter-payment-method').value;
+      const status = document.getElementById('filter-status').value;
+
+      let query = new URLSearchParams();
+      if (search) query.append('search', search);
+      if (startDate) query.append('startDate', startDate);
+      if (endDate) query.append('endDate', endDate);
+      if (paymentMethod !== 'All') query.append('paymentMethod', paymentMethod);
+      if (status !== 'All') query.append('status', status);
+
+      try {
+        const res = await fetch(`/api/orders?${query.toString()}`);
+        const data = await res.json();
+        if (data.success) {
+          transactions = data.orders;
+          renderTransactionsTable();
+        }
+      } catch (err) {
+        console.error('Error fetching transactions:', err);
+      }
+    }
+
+    function renderTransactionsTable() {
+      const tbody = document.getElementById('transactions-table-body');
+      document.getElementById('results-count').textContent = transactions.length;
+
+      let totalRevenue = 0;
+
+      if (transactions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">No transactions matched your filters.</td></tr>`;
+        document.getElementById('total-revenue-summary').textContent = 'Total: Php 0.00';
+        return;
+      }
+
+      tbody.innerHTML = transactions.map(t => {
+        const amt = parseFloat(t.order_total) || 0;
+        if (t.order_status !== 'Cancelled') totalRevenue += amt;
+
+        // Order Status badge
+        let orderBadge = '<span class="badge-status badge-pending">Pending</span>';
+        if (t.order_status === 'Preparing') orderBadge = '<span class="badge-status badge-preparing">Preparing</span>';
+        if (t.order_status === 'Completed') orderBadge = '<span class="badge-status badge-completed">Completed</span>';
+        if (t.order_status === 'Cancelled') orderBadge = '<span class="badge-status badge-cancelled">Cancelled</span>';
+
+        // Payment Status badge
+        const payStatus = t.payment_status || 'Pending';
+        let payBadge = '<span class="badge-status badge-pay-pending">Pending</span>';
+        if (payStatus === 'Verified') payBadge = '<span class="badge-status badge-pay-verified">Verified</span>';
+        if (payStatus === 'Failed') payBadge = '<span class="badge-status badge-pay-failed">Failed</span>';
+        if (payStatus === 'Refunded') payBadge = '<span class="badge-status badge-pay-refunded">Refunded</span>';
+
+        const dateFormatted = new Date(t.order_datetime).toLocaleString();
+
+        return `
+          <tr>
+            <td>
+              <div class="fw-bold text-dark">#${String(t.order_id).padStart(4, '0')}</div>
+              <div class="text-muted small" style="font-size: 0.76rem;">${t.transaction_number || 'No Txn #'}</div>
+            </td>
+            <td>
+              <div class="fw-semibold text-dark">${t.cust_name || 'Walk-in'}</div>
+              <div class="text-muted small">${t.order_type || 'Dine-In'}</div>
+            </td>
+            <td class="fw-bold text-success">Php ${amt.toFixed(2)}</td>
+            <td>${orderBadge}</td>
+            <td>${payBadge}</td>
+            <td class="small text-muted">${dateFormatted}</td>
+            <td>
+              <div class="d-flex gap-1">
+                <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-semibold small" onclick="openDetailsModal(${t.order_id})">
+                  Manage
+                </button>
+                <button class="btn btn-sm btn-outline-success rounded-pill p-1 px-2" title="View Receipt" onclick="viewReceiptDirect(${t.order_id})">
+                  <i class="bi bi-receipt"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('total-revenue-summary').textContent = `Total: Php ${totalRevenue.toFixed(2)}`;
+    }
+
+    function openDetailsModal(orderId) {
+      const order = transactions.find(t => t.order_id === orderId);
+      if (!order) return;
+
+      activeDetailOrder = order;
+
+      document.getElementById('modal-detail-order-id').textContent = `#${String(order.order_id).padStart(4, '0')}`;
+      document.getElementById('modal-detail-txn-no').textContent = order.transaction_number || 'Pending';
+      document.getElementById('modal-detail-branch').textContent = order.branch_name || 'Balagtas';
+      document.getElementById('modal-detail-datetime').textContent = new Date(order.order_datetime).toLocaleString();
+
+      // Editable form controls
+      document.getElementById('edit-cust-name').value = order.cust_name || 'Walk-in Customer';
+      document.getElementById('edit-contact-no').value = order.contact_number || '';
+      document.getElementById('edit-order-type').value = order.order_type || 'Dine-In';
+      document.getElementById('edit-order-status').value = order.order_status || 'Pending';
+      document.getElementById('edit-payment-status').value = order.payment_status || 'Pending';
+      document.getElementById('edit-notes').value = order.notes || '';
+
+      // Payment details display
+      document.getElementById('modal-detail-pay-method').textContent = order.payment_method || 'Unpaid';
+      document.getElementById('modal-detail-amount-paid').textContent = `Php ${Number(order.amount_paid || 0).toFixed(2)}`;
+      document.getElementById('modal-detail-change').textContent = `Php ${Number(order.change_amount || 0).toFixed(2)}`;
+      document.getElementById('modal-detail-ref').textContent = order.gcash_reference_number || '—';
+
+      // Items list
+      const itemsContainer = document.getElementById('modal-detail-items-list');
+      if (order.items && order.items.length > 0) {
+        itemsContainer.innerHTML = order.items.map(i => `
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <div>
+              <span class="fw-semibold text-dark">${i.quantity}x ${i.item_name}</span>
+              ${i.addons && i.addons.length ? `<div class="text-muted" style="font-size: 0.75rem;">+ ${i.addons.map(a => a.addon_name).join(', ')}</div>` : ''}
+            </div>
+            <span class="fw-semibold">Php ${Number(i.subtotal).toFixed(2)}</span>
+          </div>
+        `).join('');
+      } else {
+        itemsContainer.innerHTML = `<div class="text-muted">No item details recorded.</div>`;
+      }
+
+      document.getElementById('modal-detail-total').textContent = `Php ${Number(order.order_total).toFixed(2)}`;
+
+      // Show/hide collect payment button
+      const collectBtn = document.getElementById('btn-modal-collect-pay');
+      if (order.payment_status === 'Verified' || order.order_status === 'Cancelled') {
+        collectBtn.style.display = 'none';
+      } else {
+        collectBtn.style.display = 'inline-block';
+      }
+
+      // Update status dropdown button in modal footer
+      const statusBtn = document.getElementById('managerStatusDropdownBtn');
+      const statusBtnText = document.getElementById('mgr-status-btn-text');
+      const st = order.order_status || 'Pending';
+      if (statusBtnText) statusBtnText.textContent = `Status: ${st}`;
+      if (statusBtn) {
+        statusBtn.className = 'btn rounded-pill px-3 dropdown-toggle fw-semibold ';
+        if (st === 'Completed') {
+          statusBtn.classList.add('btn-outline-success');
+        } else if (st === 'Preparing') {
+          statusBtn.classList.add('btn-outline-primary');
+        } else if (st === 'Cancelled') {
+          statusBtn.classList.add('btn-outline-danger');
+        } else {
+          statusBtn.classList.add('btn-outline-warning');
+        }
+      }
+
+      new bootstrap.Modal(document.getElementById('transactionDetailsModal')).show();
+    }
+
+    async function saveManagerOrderChanges() {
+      if (!activeDetailOrder) return;
+
+      const payload = {
+        cust_name: document.getElementById('edit-cust-name').value.trim(),
+        contact_number: document.getElementById('edit-contact-no').value.trim(),
+        order_type: document.getElementById('edit-order-type').value,
+        order_status: document.getElementById('edit-order-status').value,
+        payment_status: document.getElementById('edit-payment-status').value,
+        notes: document.getElementById('edit-notes').value.trim()
+      };
+
+      try {
+        const res = await fetch(`/api/orders/${activeDetailOrder.order_id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Order updated successfully!');
+          bootstrap.Modal.getInstance(document.getElementById('transactionDetailsModal')).hide();
+          fetchTransactions();
+        } else {
+          alert('Error updating order: ' + data.error);
+        }
+      } catch (err) {
+        alert('Failed to connect to server: ' + err.message);
+      }
+    }
+
+    async function managerQuickSetStatus(newStatus) {
+      if (!activeDetailOrder) return;
+
+      if (newStatus === 'Cancelled') {
+        if (!confirm(`Are you sure you want to cancel Order #${activeDetailOrder.order_id}?`)) {
+          return;
+        }
+      }
+
+      const payload = { order_status: newStatus };
+      if (newStatus === 'Cancelled') {
+        payload.payment_status = 'Failed';
+      }
+
+      try {
+        const res = await fetch(`/api/orders/${activeDetailOrder.order_id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('transactionDetailsModal')).hide();
+          await fetchTransactions();
+        } else {
+          alert('Error updating order status: ' + data.error);
+        }
+      } catch (err) {
+        alert('Failed to connect to server: ' + err.message);
+      }
+    }
+
+    function viewReceiptFromManagerModal() {
+      if (!activeDetailOrder) return;
+      openReceiptModal(activeDetailOrder);
+    }
+
+    function viewReceiptDirect(orderId) {
+      const order = transactions.find(t => t.order_id === orderId);
+      if (!order) return;
+      openReceiptModal(order);
+    }
+
+    function openReceiptModal(order) {
+      const user = window.getCurrentUser ? window.getCurrentUser() : { branch: 'Balagtas' };
+
+      document.getElementById('receipt-branch-name').textContent = `${order.branch_name || user.branch || 'Balagtas'} Branch`;
+      document.getElementById('receipt-date-time').textContent = new Date(order.order_datetime).toLocaleString();
+      document.getElementById('receipt-order-id').textContent = `#${String(order.order_id).padStart(4, '0')}`;
+      document.getElementById('receipt-order-type').textContent = order.order_type || 'Dine-In';
+      document.getElementById('receipt-cust-name').textContent = order.cust_name || 'Walk-in Customer';
+
+      if (order.contact_number) {
+        document.getElementById('receipt-contact-row').style.display = 'flex';
+        document.getElementById('receipt-contact-val').textContent = order.contact_number;
+      } else {
+        document.getElementById('receipt-contact-row').style.display = 'none';
+      }
+
+      // Check if verified vs pending vs cancelled
+      const isVerified = (order.payment_status === 'Verified');
+      const isCancelled = (order.order_status === 'Cancelled');
+
+      if (isCancelled) {
+        document.getElementById('receipt-doc-title').textContent = '*** ORDER CANCELLED ***';
+        document.getElementById('receipt-status-banner').innerHTML = '<span class="badge bg-danger">CANCELLED</span>';
+        document.getElementById('receipt-txn-no').textContent = order.transaction_number || 'Cancelled';
+        document.getElementById('receipt-footer-title').textContent = 'ORDER CANCELLED';
+        document.getElementById('receipt-footer-sub').textContent = 'This order has been cancelled.';
+      } else if (isVerified) {
+        document.getElementById('receipt-doc-title').textContent = '*** OFFICIAL RECEIPT ***';
+        document.getElementById('receipt-status-banner').innerHTML = '<span class="badge bg-success">STATUS: VERIFIED / PAID</span>';
+        document.getElementById('receipt-txn-no').textContent = order.transaction_number || `TXN-${order.order_id}`;
+        document.getElementById('receipt-footer-title').textContent = 'THANK YOU FOR DINING WITH US!';
+        document.getElementById('receipt-footer-sub').textContent = 'Please come again.';
+      } else {
+        document.getElementById('receipt-doc-title').textContent = '*** ORDER BILL / PENDING PAYMENT ***';
+        document.getElementById('receipt-status-banner').innerHTML = '<span class="badge bg-warning text-dark">STATUS: PENDING PAYMENT (UNPAID)</span>';
+        document.getElementById('receipt-txn-no').textContent = 'Pending at Register';
+        document.getElementById('receipt-footer-title').textContent = 'PLEASE PRESENT SLIP AT CASHIER';
+        document.getElementById('receipt-footer-sub').textContent = 'Payment required before order prep is served.';
+      }
+
+      // Items list
+      const itemsList = document.getElementById('receipt-items-list');
+      if (order.items && order.items.length) {
+        itemsList.innerHTML = order.items.map(i => `
+          <div class="mb-1">
+            <div class="d-flex justify-content-between fw-bold">
+              <span>${i.quantity}x ${i.item_name}</span>
+              <span>Php ${Number(i.subtotal).toFixed(2)}</span>
+            </div>
+            ${i.addons && i.addons.length ? `<div style="font-size: 10px; color: #555; padding-left: 12px;">+ ${i.addons.map(a => a.addon_name).join(', ')}</div>` : ''}
+          </div>
+        `).join('');
+      } else {
+        itemsList.innerHTML = `<div class="text-muted">Order items summary</div>`;
+      }
+
+      document.getElementById('receipt-total-due').textContent = `Php ${Number(order.order_total).toFixed(2)}`;
+      document.getElementById('receipt-pay-method').textContent = order.payment_method || 'Unpaid';
+      document.getElementById('receipt-pay-status').textContent = order.payment_status || order.order_status;
+      document.getElementById('receipt-amount-paid').textContent = `Php ${Number(order.amount_paid || 0).toFixed(2)}`;
+      document.getElementById('receipt-change').textContent = `Php ${Number(order.change_amount || 0).toFixed(2)}`;
+
+      const refRow = document.getElementById('receipt-ref-row');
+      if (order.gcash_reference_number) {
+        refRow.style.display = 'flex';
+        document.getElementById('receipt-ref-val').textContent = order.gcash_reference_number;
+      } else {
+        refRow.style.display = 'none';
+      }
+
+      new bootstrap.Modal(document.getElementById('receiptModal')).show();
+    }
+
+    // Payment collection modal handlers
+    function openPaymentFromManagerModal() {
+      if (!activeDetailOrder) return;
+      document.getElementById('manager-pay-order-label').textContent = `Order #${activeDetailOrder.order_id} - ${activeDetailOrder.cust_name || 'Walk-in'}`;
+      document.getElementById('manager-pay-amount-due').textContent = `Php ${Number(activeDetailOrder.order_total).toFixed(2)}`;
+      document.getElementById('mgr-cash-paid').value = activeDetailOrder.order_total;
+      calculateManagerChange();
+
+      setManagerPayMethod('Cash');
+      new bootstrap.Modal(document.getElementById('managerPaymentModal')).show();
+    }
+
+    function setManagerPayMethod(method) {
+      mgrPayMethod = method;
+      const btnCash = document.getElementById('btn-mgr-pay-cash');
+      const btnGCash = document.getElementById('btn-mgr-pay-gcash');
+      const secCash = document.getElementById('mgr-cash-section');
+      const secGCash = document.getElementById('mgr-gcash-section');
+
+      if (method === 'Cash') {
+        btnCash.classList.add('active');
+        btnGCash.classList.remove('active');
+        secCash.style.display = 'block';
+        secGCash.style.display = 'none';
+      } else {
+        btnGCash.classList.add('active');
+        btnCash.classList.remove('active');
+        secCash.style.display = 'none';
+        secGCash.style.display = 'block';
+      }
+    }
+
+    function calculateManagerChange() {
+      const due = activeDetailOrder ? Number(activeDetailOrder.order_total) : 0;
+      const paid = parseFloat(document.getElementById('mgr-cash-paid').value) || 0;
+      const change = Math.max(0, paid - due);
+      document.getElementById('mgr-cash-change').textContent = `Php ${change.toFixed(2)}`;
+    }
+
+    function quickManagerCash(val) {
+      const due = activeDetailOrder ? Number(activeDetailOrder.order_total) : 0;
+      if (val === 'exact') {
+        document.getElementById('mgr-cash-paid').value = due;
+      } else {
+        document.getElementById('mgr-cash-paid').value = val;
+      }
+      calculateManagerChange();
+    }
+
+    async function generateManagerPayMongoLink() {
+      if (!activeDetailOrder) return;
+      const btn = document.getElementById('btn-mgr-create-link');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Generating link...`;
+
+      try {
+        const res = await fetch('/api/paymongo/create-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_id: activeDetailOrder.order_id,
+            amount: activeDetailOrder.order_total,
+            branch_name: activeDetailOrder.branch_name || 'Balagtas'
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          mgrPayMongoLink = data;
+          document.getElementById('mgr-paymongo-details').style.display = 'block';
+          document.getElementById('mgr-paymongo-checkout').href = data.checkoutUrl;
+          document.getElementById('mgr-gcash-ref').value = data.referenceNumber || `GCX-${data.linkId.slice(-6)}`;
+          btn.innerHTML = `<i class="bi bi-check-circle me-1"></i> Link Active`;
+        } else {
+          alert('PayMongo Error: ' + data.error);
+          btn.disabled = false;
+          btn.innerHTML = `<i class="bi bi-link-45deg me-1"></i> Retry Link`;
+        }
+      } catch (err) {
+        alert('Server error: ' + err.message);
+        btn.disabled = false;
+      }
+    }
+
+    async function checkManagerPayMongoStatus() {
+      if (!mgrPayMongoLink?.linkId) return;
+      try {
+        const res = await fetch(`/api/paymongo/check-status/${mgrPayMongoLink.linkId}`);
+        const data = await res.json();
+        const badge = document.getElementById('mgr-paymongo-badge');
+        if (data.isPaid) {
+          badge.className = 'small fw-bold text-success';
+          badge.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Paid Verified on PayMongo!`;
+          if (data.referenceNumber) {
+            document.getElementById('mgr-gcash-ref').value = data.referenceNumber;
+          }
+        } else {
+          badge.className = 'small fw-semibold text-warning';
+          badge.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> Status: ${data.status || 'unpaid'}. Customer has not paid yet.`;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function submitManagerPayment() {
+      if (!activeDetailOrder) return;
+      const due = Number(activeDetailOrder.order_total);
+      let paid = due;
+      let change = 0;
+      let gcashRef = null;
+
+      if (mgrPayMethod === 'Cash') {
+        paid = parseFloat(document.getElementById('mgr-cash-paid').value) || 0;
+        if (paid < due) {
+          alert('Amount tendered is less than total amount due!');
+          return;
+        }
+        change = paid - due;
+      } else {
+        gcashRef = document.getElementById('mgr-gcash-ref').value.trim() || `GCX-${Date.now().toString().slice(-6)}`;
+      }
+
+      try {
+        const res = await fetch(`/api/orders/${activeDetailOrder.order_id}/pay`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payment_method: mgrPayMethod,
+            amount_due: due,
+            amount_paid: paid,
+            change_amount: change,
+            gcash_reference_number: gcashRef,
+            paymongo_link_id: mgrPayMethod === 'GCash' ? mgrPayMongoLink?.linkId : null
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('managerPaymentModal')).hide();
+          bootstrap.Modal.getInstance(document.getElementById('transactionDetailsModal')).hide();
+
+          // Refresh orders list
+          await fetchTransactions();
+
+          // Find updated order and show receipt
+          const updated = transactions.find(t => t.order_id === activeDetailOrder.order_id);
+          openReceiptModal(updated || {
+            ...activeDetailOrder,
+            transaction_number: data.transaction_number,
+            payment_method: mgrPayMethod,
+            payment_status: 'Verified',
+            order_status: 'Completed',
+            amount_paid: paid,
+            change_amount: change,
+            gcash_reference_number: gcashRef
+          });
+        } else {
+          alert('Payment processing error: ' + data.error);
+        }
+      } catch (err) {
+        alert('Failed to connect to server: ' + err.message);
+      }
+    }
+
+    function resetFilters() {
+      document.getElementById('filter-search').value = '';
+      document.getElementById('filter-from-date').value = '';
+      document.getElementById('filter-to-date').value = '';
+      document.getElementById('filter-payment-method').value = 'All';
+      document.getElementById('filter-status').value = 'All';
+      fetchTransactions();
+    }
+
+    function openExportModal() {
+      document.getElementById('export-from-date').value = document.getElementById('filter-from-date').value;
+      document.getElementById('export-to-date').value = document.getElementById('filter-to-date').value;
+      new bootstrap.Modal(document.getElementById('exportModal')).show();
+    }
+
+    function selectExportFormat(fmt) {
+      selectedExportFormat = fmt;
+      const btnCsv = document.getElementById('btn-export-csv');
+      const btnPdf = document.getElementById('btn-export-pdf');
+
+      if (fmt === 'CSV') {
+        btnCsv.classList.add('active');
+        btnPdf.classList.remove('active');
+      } else {
+        btnPdf.classList.add('active');
+        btnCsv.classList.remove('active');
+      }
+    }
+
+    function executeExport() {
+      if (transactions.length === 0) {
+        alert('No transaction data to export.');
+        return;
+      }
+
+      if (selectedExportFormat === 'CSV') {
+        exportToCSV();
+      } else {
+        exportToPDF();
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
+    }
+
+    function exportToCSV() {
+      let csv = 'Payment ID,Transaction No,Order ID,Customer Name,Contact,Order Type,Amount,Payment Method,Payment Status,Order Status,Reference No,Date Time\n';
+      
+      transactions.forEach(t => {
+        csv += `"${t.payment_id || ''}","${t.transaction_number || ''}","${t.order_id}","${(t.cust_name || '').replace(/"/g, '""')}","${t.contact_number || ''}","${t.order_type || 'Dine-In'}","${t.order_total}","${t.payment_method || 'Unpaid'}","${t.payment_status || 'Pending'}","${t.order_status}","${t.gcash_reference_number || ''}","${t.order_datetime}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `ChickNPastil_Transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(16);
+      doc.setTextColor(30, 86, 49);
+      doc.text("Chick N Pastil - Transaction Report", 14, 18);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Generated: ${new Date().toLocaleString()} | Manager Audit Report`, 14, 25);
+
+      const tableData = transactions.map(t => [
+        `#${t.order_id}`,
+        t.transaction_number || '-',
+        t.cust_name || 'Walk-in',
+        `Php ${Number(t.order_total).toFixed(2)}`,
+        t.order_status,
+        t.payment_status || 'Pending',
+        t.payment_method || 'Unpaid',
+        new Date(t.order_datetime).toLocaleDateString()
+      ]);
+
+      doc.autoTable({
+        startY: 32,
+        head: [['Order #', 'Txn #', 'Customer', 'Amount', 'Order Status', 'Pay Status', 'Method', 'Date']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [30, 86, 49] },
+        styles: { fontSize: 8 }
+      });
+
+      doc.save(`ChickNPastil_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchTransactions();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,601 @@
+/* Chick N Pastil Standardized POS Design System */
+:root {
+  --primary-green: #1e5631;
+  --primary-green-hover: #153e23;
+  --primary-green-light: #eaf3ed;
+  --accent-red: #c62828;
+  --bg-light: #f5f8f6;
+  --card-bg: #ffffff;
+  --border-color: #dce7df;
+  --text-dark: #1f2d22;
+  --text-muted: #6b7a6f;
+  --sidebar-width: 220px;
+  --sidebar-collapsed-width: 68px;
+  --topbar-height: 64px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* TOPBAR */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--topbar-height);
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  z-index: 1020;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.topbar-logo {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+}
+
+.user-avatar-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: var(--primary-green-light);
+  color: var(--primary-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.user-avatar-circle:hover {
+  background-color: var(--primary-green);
+  color: #ffffff;
+}
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed;
+  top: var(--topbar-height);
+  bottom: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  background-color: var(--primary-green);
+  color: #ffffff;
+  z-index: 1010;
+  transition: width 0.25s ease, transform 0.25s ease;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 14px;
+  right: -13px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  color: var(--primary-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1015;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: var(--primary-green-light);
+}
+
+.sidebar-nav {
+  list-style: none;
+  padding: 14px 8px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sidebar-nav .nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.sidebar-nav .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.sidebar-nav .nav-link.active,
+.sidebar-nav .subnav a.active {
+  background-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.subnav {
+  list-style: none;
+  padding: 4px 0 4px 12px;
+  margin: 0;
+}
+
+.subnav a {
+  display: block;
+  padding: 7px 12px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.88rem;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.subnav a:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.subnav-chevron {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.subnav-open .subnav-chevron {
+  transform: rotate(180deg);
+}
+
+/* SIDEBAR COLLAPSED (DESKTOP) */
+body.sidebar-collapsed .sidebar {
+  width: var(--sidebar-collapsed-width);
+}
+
+body.sidebar-collapsed .sidebar .nav-text,
+body.sidebar-collapsed .sidebar .subnav-chevron,
+body.sidebar-collapsed .sidebar .subnav {
+  display: none !important;
+}
+
+body.sidebar-collapsed .sidebar-toggle-btn i {
+  transform: rotate(180deg);
+}
+
+/* MAIN CONTENT CONTAINER */
+.main-content {
+  margin-left: var(--sidebar-width);
+  margin-top: var(--topbar-height);
+  padding: 24px 28px;
+  min-height: calc(100vh - var(--topbar-height));
+  transition: margin-left 0.25s ease;
+}
+
+body.sidebar-collapsed .main-content {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* MOBILE RESPONSIVE SIDEBAR */
+@media (max-width: 767.98px) {
+  .sidebar {
+    transform: translateX(-100%);
+    width: 260px;
+  }
+  body.mobile-sidebar-open .sidebar {
+    transform: translateX(0);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.25);
+  }
+  .main-content {
+    margin-left: 0 !important;
+    padding: 16px;
+  }
+}
+
+/* DASHBOARD & POS COMPONENTS */
+.pos-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pos-card:hover {
+  border-color: #bcd1c1;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-top: 4px;
+}
+
+/* CATEGORY PILLS */
+.category-pills {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.cat-pill {
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: 1.5px solid var(--primary-green);
+  background-color: #ffffff;
+  color: var(--primary-green);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.cat-pill:hover,
+.cat-pill.active {
+  background-color: var(--primary-green);
+  color: #ffffff;
+}
+
+/* PRODUCT CARDS */
+.product-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 140px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.product-card:hover:not(.is-unavailable) {
+  border-color: var(--primary-green);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 86, 49, 0.12);
+}
+
+.product-card.is-unavailable {
+  opacity: 0.52;
+  cursor: not-allowed;
+  background-color: #f8faf8;
+  border-style: dashed;
+}
+
+.product-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.product-price {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary-green);
+}
+
+.product-add-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--primary-green);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.product-card:hover:not(.is-unavailable) .product-add-circle {
+  transform: scale(1.1);
+  background-color: var(--primary-green-hover);
+}
+
+.card-qty-stepper {
+  background: var(--primary-green-light);
+  border: 1px solid #c8decb;
+  border-radius: 20px;
+  padding: 3px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(30, 86, 49, 0.08);
+}
+
+.card-qty-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--primary-green);
+  background: #ffffff;
+  color: var(--primary-green);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: bold;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.card-qty-btn:hover {
+  background: var(--primary-green);
+  color: #ffffff;
+}
+
+.card-qty-count {
+  min-width: 20px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--primary-green);
+  font-weight: 700;
+  user-select: none;
+}
+
+.product-card.has-items {
+  border-color: var(--primary-green);
+  background-color: #fbfdfb;
+}
+
+/* CURRENT ORDER CART PANEL */
+.cart-panel {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.order-type-btn {
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border: 1.5px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-dark);
+}
+
+.order-type-btn.active {
+  background: var(--primary-green);
+  color: #ffffff;
+  border-color: var(--primary-green);
+}
+
+.cart-item {
+  border-bottom: 1px solid #edf2ee;
+  padding: 10px 0;
+}
+
+.cart-item:last-child {
+  border-bottom: none;
+}
+
+.qty-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.qty-btn:hover {
+  background: var(--primary-green-light);
+  border-color: var(--primary-green);
+  color: var(--primary-green);
+}
+
+/* MODAL: RESPONSIVE BOTTOM SHEET (MOBILE) vs CENTERED (DESKTOP) */
+@media (max-width: 767.98px) {
+  .responsive-order-modal .modal-dialog {
+    margin: 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: 100%;
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .responsive-order-modal.show .modal-dialog {
+    transform: translateY(0);
+  }
+  .responsive-order-modal .modal-content {
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-order-modal .modal-dialog {
+    max-width: 480px;
+  }
+  .responsive-order-modal .modal-content {
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  }
+}
+
+/* PILL TOGGLE GROUP */
+.option-pill-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.option-pill {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1.5px solid var(--primary-green);
+  background: #ffffff;
+  color: var(--primary-green);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.option-pill.active {
+  background: var(--primary-green);
+  color: #ffffff;
+}
+
+/* TABLE STYLES */
+.custom-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.custom-table thead th {
+  background-color: #f7faf8;
+  color: var(--text-dark);
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.custom-table tbody td {
+  padding: 14px 16px;
+  font-size: 0.92rem;
+  border-bottom: 1px solid #eef3ef;
+  color: #333333;
+  vertical-align: middle;
+}
+
+.custom-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.custom-table tbody tr:hover {
+  background-color: #fafdfa;
+}
+
+/* STATUS BADGES */
+.badge-status {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.badge-completed {
+  background-color: #e6f6ec;
+  color: #1e5631;
+}
+
+.badge-pending {
+  background-color: #fff8e6;
+  color: #b7791f;
+}
+
+.badge-cancelled {
+  background-color: #fde8e8;
+  color: #c53030;
+}
+
+.badge-archived {
+  background-color: #edebe9;
+  color: #616161;
+}
+
+/* THERMAL RECEIPT STYLES */
+.receipt-paper {
+  background: #ffffff;
+  width: 320px;
+  margin: 0 auto;
+  padding: 24px 18px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 13px;
+  color: #111111;
+  border: 1px dashed #cccccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.receipt-divider {
+  border-top: 1px dashed #777777;
+  margin: 10px 0;
+}
+
+.receipt-double-divider {
+  border-top: 2px dashed #333333;
+  margin: 12px 0;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printableReceipt, #printableReceipt * {
+    visibility: visible;
+  }
+  #printableReceipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

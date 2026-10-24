@@ -1,3 +1,6 @@
+let currentSessionUser = null;
+window.getCurrentUser = () => currentSessionUser;
+
 document.addEventListener("DOMContentLoaded", function () {
   // 1. Fetch reusable components from bars.html
   fetch("../../assets/html/bars.html")
@@ -86,6 +89,12 @@ document.addEventListener("DOMContentLoaded", function () {
           return response.json();
         })
         .then((session) => {
+          currentSessionUser = {
+            name: `${session.firstName || ""} ${session.lastName || ""}`.trim(),
+            role: session.role.charAt(0).toUpperCase() + session.role.slice(1),
+            branch: session.branchLocationName,
+            email: session.email,
+          };
           const userName = document.getElementById("topbar-user-name");
           const userRole = document.getElementById("topbar-user-role");
           const branchLocation = document.getElementById("branch-location-name");

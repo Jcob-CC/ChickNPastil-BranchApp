@@ -20,13 +20,14 @@ The repository currently tracks `database.sqlite`, and `.gitignore` does not exc
 
 ## Configuration
 
-Copy `.env.example` to `.env` and set the SMTP credentials if email delivery is enabled:
+Copy `.env.example` to `.env` and set the SMTP credentials if email delivery is enabled. Set a PayMongo secret key to enable POS payment links:
 
 ```env
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-app-password
+PAYMONGO_SECRET_KEY=sk_test_replace-with-your-key
 SESSION_SECRET=replace-with-a-long-random-value
 ```
 
@@ -51,6 +52,12 @@ The sign-in flow includes endpoints for password checking, code verification, an
 | `app/pages/supply/receive_stock.html` | `/supply/receive_stock` | Signed-in users |
 | `app/pages/supply/manage_request.html` | `/supply/manage_request` | Admins and managers |
 | `app/pages/supply/manage_expenses.html` | `/supply/manage_expenses` | Admins and managers |
+| `app/pages/sales/pos/ordering.html` | `/sales/pos/ordering` | Signed-in users |
+| `app/pages/sales/manager/dashboard.html` | `/sales/manager/dashboard` | Admins and managers |
+| `app/pages/sales/manager/menu.html` | `/sales/manager/menu` | Admins and managers |
+| `app/pages/sales/manager/transaction_reports.html` | `/sales/manager/transactions` | Admins and managers |
+| `app/pages/sales/staff/dashboard.html` | `/sales/staff/dashboard` | Branch staff |
+| `app/pages/sales/staff/transactions.html` | `/sales/staff/transactions` | Branch staff |
 
 The user API includes:
 
@@ -59,6 +66,10 @@ The user API includes:
 - `/user/manager/users`, `/user/manager/branches`, and `/user/manager/stock-items` for manager user, branch, and stock-item management.
 
 The supply API is organized under `/supply`: inventory operations use `/inventory`; stock requests and receiving use `/request_stock` and `/receive_stock`; expense requests use `/request_expenses`; and manager workflows use `/manage_request` and `/manage_expenses`. See `routes/user.js` and `routes/supply.js` for the available HTTP methods and endpoint details.
+
+The sales module uses `/sales` for its screens and `/api` for POS menu, order, dashboard, and PayMongo endpoints. Manager pages require an admin or manager account; staff reports and order actions are scoped to the signed-in user's branch. POS screens use the existing root session and branch selection rather than the standalone demo login.
+
+Sales pages are stored in `app/pages/sales/`, sales-specific styles and images in `app/assets/sales/`, server handlers in `controllers/sales/`, and route definitions in `routes/sales.js`. They use the root shared navigation component in `app/assets/html/bars.html` and loader in `app/js/shared/bars.js`. The additive startup migration supplies the default Original/Spicy and Plain/Garlic Rice options only when they are missing. PayMongo endpoints require `PAYMONGO_SECRET_KEY`; GCash payments are marked verified only after the server confirms the linked payment and amount with PayMongo.
 
 Static assets such as stylesheets, scripts, images, and shared HTML are served from `app/`.
 
@@ -69,8 +80,9 @@ Static assets such as stylesheets, scripts, images, and shared HTML are served f
 ├── app/
 │   ├── assets/              # CSS, shared HTML, and images
 │   ├── js/                  # Browser-side JavaScript
-│   └── pages/               # User, supply, and template pages
+│   └── pages/               # User, supply, sales, and template pages
 ├── controllers/
+│   ├── sales/               # Menu, order, dashboard, and payment handlers
 │   ├── supply/              # Inventory, stock, and expense handlers
 │   └── user/                # Login, profile, and manager handlers
 ├── docs/                    # Project notes and reference documents
@@ -86,7 +98,7 @@ Static assets such as stylesheets, scripts, images, and shared HTML are served f
 
 ## Database
 
-`schema.sql` is the authoritative database structure. It defines tables for users and branches, inventory and stock requests (including restock-request status history), expense requests, and menu, order, payment, and receipt data. The `docs/` directory includes project notes and reference documents; these do not replace the schema.
+`schema.sql` is the authoritative base database structure. On startup, `lib/sales_schema.js` applies additive POS compatibility changes to existing menu, order, and payment tables. It preserves existing records and does not run the standalone `POS-main/schema.sql` initializer, which drops and recreates POS tables.
 
 To create a fresh local database, back up any data you need, then remove or move `database.sqlite` and restart the app. The server creates the database file and applies the schema at startup; the new database will not contain user, branch, or inventory records.
 

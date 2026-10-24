@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu Display Management - Chick N Pastil</title>
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/sales/shared/style.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <style>
+    .menu-mgmt-container {
+      max-width: 1150px;
+      margin-left: 0;
+    }
+    .mgmt-box {
+      background: #ffffff;
+      border: 1.5px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    }
+    .section-card {
+      background: #ffffff;
+      border: 1.5px solid var(--border-color);
+      border-radius: 16px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    }
+    .section-header {
+      background-color: #f7faf8;
+      border-bottom: 1.5px solid var(--border-color);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .status-pill-toggle {
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+    .status-available {
+      background-color: #e6f6ec;
+      color: #1e5631;
+    }
+    .status-available:hover {
+      background-color: #d1ebd9;
+    }
+    .status-unavailable {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+    .status-unavailable:hover {
+      background-color: #fecaca;
+    }
+  </style>
+</head>
+<body data-page-header="Menu Display Management">
+
+  <div id="topbar-wrapper"></div>
+  <div class="app-container">
+    <div id="sidebar-wrapper"></div>
+
+  <!-- Main Content Area (left-aligned) -->
+  <main class="main-content">
+    <div class="menu-mgmt-container">
+      
+      <!-- Top Action Bar -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+          <h4 class="fw-bold text-dark mb-1">Menu Display Management</h4>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-success rounded-pill px-3 fw-semibold small" onclick="openAddSectionModal()">
+            <i class="bi bi-folder-plus me-1"></i> Add New Section
+          </button>
+          <button class="btn btn-success rounded-pill px-3 fw-semibold small" style="background-color: var(--primary-green); border-color: var(--primary-green);" onclick="openAddProductModal()">
+            <i class="bi bi-plus-circle me-1"></i> Add New Product
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Creation Panels -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-5">
+          <div class="mgmt-box h-100">
+            <h6 class="fw-bold text-dark small text-uppercase mb-2"><i class="bi bi-plus-square text-success me-1"></i> Quick Create Section</h6>
+            <form onsubmit="handleQuickCreateSection(event)" class="d-flex gap-2">
+              <input type="text" id="quick-section-name" class="form-control form-control-sm" placeholder="Section Name (e.g. Rice Bowls)" required>
+              <button type="submit" class="btn btn-sm btn-success px-3 fw-semibold text-nowrap" style="background-color: var(--primary-green);">
+                Add Section
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="col-md-7">
+          <div class="mgmt-box h-100">
+            <h6 class="fw-bold text-dark small text-uppercase mb-2"><i class="bi bi-bag-plus text-success me-1"></i> Quick Add Product</h6>
+            <form onsubmit="handleQuickCreateProduct(event)" class="row g-2">
+              <div class="col-sm-4">
+                <select id="quick-product-section" class="form-select form-select-sm" required>
+                  <option value="">Select Section...</option>
+                </select>
+              </div>
+              <div class="col-sm-4">
+                <input type="text" id="quick-product-name" class="form-control form-control-sm" placeholder="Product name" required>
+              </div>
+              <div class="col-sm-2">
+                <input type="number" step="0.5" id="quick-product-price" class="form-control form-control-sm" placeholder="Price" required>
+              </div>
+              <div class="col-sm-2">
+                <button type="submit" class="btn btn-sm btn-success w-100 fw-semibold" style="background-color: var(--primary-green);">
+                  Add
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sections & Products Listing Container -->
+      <div id="sections-container">
+        <div class="text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+          Loading menu display items...
+        </div>
+      </div>
+
+    </div>
+  </main>
+  </div>
+
+  <!-- ADD / EDIT SECTION MODAL -->
+  <div class="modal fade" id="sectionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+      <div class="modal-content border-0 p-3 shadow">
+        <div class="modal-header border-0 pb-1">
+          <h5 class="modal-title fw-bold text-dark" id="sectionModalTitle">Rename Section</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form onsubmit="saveSection(event)">
+          <div class="modal-body py-2">
+            <input type="hidden" id="edit-section-id">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-muted">Section Name</label>
+              <input type="text" id="edit-section-name" class="form-control" required>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-1">
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold" style="background-color: var(--primary-green);">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT PRODUCT MODAL -->
+  <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+      <div class="modal-content border-0 p-3 shadow">
+        <div class="modal-header border-0 pb-1">
+          <h5 class="modal-title fw-bold text-dark" id="productModalTitle">Add New Product</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form onsubmit="saveProduct(event)">
+          <div class="modal-body py-2">
+            <input type="hidden" id="edit-product-id">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-muted">Section</label>
+              <select id="edit-product-section" class="form-select" required></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-muted">Product Name</label>
+              <input type="text" id="edit-product-name" class="form-control" placeholder="e.g. Special Jumbo Pastil" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-muted">Description</label>
+              <input type="text" id="edit-product-desc" class="form-control" placeholder="Brief serving description">
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-semibold text-muted">Price (Php)</label>
+                <input type="number" step="0.5" id="edit-product-price" class="form-control fw-bold" placeholder="0.00" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold text-muted">Allow Quantity</label>
+                <select id="edit-product-allow-qty" class="form-select">
+                  <option value="true">Enabled</option>
+                  <option value="false">Disabled</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-1">
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold" style="background-color: var(--primary-green);">
+              Save Product
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Shared Components -->
+  <script src="../../js/shared/bars.js"></script>
+
+  <script>
+    let fullMenu = [];
+
+    async function loadMenuDisplay() {
+      try {
+        const res = await fetch('/api/menu?includeArchived=true');
+        const data = await res.json();
+        if (data.success) {
+          fullMenu = data.sections;
+          renderSections();
+          populateSectionDropdowns();
+        }
+      } catch (err) {
+        console.error('Error loading menu:', err);
+      }
+    }
+
+    function populateSectionDropdowns() {
+      const activeSections = fullMenu.filter(s => !s.is_archived);
+      const optionsHtml = activeSections.map(s => `<option value="${s.section_id}">${s.section_name}</option>`).join('');
+
+      const quickSelect = document.getElementById('quick-product-section');
+      if (quickSelect) quickSelect.innerHTML = `<option value="">Select Section...</option>` + optionsHtml;
+
+      const editSelect = document.getElementById('edit-product-section');
+      if (editSelect) editSelect.innerHTML = optionsHtml;
+    }
+
+    function renderSections() {
+      const container = document.getElementById('sections-container');
+      if (fullMenu.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-muted bg-white rounded-3 border">No menu sections configured yet.</div>`;
+        return;
+      }
+
+      container.innerHTML = fullMenu.map(sec => {
+        const isSecArchived = sec.is_archived;
+        const productsHtml = sec.products.map(p => {
+          return `
+            <tr>
+              <td>
+                <div class="fw-bold text-dark">${p.product_name}</div>
+                <div class="text-muted small">${p.description || '-'}</div>
+              </td>
+              <td class="fw-semibold text-success">Php ${Number(p.price).toFixed(2)}</td>
+              <td>
+                <span class="badge ${p.allow_quantity ? 'bg-light text-dark border' : 'bg-secondary'}">
+                  ${p.allow_quantity ? 'Enabled' : 'Disabled'}
+                </span>
+              </td>
+              <td>
+                <button type="button" class="status-pill-toggle ${p.is_available ? 'status-available' : 'status-unavailable'}" onclick="toggleProductAvailability(${p.product_id})" title="Click to toggle availability">
+                  <i class="bi ${p.is_available ? 'bi-check-circle-fill' : 'bi-x-circle-fill'} me-1"></i>
+                  ${p.is_available ? 'Available' : 'Unavailable'}
+                </button>
+              </td>
+              <td>
+                ${p.is_archived ? '<span class="badge bg-secondary">Archived</span>' : '<span class="badge bg-success-subtle text-success">Active</span>'}
+              </td>
+              <td>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 small" onclick="openEditProductModal(${sec.section_id}, ${p.product_id})">
+                    <i class="bi bi-pencil me-1"></i>Modify
+                  </button>
+                  <button type="button" class="btn btn-sm ${p.is_archived ? 'btn-outline-success' : 'btn-outline-danger'} py-1 px-2 small" onclick="toggleArchiveProduct(${p.product_id}, ${p.is_archived})">
+                    <i class="bi ${p.is_archived ? 'bi-arrow-counterclockwise' : 'bi-archive'} me-1"></i>
+                    ${p.is_archived ? 'Restore' : 'Archive'}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        return `
+          <div class="section-card ${isSecArchived ? 'opacity-75' : ''}">
+            <div class="section-header">
+              <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold text-dark fs-5">${sec.section_name}</span>
+                ${isSecArchived ? '<span class="badge bg-secondary">Archived Section</span>' : ''}
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="openRenameSectionModal(${sec.section_id}, '${sec.section_name.replace(/'/g, "\\'")}')">
+                  <i class="bi bi-pencil-square me-1"></i> Rename
+                </button>
+                <button class="btn btn-sm ${isSecArchived ? 'btn-outline-success' : 'btn-outline-danger'} rounded-pill px-3" onclick="toggleArchiveSection(${sec.section_id}, ${isSecArchived})">
+                  <i class="bi ${isSecArchived ? 'bi-arrow-counterclockwise' : 'bi-archive'} me-1"></i>
+                  ${isSecArchived ? 'Restore Section' : 'Archive Section'}
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table custom-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Value</th>
+                    <th>Qty Selector</th>
+                    <th>Availability</th>
+                    <th>Status</th>
+                    <th style="width: 180px;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${productsHtml.length > 0 ? productsHtml : '<tr><td colspan="6" class="text-center text-muted py-3">No products added in this section.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleQuickCreateSection(e) {
+      e.preventDefault();
+      const input = document.getElementById('quick-section-name');
+      const name = input.value.trim();
+      if (!name) return;
+
+      try {
+        const res = await fetch('/api/menu/section', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ section_name: name })
+        });
+        const data = await res.json();
+        if (data.success) {
+          input.value = '';
+          loadMenuDisplay();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function handleQuickCreateProduct(e) {
+      e.preventDefault();
+      const sectionId = document.getElementById('quick-product-section').value;
+      const name = document.getElementById('quick-product-name').value.trim();
+      const price = document.getElementById('quick-product-price').value;
+
+      try {
+        const res = await fetch('/api/menu/product', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            section_id: sectionId,
+            product_name: name,
+            price: price,
+            allow_quantity: true
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('quick-product-name').value = '';
+          document.getElementById('quick-product-price').value = '';
+          loadMenuDisplay();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function openAddSectionModal() {
+      document.getElementById('sectionModalTitle').textContent = 'Add New Section';
+      document.getElementById('edit-section-id').value = '';
+      document.getElementById('edit-section-name').value = '';
+      new bootstrap.Modal(document.getElementById('sectionModal')).show();
+    }
+
+    function openRenameSectionModal(id, currentName) {
+      document.getElementById('sectionModalTitle').textContent = 'Rename Section';
+      document.getElementById('edit-section-id').value = id;
+      document.getElementById('edit-section-name').value = currentName;
+      new bootstrap.Modal(document.getElementById('sectionModal')).show();
+    }
+
+    async function saveSection(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-section-id').value;
+      const name = document.getElementById('edit-section-name').value.trim();
+
+      const url = id ? `/api/menu/section/${id}` : '/api/menu/section';
+      const method = id ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ section_name: name })
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('sectionModal')).hide();
+          loadMenuDisplay();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function toggleArchiveSection(id, currentlyArchived) {
+      const verb = currentlyArchived ? 'restore' : 'archive';
+      if (!confirm(`Are you sure you want to ${verb} this section? (Archived sections are hidden from staff ordering but retained in reports)`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/menu/section/${id}/archive`, { method: 'PUT' });
+        const data = await res.json();
+        if (data.success) {
+          loadMenuDisplay();
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function openAddProductModal() {
+      document.getElementById('productModalTitle').textContent = 'Add New Product';
+      document.getElementById('edit-product-id').value = '';
+      document.getElementById('edit-product-name').value = '';
+      document.getElementById('edit-product-desc').value = '';
+      document.getElementById('edit-product-price').value = '';
+      document.getElementById('edit-product-allow-qty').value = 'true';
+      new bootstrap.Modal(document.getElementById('productModal')).show();
+    }
+
+    function openEditProductModal(sectionId, productId) {
+      let found = null;
+      for (const s of fullMenu) {
+        found = s.products.find(p => p.product_id === productId);
+        if (found) break;
+      }
+      if (!found) return;
+
+      document.getElementById('productModalTitle').textContent = 'Modify Product';
+      document.getElementById('edit-product-id').value = found.product_id;
+      document.getElementById('edit-product-section').value = found.section_id;
+      document.getElementById('edit-product-name').value = found.product_name;
+      document.getElementById('edit-product-desc').value = found.description || '';
+      document.getElementById('edit-product-price').value = found.price;
+      document.getElementById('edit-product-allow-qty').value = found.allow_quantity ? 'true' : 'false';
+
+      new bootstrap.Modal(document.getElementById('productModal')).show();
+    }
+
+    async function saveProduct(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-product-id').value;
+      const sectionId = document.getElementById('edit-product-section').value;
+      const name = document.getElementById('edit-product-name').value.trim();
+      const desc = document.getElementById('edit-product-desc').value.trim();
+      const price = document.getElementById('edit-product-price').value;
+      const allowQty = document.getElementById('edit-product-allow-qty').value === 'true';
+
+      const url = id ? `/api/menu/product/${id}` : '/api/menu/product';
+      const method = id ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            section_id: sectionId,
+            product_name: name,
+            description: desc,
+            price: price,
+            allow_quantity: allowQty
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
+          loadMenuDisplay();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function toggleProductAvailability(id) {
+      try {
+        const res = await fetch(`/api/menu/product/${id}/availability`, { method: 'PUT' });
+        const data = await res.json();
+        if (data.success) {
+          loadMenuDisplay();
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function toggleArchiveProduct(id, currentlyArchived) {
+      const verb = currentlyArchived ? 'restore' : 'archive';
+      if (!confirm(`Are you sure you want to ${verb} this product?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/menu/product/${id}/archive`, { method: 'PUT' });
+        const data = await res.json();
+        if (data.success) {
+          loadMenuDisplay();
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadMenuDisplay);
+  </script>
+</body>
+</html>
