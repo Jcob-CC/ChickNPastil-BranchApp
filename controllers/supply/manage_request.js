@@ -117,31 +117,44 @@ const updateStatus = (req, res) => {
     }
 
     try {
-        const request = db.prepare(`
-            SELECT status FROM branch_restock_request WHERE id = ?
-        `).get(requestId);
-        if (!request) return res.status(404).json({ message: 'Request not found.' });
-        if (request.status === 'cancelled') {
+        const updateStatusWithHistory = db.transaction(() => {
+            const request = db.prepare(`
+                SELECT status FROM branch_restock_request WHERE id = ?
+            `).get(requestId);
+            if (!request) return 'not-found';
+            if (request.status === 'cancelled') return 'cancelled';
+
+            const noteColumn = statusNoteColumns[status];
+            const cleanNote = typeof note === 'string' && note.trim() ? note.trim() : null;
+            const updateRequest = noteColumn
+                ? db.prepare(`
+                    UPDATE branch_restock_request
+                    SET status = ?, ${noteColumn} = ?
+                    WHERE id = ? AND status = ?
+                `)
+                : db.prepare(`
+                    UPDATE branch_restock_request
+                    SET status = ?
+                    WHERE id = ? AND status = ?
+                `);
+            const result = noteColumn
+                ? updateRequest.run(status, cleanNote, requestId, request.status)
+                : updateRequest.run(status, requestId, request.status);
+            if (result.changes === 0) return 'conflict';
+
+            db.prepare(`
+                INSERT INTO branch_restock_request_status_history
+                    (branch_restock_request_id, status, note, user_id)
+                VALUES (?, ?, ?, ?)
+            `).run(requestId, status, noteColumn ? cleanNote : null, req.session.user.id);
+            return 'updated';
+        });
+        const result = updateStatusWithHistory();
+        if (result === 'not-found') return res.status(404).json({ message: 'Request not found.' });
+        if (result === 'cancelled') {
             return res.status(409).json({ message: 'Cancelled requests cannot be changed.' });
         }
-
-        const noteColumn = statusNoteColumns[status];
-        const updateRequest = noteColumn
-            ? db.prepare(`
-                UPDATE branch_restock_request
-                SET status = ?, ${noteColumn} = ?
-                WHERE id = ? AND status = ?
-            `)
-            : db.prepare(`
-                UPDATE branch_restock_request
-                SET status = ?
-                WHERE id = ? AND status = ?
-            `);
-        const result = noteColumn
-            ? updateRequest.run(status, typeof note === 'string' && note.trim() ? note.trim() : null, requestId, request.status)
-            : updateRequest.run(status, requestId, request.status);
-
-        if (result.changes === 0) {
+        if (result === 'conflict') {
             return res.status(409).json({ message: 'This request has already changed status. Refresh and try again.' });
         }
 

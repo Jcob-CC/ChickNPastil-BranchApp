@@ -59,6 +59,15 @@ CREATE TABLE IF NOT EXISTS branch_restock_request (
     status TEXT NOT NULL DEFAULT 'pending'
 );
 
+CREATE TABLE IF NOT EXISTS branch_restock_request_status_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    branch_restock_request_id INTEGER NOT NULL REFERENCES branch_restock_request(id) ON DELETE CASCADE,
+    status TEXT NOT NULL,
+    note TEXT,
+    date_and_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    user_id INTEGER REFERENCES "user"(id) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS branch_restock_request_item (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     branch_restock_request_id INTEGER NOT NULL REFERENCES branch_restock_request(id) ON DELETE CASCADE,

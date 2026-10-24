@@ -1,8 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const state = { requests: [], activeRequestId: null, staffName: '' };
+    const pageSize = 10;
+    const state = { requests: [], activeRequestId: null, staffName: '', page: 1, deliveryPage: 1 };
     const tableBody = document.getElementById('requestsTableBody');
+    const deliveryTableBody = document.getElementById('deliveryRequestsTableBody');
+    const pagination = document.getElementById('requestsPagination');
+    const deliveryPagination = document.getElementById('deliveryRequestsPagination');
     const message = document.getElementById('requestMessage');
     const viewModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('viewRequestModal'));
+    const historyModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('requestHistoryModal'));
     const cancelModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('cancelRequestModal'));
     const receiveModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('receiveDeliveryModal'));
 
@@ -42,14 +47,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return cell;
     };
 
-    const showEmptyRow = (text) => {
+    const showEmptyRow = (text, body = tableBody) => {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 5;
+        cell.colSpan = 6;
         cell.className = 'text-center text-secondary py-4';
         cell.textContent = text;
         row.appendChild(cell);
-        tableBody.appendChild(row);
+        body.appendChild(row);
     };
 
     const createActionButton = (label, action, className, icon) => {
@@ -64,33 +69,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return button;
     };
 
-    const renderRequests = () => {
-        tableBody.replaceChildren();
-        const requestCount = state.requests.length;
-        const statusCounts = state.requests.reduce((counts, request) => {
-            counts[request.status] = (counts[request.status] || 0) + 1;
-            return counts;
-        }, {});
-        Object.entries({
-            pending: 'pendingRequestCount',
-            preparing: 'preparingRequestCount',
-            in_transit: 'inTransitRequestCount',
-            received: 'receivedRequestCount',
-            rejected: 'rejectedRequestCount',
-            cancelled: 'cancelledRequestCount',
-        }).forEach(([status, elementId]) => {
-            document.getElementById(elementId).textContent = statusCounts[status] || 0;
-        });
-        document.getElementById('requestCount').textContent =
-            `${requestCount} ${requestCount === 1 ? 'request' : 'requests'}`;
-        document.getElementById('showingRequests').textContent = `Showing ${requestCount} requests`;
-
-        if (!requestCount) {
-            showEmptyRow('You have not submitted any stock requests yet.');
+    const renderRequestRows = (requests, body, emptyMessage) => {
+        body.replaceChildren();
+        if (requests.length === 0) {
+            showEmptyRow(emptyMessage, body);
             return;
         }
-
-        state.requests.forEach((request) => {
+        requests.forEach((request) => {
             const row = document.createElement('tr');
             row.dataset.requestId = request.id;
             const idCell = document.createElement('th');
@@ -98,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
             idCell.className = 'ps-3';
             idCell.textContent = `REQ-${request.id}`;
             row.appendChild(idCell);
+            appendCell(row, request.requesterName || 'Unknown requester');
             appendCell(row, formatDate(request.dateAndTime), 'text-nowrap');
             const totalQuantity = request.items.reduce((total, item) => total + Number(item.quantity), 0);
             appendCell(row, `${request.items.length} ${request.items.length === 1 ? 'item' : 'items'} · ${formatQuantity(totalQuantity)} units`);
@@ -120,6 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const viewButton = createActionButton('View', 'view', 'btn-outline-secondary me-1', 'bi-eye');
             viewButton.dataset.requestId = request.id;
             actions.appendChild(viewButton);
+            const historyButton = createActionButton('History', 'history', 'btn-outline-secondary me-1', 'bi-clock-history');
+            historyButton.dataset.requestId = request.id;
+            actions.appendChild(historyButton);
             if (request.status === 'pending') {
                 const cancelButton = createActionButton('Cancel', 'cancel', 'btn-outline-danger', 'bi-x-circle');
                 cancelButton.dataset.requestId = request.id;
@@ -130,15 +119,110 @@ document.addEventListener('DOMContentLoaded', () => {
                 receiveButton.dataset.requestId = request.id;
                 actions.appendChild(receiveButton);
             }
-            tableBody.appendChild(row);
+            body.appendChild(row);
         });
+    };
+
+    const renderPagination = (list, pageKey, paginationElement, summaryElement) => {
+        const pageCount = Math.ceil(list.length / pageSize);
+        state[pageKey] = Math.min(state[pageKey], Math.max(pageCount, 1));
+        const start = list.length === 0 ? 0 : ((state[pageKey] - 1) * pageSize) + 1;
+        const end = Math.min(state[pageKey] * pageSize, list.length);
+        summaryElement.textContent =
+            `Showing ${start}–${end} of ${list.length} ${list.length === 1 ? 'request' : 'requests'}`;
+
+        paginationElement.replaceChildren();
+        const lastPage = Math.max(pageCount, 1);
+        const addPageButton = (label, page, disabled, active = false) => {
+            const item = document.createElement('li');
+            item.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+            if (active) item.setAttribute('aria-current', 'page');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'page-link';
+            button.textContent = label;
+            button.dataset.page = page;
+            button.dataset.pageKey = pageKey;
+            button.disabled = disabled;
+            item.appendChild(button);
+            paginationElement.appendChild(item);
+        };
+        addPageButton('Previous', Math.max(state[pageKey] - 1, 1), state[pageKey] <= 1);
+        for (let page = 1; page <= lastPage; page += 1) {
+            addPageButton(String(page), page, false, page === state[pageKey]);
+        }
+        addPageButton('Next', Math.min(state[pageKey] + 1, lastPage), state[pageKey] >= lastPage);
+        return list.slice((state[pageKey] - 1) * pageSize, state[pageKey] * pageSize);
+    };
+
+    const renderRequests = () => {
+        const statusCounts = state.requests.reduce((counts, request) => {
+            counts[request.status] = (counts[request.status] || 0) + 1;
+            return counts;
+        }, {});
+        Object.entries({
+            pending: 'pendingRequestCount',
+            preparing: 'preparingRequestCount',
+            in_transit: 'inTransitRequestCount',
+            received: 'receivedRequestCount',
+            rejected: 'rejectedRequestCount',
+            cancelled: 'cancelledRequestCount',
+        }).forEach(([status, elementId]) => {
+            document.getElementById(elementId).textContent = statusCounts[status] || 0;
+        });
+
+        const deliveryRequests = state.requests.filter((request) =>
+            request.status === 'preparing' ||
+            request.status === 'in_transit' ||
+            request.status === 'received'
+        );
+        const otherRequests = state.requests.filter((request) =>
+            request.status !== 'preparing' &&
+            request.status !== 'in_transit' &&
+            request.status !== 'received'
+        );
+        document.getElementById('deliveryRequestCount').textContent =
+            `${deliveryRequests.length} ${deliveryRequests.length === 1 ? 'request' : 'requests'}`;
+        document.getElementById('requestCount').textContent =
+            `${otherRequests.length} ${otherRequests.length === 1 ? 'request' : 'requests'}`;
+
+        renderRequestRows(
+            renderPagination(
+                deliveryRequests,
+                'deliveryPage',
+                deliveryPagination,
+                document.getElementById('showingDeliveryRequests'),
+            ),
+            deliveryTableBody,
+            'No requests are currently preparing, in transit, or received.',
+        );
+        renderRequestRows(
+            renderPagination(
+                otherRequests,
+                'page',
+                pagination,
+                document.getElementById('showingRequests'),
+            ),
+            tableBody,
+            'You have not submitted any other stock requests.',
+        );
     };
 
     const getActiveRequest = () => state.requests.find((request) => request.id === state.activeRequestId);
 
+    const handlePaginationClick = (event) => {
+        const button = event.target.closest('[data-page]');
+        if (!button || button.disabled) return;
+        state[button.dataset.pageKey] = Number(button.dataset.page);
+        renderRequests();
+    };
+    pagination.addEventListener('click', handlePaginationClick);
+    deliveryPagination.addEventListener('click', handlePaginationClick);
+
     const showRequestDetails = (request) => {
         document.getElementById('viewRequestSubtitle').textContent =
             `REQ-${request.id} · ${getStatusLabel(request.status)}`;
+        document.getElementById('viewRequestRequester').textContent = request.requesterName || 'Unknown requester';
         document.getElementById('viewRequestDate').textContent = formatDate(request.dateAndTime);
         document.getElementById('viewRequestNote').textContent = request.note || 'No note provided.';
         const rows = document.getElementById('viewRequestItems');
@@ -154,6 +238,75 @@ document.addEventListener('DOMContentLoaded', () => {
             rows.appendChild(row);
         });
         viewModal.show();
+    };
+
+    const showRequestHistory = (request) => {
+        document.getElementById('requestHistorySubtitle').textContent = `REQ-${request.id}`;
+        const timeline = document.getElementById('requestHistoryTimeline');
+        timeline.replaceChildren();
+        if (!request.statusHistory || request.statusHistory.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'text-center rounded-3 border bg-light py-5 px-3';
+            const icon = document.createElement('i');
+            icon.className = 'bi bi-clock-history fs-2 text-secondary';
+            icon.setAttribute('aria-hidden', 'true');
+            const message = document.createElement('p');
+            message.className = 'text-secondary mb-0 mt-2';
+            message.textContent = 'No status history is available yet.';
+            emptyState.append(icon, message);
+            timeline.appendChild(emptyState);
+        } else {
+            const statusStyles = {
+                pending: { color: 'text-warning-emphasis', background: 'bg-warning-subtle', icon: 'bi-hourglass-split' },
+                preparing: { color: 'text-primary', background: 'bg-primary-subtle', icon: 'bi-box-seam' },
+                in_transit: { color: 'text-info-emphasis', background: 'bg-info-subtle', icon: 'bi-truck' },
+                received: { color: 'text-success', background: 'bg-success-subtle', icon: 'bi-check-lg' },
+                rejected: { color: 'text-danger', background: 'bg-danger-subtle', icon: 'bi-x-lg' },
+                cancelled: { color: 'text-secondary', background: 'bg-secondary-subtle', icon: 'bi-slash-circle' },
+            };
+            request.statusHistory.forEach((entry, index) => {
+                const item = document.createElement('article');
+                item.className = `position-relative border-start ms-3 ps-4 ${index === request.statusHistory.length - 1 ? 'pb-0' : 'pb-4'}`;
+
+                const style = statusStyles[entry.status] || statusStyles.pending;
+                const marker = document.createElement('span');
+                marker.className = `position-absolute top-0 start-0 translate-middle ms-0 rounded-circle d-flex align-items-center justify-content-center ${style.color} ${style.background}`;
+                marker.style.width = '2rem';
+                marker.style.height = '2rem';
+                marker.setAttribute('aria-hidden', 'true');
+                const markerIcon = document.createElement('i');
+                markerIcon.className = `bi ${style.icon}`;
+                marker.appendChild(markerIcon);
+
+                const card = document.createElement('div');
+                card.className = 'card border-0 shadow-sm';
+                const body = document.createElement('div');
+                body.className = 'card-body p-3';
+                const heading = document.createElement('div');
+                heading.className = 'd-flex flex-wrap align-items-center justify-content-between gap-2 mb-2';
+                const status = document.createElement('h3');
+                status.className = 'h6 mb-0';
+                status.textContent = getStatusLabel(entry.status);
+                const date = document.createElement('time');
+                date.className = 'small text-secondary';
+                if (entry.dateAndTime) {
+                    date.dateTime = entry.dateAndTime.replace(' ', 'T');
+                    date.textContent = formatDate(entry.dateAndTime);
+                } else {
+                    date.textContent = 'Date not recorded';
+                }
+                heading.append(status, date);
+
+                const note = document.createElement('p');
+                note.className = `small mb-0 ${entry.note ? 'text-body' : 'text-secondary'}`;
+                note.textContent = entry.note || 'No note provided for this status.';
+                body.append(heading, note);
+                card.appendChild(body);
+                item.append(marker, card);
+                timeline.appendChild(item);
+            });
+        }
+        historyModal.show();
     };
 
     const showReceiveForm = (request) => {
@@ -222,11 +375,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await sendRequest('/supply/receive_stock/data');
         state.requests = data.requests;
         state.staffName = data.staffName;
-        document.getElementById('branchName').textContent = `${data.branchName} · requests and deliveries`;
         renderRequests();
     };
 
-    tableBody.addEventListener('click', (event) => {
+    const handleRequestAction = (event) => {
         const button = event.target.closest('[data-action]');
         if (!button) return;
         const requestId = Number(button.dataset.requestId);
@@ -234,12 +386,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!request) return;
         state.activeRequestId = requestId;
         if (button.dataset.action === 'view') showRequestDetails(request);
+        if (button.dataset.action === 'history') showRequestHistory(request);
         if (button.dataset.action === 'cancel') {
             document.getElementById('cancelRequestSubtitle').textContent = `REQ-${request.id}`;
             cancelModal.show();
         }
         if (button.dataset.action === 'receive') showReceiveForm(request);
-    });
+    };
+    tableBody.addEventListener('click', handleRequestAction);
+    deliveryTableBody.addEventListener('click', handleRequestAction);
 
     document.getElementById('confirmCancelRequest').addEventListener('click', async (event) => {
         const button = event.currentTarget;
@@ -303,7 +458,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadRequests().catch((error) => {
         showMessage(error.message, 'danger');
-        tableBody.replaceChildren();
-        showEmptyRow('Unable to load branch requests.');
+        renderRequestRows([], deliveryTableBody, 'Unable to load branch requests.');
+        renderRequestRows([], tableBody, 'Unable to load branch requests.');
+        document.getElementById('deliveryRequestCount').textContent = 'Unable to load requests';
+        document.getElementById('requestCount').textContent = 'Unable to load requests';
+        document.getElementById('showingDeliveryRequests').textContent = '';
+        document.getElementById('showingRequests').textContent = '';
+        deliveryPagination.replaceChildren();
+        pagination.replaceChildren();
     });
 });

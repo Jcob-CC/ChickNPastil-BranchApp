@@ -86,7 +86,7 @@ Static assets such as stylesheets, scripts, images, and shared HTML are served f
 
 ## Database
 
-`schema.sql` is the authoritative database structure. It defines tables for users and branches, inventory and stock requests, expense requests, and menu, order, payment, and receipt data. The `docs/` directory includes project notes and reference documents; these do not replace the schema.
+`schema.sql` is the authoritative database structure. It defines tables for users and branches, inventory and stock requests (including restock-request status history), expense requests, and menu, order, payment, and receipt data. The `docs/` directory includes project notes and reference documents; these do not replace the schema.
 
 To create a fresh local database, back up any data you need, then remove or move `database.sqlite` and restart the app. The server creates the database file and applies the schema at startup; the new database will not contain user, branch, or inventory records.
 

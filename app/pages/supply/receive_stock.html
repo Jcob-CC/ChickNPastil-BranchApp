@@ -14,16 +14,6 @@
     <div id="sidebar-wrapper"></div>
     <main class="main-content">
       <div class="container-fluid py-4">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
-            <div>
-              <h1 class="h4 mb-0">Requisition fulfillment</h1>
-              <p class="small text-secondary mb-0" id="branchName">Branch requests and deliveries</p>
-            </div>
-          </div>
-        </div>
-
         <div class="alert d-none" id="requestMessage" role="alert" aria-live="polite"></div>
         <section class="row g-3 mb-4" aria-label="Request counts by status" aria-live="polite">
           <div class="col-6 col-md-4 col-xl-2">
@@ -75,9 +65,34 @@
             </article>
           </div>
         </section>
+        <section class="card border-0 shadow-sm mb-4" aria-labelledby="deliveryRequestsHeading" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
+          <div class="card-header border-0 bg-transparent d-flex flex-wrap align-items-center justify-content-between gap-2 pt-3">
+            <h2 class="h5 mb-0" id="deliveryRequestsHeading"><i class="bi bi-box-seam fs-3 text-primary" aria-hidden="true"></i> Processing requests</h2>
+            <span class="small text-secondary" id="deliveryRequestCount">Loading requests…</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="ps-3">Request</th>
+                  <th scope="col">Requested by</th>
+                  <th scope="col">Submitted</th>
+                  <th scope="col">Items</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-end pe-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="deliveryRequestsTableBody"></tbody>
+            </table>
+          </div>
+          <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span class="small text-secondary" id="showingDeliveryRequests"></span>
+            <nav aria-label="Preparing, in-transit, and received request pages"><ul class="pagination pagination-sm mb-0" id="deliveryRequestsPagination"></ul></nav>
+          </div>
+        </section>
         <section class="card border-0 shadow-sm" aria-labelledby="branchRequestsHeading" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
           <div class="card-header border-0 bg-transparent d-flex flex-wrap align-items-center justify-content-between gap-2 pt-3">
-            <h2 class="h5 mb-0" id="branchRequestsHeading">My requests</h2>
+            <h2 class="h5 mb-0" id="branchRequestsHeading"><i class="bi bi-hourglass-split fs-3 text-warning-emphasis" aria-hidden="true"></i> Pending requests</h2>
             <span class="small text-secondary" id="requestCount">Loading requests…</span>
           </div>
           <div class="table-responsive">
@@ -85,6 +100,7 @@
               <thead class="table-light">
                 <tr>
                   <th scope="col" class="ps-3">Request</th>
+                  <th scope="col">Requested by</th>
                   <th scope="col">Submitted</th>
                   <th scope="col">Items</th>
                   <th scope="col">Status</th>
@@ -94,7 +110,10 @@
               <tbody id="requestsTableBody"></tbody>
             </table>
           </div>
-          <div class="card-footer bg-white"><span class="small text-secondary" id="showingRequests"></span></div>
+          <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span class="small text-secondary" id="showingRequests"></span>
+            <nav aria-label="Request pages"><ul class="pagination pagination-sm mb-0" id="requestsPagination"></ul></nav>
+          </div>
         </section>
       </div>
     </main>
@@ -109,6 +128,7 @@
         </div>
         <div class="modal-body">
           <div class="row g-3 mb-3">
+            <div class="col-sm-6"><span class="small text-secondary d-block">Requested by</span><strong id="viewRequestRequester"></strong></div>
             <div class="col-sm-6"><span class="small text-secondary d-block">Submitted</span><strong id="viewRequestDate"></strong></div>
             <div class="col-sm-6"><span class="small text-secondary d-block">Request note</span><strong id="viewRequestNote"></strong></div>
           </div>
@@ -118,6 +138,21 @@
               <tbody id="viewRequestItems"></tbody>
             </table>
           </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="requestHistoryModal" tabindex="-1" aria-labelledby="requestHistoryModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div><h2 class="modal-title fs-5" id="requestHistoryModalTitle">Status history</h2><p class="small text-secondary mb-0 mt-1" id="requestHistorySubtitle"></p></div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="requestHistoryTimeline" aria-label="Request status timeline"></div>
         </div>
         <div class="modal-footer"><button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Close</button></div>
       </div>
@@ -166,7 +201,7 @@
           </div>
           <div class="modal-footer">
             <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-success" type="submit" id="saveReceipt"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Save receipt to inventory</button>
+            <button class="btn btn-success" type="submit" id="saveReceipt"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Save to inventory</button>
           </div>
         </form>
       </div>

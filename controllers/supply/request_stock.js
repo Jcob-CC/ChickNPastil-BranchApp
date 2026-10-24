@@ -76,6 +76,12 @@ const createRequest = (req, res) => {
         requestItems.forEach((item, index) => {
             addRequestItem.run(requestResult.lastInsertRowid, stockItemIds[index], item.quantity);
         });
+        db.prepare(`
+            INSERT INTO branch_restock_request_status_history
+                (branch_restock_request_id, status, note, date_and_time, user_id)
+            SELECT id, status, note, date_and_time, user_id
+            FROM branch_restock_request WHERE id = ?
+        `).run(requestResult.lastInsertRowid);
         return requestResult.lastInsertRowid;
     });
 

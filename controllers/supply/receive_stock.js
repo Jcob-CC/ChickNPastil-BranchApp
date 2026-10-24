@@ -10,10 +10,13 @@ const getRequests = (req, res) => {
         const rows = db.prepare(`
             SELECT r.id, r.date_and_time, r.status, r.note, r.preparation_note,
                    r.transit_note, r.rejection_note,
+                   requester.first_name AS requester_first_name,
+                   requester.last_name AS requester_last_name,
                    receipt.date_and_time AS received_at, receipt.note AS receiving_note,
                    i.id AS request_item_id, g.id AS item_id, g.name AS item_name,
                    g.unit_type, i.quantity
             FROM branch_restock_request r
+            JOIN "user" requester ON requester.id = r.user_id
             LEFT JOIN branch_restock_request_item i ON i.branch_restock_request_id = r.id
             LEFT JOIN general_stock_item g ON g.id = i.general_stock_item_id
             LEFT JOIN branch_stock_received_log receipt ON receipt.branch_restock_request_id = r.id
@@ -28,6 +31,7 @@ const getRequests = (req, res) => {
                     id: row.id,
                     dateAndTime: row.date_and_time,
                     status: row.status,
+                    requesterName: [row.requester_first_name, row.requester_last_name].filter(Boolean).join(' '),
                     note: row.note,
                     preparationNote: row.preparation_note,
                     transitNote: row.transit_note,
@@ -44,6 +48,27 @@ const getRequests = (req, res) => {
                     name: row.item_name,
                     unitType: row.unit_type,
                     quantity: row.quantity,
+                });
+            }
+        });
+
+        const statusHistory = db.prepare(`
+            SELECT history.id, history.branch_restock_request_id, history.status,
+                   history.note, history.date_and_time
+            FROM branch_restock_request_status_history history
+            JOIN branch_restock_request request
+                ON request.id = history.branch_restock_request_id
+            WHERE request.branch_location_id = ?
+            ORDER BY history.date_and_time IS NULL, datetime(history.date_and_time), history.id
+        `).all(req.session.user.branchLocationId);
+        statusHistory.forEach((entry) => {
+            const request = requestsById.get(entry.branch_restock_request_id);
+            if (request) {
+                if (!request.statusHistory) request.statusHistory = [];
+                request.statusHistory.push({
+                    status: entry.status,
+                    note: entry.note,
+                    dateAndTime: entry.date_and_time,
                 });
             }
         });
@@ -66,11 +91,22 @@ const cancelRequest = (req, res) => {
     }
 
     try {
-        const result = db.prepare(`
-            UPDATE branch_restock_request
-            SET status = 'cancelled'
-            WHERE id = ? AND branch_location_id = ? AND status = 'pending'
-        `).run(requestId, req.session.user.branchLocationId);
+        const cancelRequestWithHistory = db.transaction(() => {
+            const result = db.prepare(`
+                UPDATE branch_restock_request
+                SET status = 'cancelled'
+                WHERE id = ? AND branch_location_id = ? AND status = 'pending'
+            `).run(requestId, req.session.user.branchLocationId);
+            if (result.changes > 0) {
+                db.prepare(`
+                    INSERT INTO branch_restock_request_status_history
+                        (branch_restock_request_id, status, user_id)
+                    VALUES (?, 'cancelled', ?)
+                `).run(requestId, req.session.user.id);
+            }
+            return result;
+        });
+        const result = cancelRequestWithHistory();
         if (result.changes === 0) {
             const request = db.prepare(`
                 SELECT status FROM branch_restock_request
@@ -192,6 +228,12 @@ const receiveDelivery = (req, res) => {
         db.prepare(`
             UPDATE branch_restock_request SET status = 'received' WHERE id = ?
         `).run(requestId);
+        db.prepare(`
+            INSERT INTO branch_restock_request_status_history
+                (branch_restock_request_id, status, note, date_and_time, user_id)
+            SELECT branch_restock_request_id, 'received', note, date_and_time, user_id
+            FROM branch_stock_received_log WHERE id = ?
+        `).run(receiptResult.lastInsertRowid);
         return 'saved';
     });
 
