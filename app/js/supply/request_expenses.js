@@ -1,5 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const state = { stockItems: [], requestedStockItems: [], otherItems: [], pendingCompletion: null };
+    const pageSize = 10;
+    const state = {
+        stockItems: [],
+        requestedStockItems: [],
+        otherItems: [],
+        pendingCompletion: null,
+        requests: [],
+        approvedPage: 1,
+        otherPage: 1,
+    };
     const expenseRows = document.getElementById('expenseItems');
     const catalogRows = document.getElementById('catalogItems');
     const expenseForm = document.getElementById('expenseForm');
@@ -8,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitButton = document.getElementById('submitExpense');
     const expenseRequestRows = document.getElementById('expenseRequestRows');
     const approvedExpenseRequestRows = document.getElementById('approvedExpenseRequestRows');
+    const approvedExpenseRequestPagination = document.getElementById('approvedExpenseRequestPagination');
+    const showingApprovedExpenseRequests = document.getElementById('showingApprovedExpenseRequests');
+    const expenseRequestPagination = document.getElementById('expenseRequestPagination');
+    const showingExpenseRequests = document.getElementById('showingExpenseRequests');
     const expenseRequestModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('expenseRequestModal'));
     const expenseDetailsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('expenseDetailsModal'));
     const completionModalElement = document.getElementById('completeExpenseModal');
@@ -113,7 +126,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const renderRequestPagination = (requests, pageKey, paginationElement, summaryElement, requestLabel) => {
+        const pageCount = Math.ceil(requests.length / pageSize);
+        state[pageKey] = Math.min(state[pageKey], Math.max(pageCount, 1));
+        const start = requests.length === 0 ? 0 : ((state[pageKey] - 1) * pageSize) + 1;
+        const end = Math.min(state[pageKey] * pageSize, requests.length);
+        summaryElement.textContent =
+            `Showing ${start}–${end} of ${requests.length} ${requests.length === 1 ? requestLabel : `${requestLabel}s`}`;
+
+        paginationElement.replaceChildren();
+        const lastPage = Math.max(pageCount, 1);
+        const addPageButton = (label, page, disabled, active = false) => {
+            const item = document.createElement('li');
+            item.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+            if (active) item.setAttribute('aria-current', 'page');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'page-link';
+            button.textContent = label;
+            button.dataset.page = page;
+            button.disabled = disabled;
+            item.appendChild(button);
+            paginationElement.appendChild(item);
+        };
+        addPageButton('Previous', Math.max(state[pageKey] - 1, 1), state[pageKey] <= 1);
+        for (let page = 1; page <= lastPage; page += 1) {
+            addPageButton(String(page), page, false, page === state[pageKey]);
+        }
+        addPageButton('Next', Math.min(state[pageKey] + 1, lastPage), state[pageKey] >= lastPage);
+        return requests.slice((state[pageKey] - 1) * pageSize, state[pageKey] * pageSize);
+    };
+
     const renderRequests = (requests) => {
+        state.requests = requests;
         const approvedRequests = requests.filter((request) => request.status === 'approved');
         const otherRequests = requests.filter((request) => request.status !== 'approved');
         document.getElementById('expenseRequestCount').textContent =
@@ -121,16 +166,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('approvedExpenseRequestCount').textContent =
             `${approvedRequests.length} ${approvedRequests.length === 1 ? 'approved request' : 'approved requests'}`;
         renderRequestRows(
-            otherRequests,
+            renderRequestPagination(otherRequests, 'otherPage', expenseRequestPagination, showingExpenseRequests, 'request'),
             expenseRequestRows,
             'No pending, rejected, or other requests yet.',
         );
         renderRequestRows(
-            approvedRequests,
+            renderRequestPagination(
+                approvedRequests,
+                'approvedPage',
+                approvedExpenseRequestPagination,
+                showingApprovedExpenseRequests,
+                'approved request',
+            ),
             approvedExpenseRequestRows,
             'No approved expense requests yet.',
         );
     };
+
+    const handlePaginationClick = (event, pageKey) => {
+        const button = event.target.closest('button[data-page]');
+        if (!button || button.disabled) return;
+        state[pageKey] = Number(button.dataset.page);
+        renderRequests(state.requests);
+    };
+
+    expenseRequestPagination.addEventListener('click', (event) => handlePaginationClick(event, 'otherPage'));
+    approvedExpenseRequestPagination.addEventListener('click', (event) => handlePaginationClick(event, 'approvedPage'));
 
     const renderRequestDetails = (request, items) => {
         document.getElementById('expenseDetailsTitle').textContent = `Expense request #${request.id}`;
@@ -516,5 +577,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('approvedExpenseRequestCount').textContent = 'Unable to load approved requests';
         renderRequestRows([], expenseRequestRows, 'Unable to load expense requests.');
         renderRequestRows([], approvedExpenseRequestRows, 'Unable to load approved expense requests.');
+        showingExpenseRequests.textContent = '';
+        expenseRequestPagination.replaceChildren();
+        showingApprovedExpenseRequests.textContent = '';
+        approvedExpenseRequestPagination.replaceChildren();
     });
 });

@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const state = { requests: [], activeRequest: null };
+    const pageSize = 10;
+    const state = { requests: [], activeRequest: null, page: 1 };
     const tableBody = document.getElementById('expenseRequests');
+    const pagination = document.getElementById('expenseRequestsPagination');
     const message = document.getElementById('expenseMessage');
     const detailsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('expenseDetailsModal'));
     const reviewModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('reviewExpenseModal'));
@@ -112,8 +114,33 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('approvedExpenseTotal').textContent = formatMoney(approvedTotal);
         document.getElementById('expenseRequestCount').textContent =
             `${state.requests.length} ${state.requests.length === 1 ? 'request' : 'requests'}`;
+        const pageCount = Math.ceil(requests.length / pageSize);
+        state.page = Math.min(state.page, Math.max(pageCount, 1));
+        const start = requests.length === 0 ? 0 : ((state.page - 1) * pageSize) + 1;
+        const end = Math.min(state.page * pageSize, requests.length);
         document.getElementById('showingExpenses').textContent =
-            `Showing ${requests.length} of ${state.requests.length} requests`;
+            `Showing ${start}–${end} of ${requests.length} filtered ${requests.length === 1 ? 'request' : 'requests'} (${state.requests.length} total)`;
+
+        pagination.replaceChildren();
+        const lastPage = Math.max(pageCount, 1);
+        const addPageButton = (label, page, disabled, active = false) => {
+            const item = document.createElement('li');
+            item.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+            if (active) item.setAttribute('aria-current', 'page');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'page-link';
+            button.textContent = label;
+            button.dataset.page = page;
+            button.disabled = disabled;
+            item.appendChild(button);
+            pagination.appendChild(item);
+        };
+        addPageButton('Previous', Math.max(state.page - 1, 1), state.page <= 1);
+        for (let page = 1; page <= lastPage; page += 1) {
+            addPageButton(String(page), page, false, page === state.page);
+        }
+        addPageButton('Next', Math.min(state.page + 1, lastPage), state.page >= lastPage);
 
         if (requests.length === 0) {
             const row = document.createElement('tr');
@@ -127,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        requests.forEach((expense) => {
+        requests.slice((state.page - 1) * pageSize, state.page * pageSize).forEach((expense) => {
             const row = document.createElement('tr');
             const requestCell = appendCell(row, '', 'ps-3 fw-semibold');
             requestCell.append(document.createTextNode(`#${expense.id}`));
@@ -148,6 +175,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 completed: 'bg-primary-subtle text-primary-emphasis',
                 rejected: 'bg-danger-subtle text-danger-emphasis',
             };
+
+            pagination.addEventListener('click', (event) => {
+                const button = event.target.closest('button[data-page]');
+                if (!button || button.disabled) return;
+                state.page = Number(button.dataset.page);
+                renderRequests();
+            });
             badge.className = `badge ${statusStyles[expense.status] || 'bg-secondary-subtle text-secondary-emphasis'}`;
             badge.textContent = expense.status;
             statusCell.appendChild(badge);
@@ -255,10 +289,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('expenseSearch').addEventListener('input', renderRequests);
-    document.getElementById('expenseStatusFilter').addEventListener('change', renderRequests);
-    document.getElementById('expenseDateFilter').addEventListener('change', renderRequests);
-    document.getElementById('expenseSort').addEventListener('change', renderRequests);
+    const resetPageAndRender = () => {
+        state.page = 1;
+        renderRequests();
+    };
+    document.getElementById('expenseSearch').addEventListener('input', resetPageAndRender);
+    document.getElementById('expenseStatusFilter').addEventListener('change', resetPageAndRender);
+    document.getElementById('expenseDateFilter').addEventListener('change', resetPageAndRender);
+    document.getElementById('expenseSort').addEventListener('change', resetPageAndRender);
 
     reviewForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -295,6 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showMessage(error.message);
         document.getElementById('expenseRequestCount').textContent = 'Unable to load requests';
         document.getElementById('showingExpenses').textContent = 'Unable to load requests';
+        pagination.replaceChildren();
         const row = document.createElement('tr');
         const cell = appendCell(row, 'Unable to load expense requests.', 'text-center text-secondary py-4');
         cell.colSpan = 7;

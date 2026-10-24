@@ -29,7 +29,7 @@
           <div class="d-flex align-items-center gap-2">
             <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis p-2"><i class="bi bi-receipt" aria-hidden="true"></i></span>
             <div>
-              <h1 class="h4 mb-0">Unexpected expenses</h1>
+              <h1 class="h4 mb-0">Request unexpected expenses</h1>
               <p class="small text-secondary mb-0">View and submit branch expense requests</p>
             </div>
           </div>
@@ -39,7 +39,37 @@
         </div>
 
         <div class="alert d-none" id="expenseMessage" role="alert" aria-live="polite"></div>
-        <section class="card border-0 shadow-sm mb-4" aria-labelledby="expenseRequestsHeading">
+        <section class="card border-0 shadow-sm mb-4" aria-labelledby="approvedExpenseRequestsHeading">
+          <div class="card-header border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
+            <div>
+              <h2 class="h5 mb-1" id="approvedExpenseRequestsHeading">Approved requests</h2>
+              <p class="small text-secondary mb-0" id="approvedExpenseRequestCount">Loading approved requests…</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="ps-3">Request</th>
+                  <th scope="col">Branch</th>
+                  <th scope="col">Date submitted</th>
+                  <th scope="col">Note</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-end pe-3">Total</th>
+                  <th scope="col"><span class="visually-hidden">View request</span></th>
+                </tr>
+              </thead>
+              <tbody id="approvedExpenseRequestRows">
+                <tr><td colspan="7" class="text-center text-secondary py-4">Loading approved requests…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span class="small text-secondary" id="showingApprovedExpenseRequests"></span>
+            <nav aria-label="Approved expense request pages"><ul class="pagination pagination-sm mb-0" id="approvedExpenseRequestPagination"></ul></nav>
+          </div>
+        </section>
+        <section class="card border-0 shadow-sm" aria-labelledby="expenseRequestsHeading">
           <div class="card-header border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3" style="background: linear-gradient(135deg, #fff7ed, #fef3c7);">
             <div>
               <h2 class="h5 mb-1" id="expenseRequestsHeading">Pending and other requests</h2>
@@ -64,31 +94,9 @@
               </tbody>
             </table>
           </div>
-        </section>
-        <section class="card border-0 shadow-sm" aria-labelledby="approvedExpenseRequestsHeading">
-          <div class="card-header border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 py-3" style="background: linear-gradient(135deg, #f0fdf4, #ecfeff);">
-            <div>
-              <h2 class="h5 mb-1" id="approvedExpenseRequestsHeading">Approved requests</h2>
-              <p class="small text-secondary mb-0" id="approvedExpenseRequestCount">Loading approved requests…</p>
-            </div>
-          </div>
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th scope="col" class="ps-3">Request</th>
-                  <th scope="col">Branch</th>
-                  <th scope="col">Date submitted</th>
-                  <th scope="col">Note</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" class="text-end pe-3">Total</th>
-                  <th scope="col"><span class="visually-hidden">View request</span></th>
-                </tr>
-              </thead>
-              <tbody id="approvedExpenseRequestRows">
-                <tr><td colspan="7" class="text-center text-secondary py-4">Loading approved requests…</td></tr>
-              </tbody>
-            </table>
+          <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span class="small text-secondary" id="showingExpenseRequests"></span>
+            <nav aria-label="Pending and other expense request pages"><ul class="pagination pagination-sm mb-0" id="expenseRequestPagination"></ul></nav>
           </div>
         </section>
       </div>
