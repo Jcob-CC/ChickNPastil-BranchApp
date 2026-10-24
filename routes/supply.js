@@ -36,6 +36,8 @@ router.get('/manage_expenses', requireFulfillmentManager, (req, res) => {
 });
 
 router.get('/inventory/data', inventory.getInventory);
+router.get('/inventory/received-log', inventory.getReceivedLogs);
+router.get('/inventory/received-log/:id', inventory.getReceivedLogDetails);
 router.post('/inventory/items', inventory.addInventoryItem);
 router.put('/inventory/items/:id/settings', inventory.updateItemSettings);
 router.put('/inventory/items/:id/stock', inventory.updateStock);

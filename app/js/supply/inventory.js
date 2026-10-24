@@ -1,13 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
     const pageSize = 6;
     const logPageSize = 3;
-    const state = { page: 1, logPage: 1, search: '', logSearch: '', logSort: 'desc', items: [] };
+    const receivedLogPageSize = 6;
+    const state = {
+        page: 1,
+        logPage: 1,
+        receivedLogPage: 1,
+        search: '',
+        inventorySort: 'name',
+        logSearch: '',
+        logSort: 'desc',
+        items: [],
+    };
     const errorMessage = document.getElementById('inventoryError');
     const inventoryRows = document.getElementById('inventoryRows');
     const inventoryLogRows = document.getElementById('inventoryLogRows');
+    const receivedLogRows = document.getElementById('receivedLogRows');
     const addItemModal = document.getElementById('addItemModal');
     const settingsModal = document.getElementById('editBranchSpecsModal');
     const updateStockModal = document.getElementById('updateStockModal');
+    const receivedLogDetailsModal = bootstrap.Modal.getOrCreateInstance(
+        document.getElementById('receivedLogDetailsModal'),
+    );
 
     const formatQuantity = (value) => Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
     const formatDate = (value) => new Date(`${value.replace(' ', 'T')}Z`).toLocaleString();
@@ -80,7 +94,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const cell = document.createElement('td');
             cell.colSpan = 6;
             cell.className = 'text-center text-secondary py-4';
-            cell.textContent = data.total === 0 ? 'No items in this branch inventory yet.' : 'No inventory items match your search.';
+            cell.textContent = data.total === 0 && !state.search
+                ? 'No items in this branch inventory yet.'
+                : 'No inventory items match your search.';
             row.appendChild(cell);
             inventoryRows.appendChild(row);
         }
@@ -131,6 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const start = data.total === 0 ? 0 : ((data.page - 1) * pageSize) + 1;
         const end = Math.min(data.page * pageSize, data.total);
         document.getElementById('inventorySummary').textContent = `Showing ${start}–${end} of ${data.total} items`;
+        document.getElementById('inventoryCount').textContent =
+            `${data.total} ${data.total === 1 ? 'item' : 'items'}`;
         renderPagination('inventoryPagination', data.page, data.pageCount);
 
         const catalog = document.getElementById('newInventoryCatalogItem');
@@ -152,7 +170,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const cell = document.createElement('td');
             cell.colSpan = 5;
             cell.className = 'text-center text-secondary py-4';
-            cell.textContent = 'No quantity updates recorded yet.';
+            cell.textContent = state.logSearch
+                ? 'No quantity updates match these filters.'
+                : 'No quantity updates recorded yet.';
             row.appendChild(cell);
             inventoryLogRows.appendChild(row);
         }
@@ -179,7 +199,109 @@ document.addEventListener('DOMContentLoaded', () => {
         const start = data.logTotal === 0 ? 0 : ((data.logPage - 1) * logPageSize) + 1;
         const end = Math.min(data.logPage * logPageSize, data.logTotal);
         document.getElementById('inventoryLogSummary').textContent = `Showing ${start}–${end} of ${data.logTotal} updates`;
+        document.getElementById('inventoryLogCount').textContent =
+            `${data.logTotal} ${data.logTotal === 1 ? 'update' : 'updates'}`;
         renderPagination('inventoryLogPagination', data.logPage, data.logPageCount);
+    };
+
+    const renderReceivedLogs = (data) => {
+        receivedLogRows.replaceChildren();
+        if (data.receipts.length === 0) {
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 6;
+            cell.className = 'text-center text-secondary py-4';
+            cell.textContent = 'No received stock records yet.';
+            row.appendChild(cell);
+            receivedLogRows.appendChild(row);
+        }
+
+        data.receipts.forEach((receipt) => {
+            const row = document.createElement('tr');
+            appendCell(row, formatDate(receipt.date_and_time), 'ps-3 text-nowrap');
+            appendCell(row, `Request #${receipt.request_id}`);
+            appendCell(row, receipt.requestedBy || 'Unknown user');
+            appendCell(row, receipt.receivedBy || 'Unknown user');
+            appendCell(row, String(receipt.item_count));
+
+            const actions = document.createElement('td');
+            actions.className = 'text-end pe-3';
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-sm btn-outline-primary';
+            button.dataset.viewReceipt = receipt.id;
+            button.innerHTML = '<i class="bi bi-eye me-1" aria-hidden="true"></i>View items';
+            actions.appendChild(button);
+            row.appendChild(actions);
+            receivedLogRows.appendChild(row);
+        });
+
+        const start = data.total === 0 ? 0 : ((data.page - 1) * receivedLogPageSize) + 1;
+        const end = Math.min(data.page * receivedLogPageSize, data.total);
+        document.getElementById('receivedLogSummary').textContent =
+            `Showing ${start}–${end} of ${data.total} receipts`;
+        document.getElementById('receivedLogCount').textContent =
+            `${data.total} ${data.total === 1 ? 'receipt' : 'receipts'}`;
+        renderPagination('receivedLogPagination', data.page, data.pageCount);
+    };
+
+    const loadReceivedLogs = async () => {
+        try {
+            const data = await request(`/supply/inventory/received-log?page=${state.receivedLogPage}`);
+            renderReceivedLogs(data);
+        } catch (error) {
+            showError(error.message);
+            document.getElementById('receivedLogCount').textContent = 'Received log unavailable';
+            document.getElementById('receivedLogSummary').textContent = 'Unable to load received stock log';
+            receivedLogRows.replaceChildren();
+        }
+    };
+
+    const showReceivedLogDetails = async (receiptId) => {
+        try {
+            const data = await request(`/supply/inventory/received-log/${receiptId}`);
+            const { receipt } = data;
+            document.getElementById('receivedLogDetailsSubtitle').textContent =
+                `Request #${receipt.request_id} · Receipt #${receipt.id}`;
+            document.getElementById('receivedLogRequestedBy').textContent = receipt.requestedBy || 'Unknown user';
+            document.getElementById('receivedLogRequestedAt').textContent = formatDate(receipt.requested_at);
+            document.getElementById('receivedLogReceivedBy').textContent = receipt.receivedBy || 'Unknown user';
+            document.getElementById('receivedLogReceivedAt').textContent = formatDate(receipt.received_at);
+            document.getElementById('receivedLogRequestNote').textContent = receipt.request_note || 'No request note.';
+            document.getElementById('receivedLogPreparationNote').textContent =
+                receipt.preparation_note || 'No preparation note.';
+            document.getElementById('receivedLogTransitNote').textContent =
+                receipt.transit_note || 'No transit note.';
+            document.getElementById('receivedLogNote').textContent =
+                receipt.receiving_note || 'No receiving notes or discrepancies recorded.';
+
+            const itemsBody = document.getElementById('receivedLogDetailsItems');
+            itemsBody.replaceChildren();
+            if (data.items.length === 0) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 5;
+                cell.className = 'text-center text-secondary py-3';
+                cell.textContent = 'No items found for this receipt.';
+                row.appendChild(cell);
+                itemsBody.appendChild(row);
+            }
+            data.items.forEach((item) => {
+                const row = document.createElement('tr');
+                const name = document.createElement('th');
+                name.scope = 'row';
+                name.textContent = item.name;
+                row.appendChild(name);
+                appendCell(row, item.unit_type);
+                appendCell(row, formatQuantity(item.requested_quantity), 'text-end');
+                appendCell(row, formatQuantity(item.received_quantity), 'text-end text-success fw-semibold');
+                appendCell(row, formatQuantity(item.lost_quantity), 'text-end text-danger fw-semibold');
+                itemsBody.appendChild(row);
+            });
+            receivedLogDetailsModal.show();
+        } catch (error) {
+            showError(error.message);
+        }
     };
 
     const loadInventory = async () => {
@@ -188,6 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
             page: state.page,
             logPage: state.logPage,
             search: state.search,
+            inventorySort: state.inventorySort,
             logSearch: state.logSearch,
             logSort: state.logSort,
         });
@@ -197,6 +320,10 @@ document.addEventListener('DOMContentLoaded', () => {
             renderLogs(data);
         } catch (error) {
             showError(error.message);
+            document.getElementById('inventoryCount').textContent = 'Inventory unavailable';
+            document.getElementById('inventorySummary').textContent = 'Unable to load inventory';
+            document.getElementById('inventoryLogCount').textContent = 'Update log unavailable';
+            document.getElementById('inventoryLogSummary').textContent = 'Unable to load update log';
         }
     };
 
@@ -276,6 +403,19 @@ document.addEventListener('DOMContentLoaded', () => {
         loadInventory();
     });
 
+    document.getElementById('receivedLogPagination').addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-page]');
+        if (!button || button.disabled) return;
+        state.receivedLogPage = Number(button.dataset.page);
+        loadReceivedLogs();
+    });
+
+    receivedLogRows.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-view-receipt]');
+        if (!button) return;
+        showReceivedLogDetails(button.dataset.viewReceipt);
+    });
+
     let searchTimeout;
     document.getElementById('inventorySearch').addEventListener('input', (event) => {
         const search = event.currentTarget.value.trim();
@@ -285,6 +425,12 @@ document.addEventListener('DOMContentLoaded', () => {
             state.page = 1;
             loadInventory();
         }, 250);
+    });
+
+    document.getElementById('inventorySort').addEventListener('change', (event) => {
+        state.inventorySort = event.currentTarget.value;
+        state.page = 1;
+        loadInventory();
     });
 
     let logSearchTimeout;
@@ -305,4 +451,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     loadInventory();
+    loadReceivedLogs();
 });
