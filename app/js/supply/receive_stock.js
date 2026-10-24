@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const idCell = document.createElement('th');
             idCell.scope = 'row';
             idCell.className = 'ps-3';
-            idCell.textContent = `REQ-${request.id}`;
+            idCell.textContent = request.id;
             row.appendChild(idCell);
             appendCell(row, request.requesterName || 'Unknown requester');
             appendCell(row, formatDate(request.dateAndTime), 'text-nowrap');
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const showRequestDetails = (request) => {
         document.getElementById('viewRequestSubtitle').textContent =
-            `REQ-${request.id} · ${getStatusLabel(request.status)}`;
+            `${request.id} · ${getStatusLabel(request.status)}`;
         document.getElementById('viewRequestRequester').textContent = request.requesterName || 'Unknown requester';
         document.getElementById('viewRequestDate').textContent = formatDate(request.dateAndTime);
         document.getElementById('viewRequestNote').textContent = request.note || 'No note provided.';
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const showRequestHistory = (request) => {
-        document.getElementById('requestHistorySubtitle').textContent = `REQ-${request.id}`;
+        document.getElementById('requestHistorySubtitle').textContent = request.id;
         const timeline = document.getElementById('requestHistoryTimeline');
         timeline.replaceChildren();
         if (!request.statusHistory || request.statusHistory.length === 0) {
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const showReceiveForm = (request) => {
-        document.getElementById('receiveDeliverySubtitle').textContent = `REQ-${request.id}`;
+        document.getElementById('receiveDeliverySubtitle').textContent = request.id;
         document.getElementById('receivingStaff').value = state.staffName;
         document.getElementById('receivedAt').value = new Date().toLocaleString();
         document.getElementById('receivingNotes').value = '';
@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (button.dataset.action === 'view') showRequestDetails(request);
         if (button.dataset.action === 'history') showRequestHistory(request);
         if (button.dataset.action === 'cancel') {
-            document.getElementById('cancelRequestSubtitle').textContent = `REQ-${request.id}`;
+            document.getElementById('cancelRequestSubtitle').textContent = request.id;
             cancelModal.show();
         }
         if (button.dataset.action === 'receive') showReceiveForm(request);

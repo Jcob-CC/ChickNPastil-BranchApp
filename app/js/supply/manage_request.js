@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const state = { requests: [], consolidatedItems: [], activeRequestId: null };
+    const pageSize = 10;
+    const state = { requests: [], consolidatedItems: [], activeRequestId: null, page: 1 };
     const tableBody = document.getElementById('requestsTableBody');
     const consolidatedBody = document.getElementById('consolidatedItemsTableBody');
+    const pagination = document.getElementById('requestsPagination');
     const message = document.getElementById('requestMessage');
     const statusActionModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('statusActionModal'));
     const requestItemsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('requestItemsModal'));
@@ -100,6 +102,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderRequests = () => {
         const requests = getFilteredRequests();
+        const pageCount = Math.ceil(requests.length / pageSize);
+        state.page = Math.min(state.page, Math.max(pageCount, 1));
+        const start = requests.length === 0 ? 0 : ((state.page - 1) * pageSize) + 1;
+        const end = Math.min(state.page * pageSize, requests.length);
+        document.getElementById('showingRequests').textContent =
+            `Showing ${start}–${end} of ${requests.length} ${requests.length === 1 ? 'request' : 'requests'}`;
+
+        pagination.replaceChildren();
+        const lastPage = Math.max(pageCount, 1);
+        const addPageButton = (label, page, disabled, active = false) => {
+            const item = document.createElement('li');
+            item.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+            if (active) item.setAttribute('aria-current', 'page');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'page-link';
+            button.textContent = label;
+            button.dataset.page = page;
+            button.disabled = disabled;
+            item.appendChild(button);
+            pagination.appendChild(item);
+        };
+        addPageButton('Previous', Math.max(state.page - 1, 1), state.page <= 1);
+        for (let page = 1; page <= lastPage; page += 1) {
+            addPageButton(String(page), page, false, page === state.page);
+        }
+        addPageButton('Next', Math.min(state.page + 1, lastPage), state.page >= lastPage);
+
+        const pageRequests = requests.slice((state.page - 1) * pageSize, state.page * pageSize);
         tableBody.replaceChildren();
         const statusCounts = state.requests.reduce((counts, request) => {
             const status = normalizeStatus(request.status);
@@ -117,15 +148,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         document.getElementById('requestCount').textContent =
             `${state.requests.length} ${state.requests.length === 1 ? 'request' : 'requests'}`;
-        document.getElementById('showingRequests').textContent =
-            `Showing ${requests.length} of ${state.requests.length} requests`;
 
         if (requests.length === 0) {
             showEmptyRow(tableBody, 7, state.requests.length ? 'No requests match these filters.' : 'There are no branch requests yet.');
             return;
         }
 
-        requests.forEach((request) => {
+        pageRequests.forEach((request) => {
             const row = document.createElement('tr');
             const idCell = document.createElement('th');
             idCell.scope = 'row';
@@ -135,11 +164,10 @@ document.addEventListener('DOMContentLoaded', () => {
             appendCell(row, request.branchName);
             appendCell(row, request.requesterName || '—');
             appendCell(row, formatDate(request.dateAndTime), 'text-nowrap');
-            const itemNames = request.items.slice(0, 2).map((item) => item.name).join(', ');
-            const extraItems = request.items.length - 2;
+            const totalQuantity = request.items.reduce((total, item) => total + Number(item.quantity), 0);
             appendCell(
                 row,
-                request.items.length > 2 ? `${itemNames} + ${extraItems} more` : itemNames || 'No items',
+                `${request.items.length} ${request.items.length === 1 ? 'item' : 'items'} · ${formatQuantity(totalQuantity)} units`,
             );
 
             const status = normalizeStatus(request.status);
@@ -168,6 +196,13 @@ document.addEventListener('DOMContentLoaded', () => {
             tableBody.appendChild(row);
         });
     };
+
+    pagination.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-page]');
+        if (!button || button.disabled) return;
+        state.page = Number(button.dataset.page);
+        renderRequests();
+    });
 
     const renderConsolidatedItems = () => {
         consolidatedBody.replaceChildren();
@@ -373,8 +408,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     ['requestSearch', 'statusFilter', 'branchFilter', 'requestSort'].forEach((id) => {
-        document.getElementById(id).addEventListener('input', renderRequests);
-        document.getElementById(id).addEventListener('change', renderRequests);
+        const updateRequests = () => {
+            state.page = 1;
+            renderRequests();
+        };
+        document.getElementById(id).addEventListener('input', updateRequests);
+        document.getElementById(id).addEventListener('change', updateRequests);
     });
 
     loadRequests().catch((error) => {
@@ -385,5 +424,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showEmptyRow(consolidatedBody, 4, 'Unable to load consolidated items.');
         document.getElementById('requestCount').textContent = 'Requests unavailable';
         document.getElementById('showingRequests').textContent = 'Unable to load requests';
+        pagination.replaceChildren();
     });
 });
