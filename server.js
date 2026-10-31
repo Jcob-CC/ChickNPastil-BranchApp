@@ -1,3 +1,5 @@
+const analyticsApi =
+require('./routes/analytics-api');
 const port = 3000;
 
 require('dotenv').config();
@@ -9,6 +11,8 @@ const path = require('path');
 const fs = require('fs');
 const db = require('./lib/database');
 const auth = require('./middleware/auth');
+const analyticsRoutes = require('./routes/analytics');
+
 
 const app = express();
 
@@ -40,6 +44,8 @@ app.use(session({
 app.use(auth);
 app.use('/supply', require('./routes/supply'));
 app.use('/user', require('./routes/user'));
+app.use('/', analyticsRoutes);
+app.use('/', analyticsApi);
 
 app.get('/', (req, res) => {
     res.redirect('/user/login');

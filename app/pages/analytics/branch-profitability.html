@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branch Profitability</title>
+
+    <link rel="stylesheet" href="/assets/analytics.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <aside class="sidebar">
+
+            <div class="logo">
+                <h2>CHICK N PASTIL</h2>
+                <p>TINE'S KITCHEN</p>
+            </div>
+
+            <nav>
+
+                <a href="/analytics/financial-overview">
+                    Financial Overview
+                </a>
+
+                <a class="active">
+                    Branch Profitability
+                </a>
+
+                <a>Sales Trends</a>
+
+                <a>Payment Audit</a>
+
+                <a>Wastage & Insights</a>
+
+            </nav>
+
+        </aside>
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div class="page-tag">
+                    Branch Profitability
+                </div>
+
+                <div class="profile">
+
+                    <div>
+                        <strong>Francis Pablo</strong>
+                        <p>Operations Manager</p>
+                    </div>
+
+                    <div class="avatar"></div>
+
+                </div>
+
+            </header>
+
+            <section class="dashboard-header">
+
+                <div>
+                    <h1>Branch Profitability & Performance</h1>
+
+                    <p>
+                        Comparing revenue, expenses and margins across branches
+                    </p>
+                </div>
+
+                <div class="filters">
+
+                    <input type="date">
+
+                    <select>
+                        <option>All Branches</option>
+                        <option>Balagtas</option>
+                        <option>Borol</option>
+                        <option>Bullihan Centro</option>
+                        <option>Pandi</option>
+                        <option>Northville 6</option>
+                        <option>Santol</option>
+                        <option>Pulong Gubat</option>
+                    </select>
+
+                </div>
+
+            </section>
+
+            <section class="cards">
+
+                <div class="card">
+                    <h3>HIGHEST PERFORMING</h3>
+                    <div class="card-value" id="highest">
+                        Balagtas
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>LOWEST PERFORMING</h3>
+                    <div class="card-value" id="lowest">
+                        Santol
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>AVERAGE PROFIT MARGIN</h3>
+                    <div class="card-value" id="averageMargin">
+                        30%
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>TOTAL ACTIVE BRANCHES</h3>
+                    <div class="card-value" id="branches">
+                        7
+                    </div>
+                </div>
+
+            </section>
+            <section class="charts">
+
+                <div class="chart-box profitability-chart">
+
+                    <h2>Branch Revenue Comparison</h2>
+
+                    <canvas id="branchRevenueChart"></canvas>
+
+                </div>
+
+                <div class="chart-box profitability-chart">
+
+                    <h2>Profit Margin Ranking</h2>
+
+                    <canvas id="marginChart"></canvas>
+
+                </div>
+
+            </section>
+
+            <section class="summary">
+
+                <h2>Branch Performance Detail</h2>
+
+                <table class="branch-table">
+
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Revenue</th>
+                            <th>Expenses</th>
+                            <th>Profit Margin</th>
+                            <th>Rank</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="branchPerformanceBody">
+
+                    </tbody>
+                </table>
+
+            </section>
+
+
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="/js/branch-profitability.js"></script>

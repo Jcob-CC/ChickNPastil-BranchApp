@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Audit</title>
+
+    <link rel="stylesheet" href="/assets/analytics.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <aside class="sidebar">
+
+            <div class="logo">
+                <h2>CHICK N PASTIL</h2>
+                <p>TINE'S KITCHEN</p>
+            </div>
+
+            <nav>
+
+                <a href="/analytics/financial-overview">
+                    Financial Overview
+                </a>
+
+                <a href="/analytics/branch-profitability">
+                    Branch Profitability
+                </a>
+
+                <a href="/analytics/sales-trends">
+                    Sales Trends
+                </a>
+
+                <a class="active">
+                    Payment Audit
+                </a>
+
+                <a>
+                    Wastage & Insights
+                </a>
+
+            </nav>
+
+        </aside>
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div class="page-tag">
+                    Payment Audit
+                </div>
+
+                <div class="profile">
+
+                    <div>
+                        <strong>Francis Pablo</strong>
+                        <p>Operations Manager</p>
+                    </div>
+
+                    <div class="avatar"></div>
+
+                </div>
+
+            </header>
+
+            <section class="dashboard-header">
+
+                <div>
+
+                    <h1>Payment Reconciliation & Financial Audit</h1>
+
+                    <p>
+                        Recorded transactions vs actual cash and GCash collected
+                    </p>
+
+                </div>
+
+                <div class="filters">
+
+                    <input type="date">
+
+                    <select id="branchFilter">
+                        <option value="all">All Branches</option>
+                        <option value="Balagtas">Balagtas</option>
+                        <option value="Borol">Borol</option>
+                        <option value="Bullihan Centro">Bullihan Centro</option>
+                        <option value="Pandi">Pandi</option>
+                        <option value="Northville 6">Northville 6</option>
+                        <option value="Santol">Santol</option>
+                        <option value="Pulong Gubat">Pulong Gubat</option>
+                    </select>
+
+                    <select>
+                        <option>All Status</option>
+                        <option>Matched</option>
+                        <option>For Review</option>
+                    </select>
+
+                </div>
+
+            </section>
+
+            <section class="cards">
+
+                <div class="card">
+                    <h3>TOTAL TRANSACTIONS</h3>
+                    <div class="card-value" id="transactions">7</div>
+                </div>
+
+                <div class="card">
+                    <h3>MATCHED TRANSACTIONS</h3>
+                    <div class="card-value" id="matched">5</div>
+                    <span class="positive" id="matchRate">
+                        0% match rate
+                    </span>
+                </div>
+
+                <div class="card">
+                    <h3>FOR REVIEW</h3>
+                    <div class="card-value" id="review">2</div>
+                    <p class="negative" id="flaggedCount">
+                        0 flagged
+                    </p>
+
+                </div>
+
+                <div class="card">
+                    <h3>TOTAL DISCREPANCY</h3>
+                    <div class="card-value" id="discrepancy">₱430</div>
+                </div>
+
+            </section>
+
+            <section class="charts">
+
+                <div class="chart-box">
+
+                    <h2>Reconciliation Status Overview</h2>
+
+                    <canvas id="statusChart"></canvas>
+
+                </div>
+
+                <div class="chart-box">
+
+                    <h2>Cash vs GCash Comparison</h2>
+
+                    <canvas id="paymentChart"></canvas>
+
+                </div>
+
+            </section>
+
+            <section class="summary">
+
+                <h2>Transaction Reconciliation Log</h2>
+
+                <table class="branch-table">
+
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Branch</th>
+                            <th>Recorded</th>
+                            <th>Actual</th>
+                            <th>Difference</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        <tr>
+                            <td>Sep 24</td>
+                            <td>Balagtas</td>
+                            <td>₱23,400</td>
+                            <td>₱23,400</td>
+                            <td>-</td>
+                            <td class="positive">Matched</td>
+                        </tr>
+
+                        <tr>
+                            <td>Sep 25</td>
+                            <td>Santol</td>
+                            <td>₱18,760</td>
+                            <td>₱18,330</td>
+                            <td class="negative">₱430</td>
+                            <td class="negative">For Review</td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/payment-audit.js"></script>
+
+</body>
+
+</html>

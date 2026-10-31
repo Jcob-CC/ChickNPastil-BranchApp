@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wastage & Operational Insights</title>
+
+    <link rel="stylesheet" href="/assets/analytics.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <aside class="sidebar">
+
+            <div class="logo">
+                <h2>CHICK N PASTIL</h2>
+                <p>TINE'S KITCHEN</p>
+            </div>
+
+            <nav>
+
+                <a href="/analytics/financial-overview">
+                    Financial Overview
+                </a>
+
+                <a href="/analytics/branch-profitability">
+                    Branch Profitability
+                </a>
+
+                <a href="/analytics/sales-trends">
+                    Sales Trends
+                </a>
+
+                <a href="/analytics/payment-audit">
+                    Payment Audit
+                </a>
+
+                <a class="active">
+                    Wastage & Insights
+                </a>
+
+            </nav>
+
+        </aside>
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div class="page-tag">
+                    Wastage & Insights
+                </div>
+
+                <div class="profile">
+
+                    <div>
+                        <strong>Francis Pablo</strong>
+                        <p>Operations Manager</p>
+                    </div>
+
+                    <div class="avatar"></div>
+
+                </div>
+
+            </header>
+
+            <section class="dashboard-header">
+
+                <div>
+
+                    <h1>Wastage & Operational Insights</h1>
+
+                    <p>
+                        Monitoring loss and turning it into business recommendations
+                    </p>
+
+                </div>
+
+                <div class="filters">
+
+                    <input type="date">
+
+                    <select>
+                        <option>All Branches</option>
+                        <option>Balagtas</option>
+                        <option>Borol</option>
+                        <option>Bullihan Centro</option>
+                        <option>Pandi</option>
+                        <option>Northville 6</option>
+                        <option>Santol</option>
+                        <option>Pulong Gubat</option>
+                    </select>
+
+                </div>
+
+            </section>
+
+            <section class="cards">
+
+                <div class="card">
+                    <h3>TOTAL WASTAGE COST</h3>
+                    <div class="card-value" id="totalCost">
+                        ₱0
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>HIGHEST WASTAGE BRANCH</h3>
+                    <div class="card-value" id="topBranch">
+                        -
+                    </div>
+                    <span class="positive" id="topBranchCost">₱0</span>
+                </div>
+
+                <div class="card">
+                    <h3>BRANCHES REQUIRING ATTENTION</h3>
+                    <div class="card-value" id="incidents">
+                        0
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>ESTIMATED PROFIT IMPACT</h3>
+                    <div class="card-value" id="profitImpact">
+                        ₱0
+                    </div>
+                    <span class="negative">
+                        5.3% of 7-day profit
+                    </span>
+                </div>
+
+            </section>
+
+            <section class="summary">
+
+                <h2>Wastage Trend - Last 4 Weeks</h2>
+
+                <canvas id="wastageTrendChart"></canvas>
+
+            </section>
+
+            <section class="charts">
+
+                <div class="chart-box">
+
+                    <h2>Wastage Cost by Branch</h2>
+
+                    <div id="wastageBranchBars"></div>
+
+                </div>
+
+                <div class="chart-box">
+
+                    <h2>Profit Impact Analysis</h2>
+
+                    <div id="profitImpactBars"></div>
+
+                </div>
+
+            </section>
+
+            <!-- NEW SECTION -->
+
+            <section class="summary">
+
+                <h2>Wastage Detail by Branch</h2>
+
+                <table class="branch-table">
+
+                    <thead>
+
+                        <tr>
+                            <th>Branch</th>
+                            <th>Wastage Cost</th>
+                            <th>Profit Impact</th>
+                            <th>Issue Identified</th>
+                            <th>Recommended Action</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="branchInsightsBody">
+
+                    </tbody>
+
+                </table>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/wastage-insights.js"></script>
+
+</body>
+
+</html>

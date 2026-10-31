@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Overview Dashboard</title>
+
+    <link rel="stylesheet" href="/assets/analytics.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <aside class="sidebar">
+
+            <div class="logo">
+                <h2>CHICK N PASTIL</h2>
+                <p>TINE'S KITCHEN</p>
+            </div>
+
+            <nav>
+
+                <a class="active">Financial Overview</a>
+
+                <a>Branch Profitability</a>
+
+                <a>Sales Trends</a>
+
+                <a>Payment Audit</a>
+
+                <a>Wastage & Insights</a>
+
+            </nav>
+
+        </aside>
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div class="page-tag">
+                    Financial Overview
+                </div>
+
+                <div class="profile">
+
+                    <div>
+                        <strong>Francis Pablo</strong>
+                        <p>Operations Manager</p>
+                    </div>
+
+                    <div class="avatar"></div>
+
+                </div>
+
+            </header>
+
+            <section class="dashboard-header">
+
+                <div>
+                    <h1>Financial Overview Dashboard</h1>
+
+                    <p>
+                        Company-wide revenue, expenses and wastage across all branches
+                    </p>
+                </div>
+
+                <div class="filters">
+
+                    <input type="date">
+
+                    <select id="branchFilter">
+                        <option value="all">All Branches</option>
+                        <option value="Balagtas">Balagtas</option>
+                        <option value="Borol">Borol</option>
+                        <option value="Bullihan Centro">Bullihan Centro</option>
+                        <option value="Pandi">Pandi</option>
+                        <option value="Northville 6">Northville 6</option>
+                        <option value="Santol">Santol</option>
+                        <option value="Pulong Gubat">Pulong Gubat</option>
+                    </select>
+
+                </div>
+
+            </section>
+
+            <section class="cards">
+
+                <div class="card">
+                    <h3>TOTAL REVENUE (7D)</h3>
+                    <div class="card-value" id="revenue">Loading...</div>
+                    <span class="positive" id="revenueTrend">
+                        Real POS Data
+                    </span>
+                </div>
+
+                <div class="card">
+                    <h3>TOTAL EXPENSES (7D)</h3>
+                    <div class="card-value" id="expenses">
+                        Loading...
+                    </div>
+                    <span class="negative" id="expenseTrend">
+                        Approved Expenses
+                    </span>
+                </div>
+
+                <div class="card">
+                    <h3>TOTAL PROFIT / LOSS</h3>
+                    <div class="card-value" id="profit">Loading...</div>
+                    <span class="positive" id="profitMargin">
+                        Margin 0%
+                    </span>
+                </div>
+
+                <div class="card">
+                    <h3>TOTAL WASTAGE COST</h3>
+                    <div class="card-value" id="wastageCost">
+                        ₱0
+                    </div>
+                    <span class="negative" id="wastageImpact">
+                        0% of profit
+                    </span>
+                </div>
+
+            </section>
+
+            <section class="charts">
+
+                <div class="chart-box">
+
+                    <h2>Revenue vs Expenses - Last 7 Days</h2>
+
+                    <canvas id="revenueChart"></canvas>
+
+                </div>
+
+                <div class="chart-box">
+
+                    <h2>Cash vs GCash</h2>
+
+                    <canvas id="paymentChart"></canvas>
+
+                </div>
+
+            </section>
+
+            <section class="summary">
+
+                <h2>Financial Summary</h2>
+
+                <p id="summaryText">
+
+                    Analytics insights will appear here.
+
+                </p>
+
+            </section>
+
+        </main>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/analytics.js"></script>
+
+
+</body>
+
+</html>

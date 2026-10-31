@@ -1,0 +1,304 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    background:#ece8dc;
+}
+
+.container{
+    display:flex;
+    min-height:100vh;
+}
+
+.sidebar{
+    width:300px;
+    background:#133d2a;
+    color:white;
+    padding:25px;
+}
+.logo h2{
+    font-size:30px;
+}
+
+.logo p{
+    margin-top:5px;
+    color:#d6d6d6;
+}
+
+nav{
+    margin-top:50px;
+}
+
+nav a{
+    display:block;
+    padding:18px;
+    margin-bottom:10px;
+    border-radius:15px;
+    color:white;
+    text-decoration:none;
+    font-size:20px;
+}
+
+nav a.active{
+    background:white;
+    color:#133d2a;
+    font-weight:bold;
+}
+.main-content{
+    flex:1;
+}
+
+.topbar{
+    background:white;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:20px 40px;
+}
+
+.page-tag{
+    background:#efede7;
+    padding:15px 25px;
+    border-radius:25px;
+    font-weight:600;
+}
+
+.profile{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.avatar{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    background:#cfa063;
+    border:3px solid #133d2a;
+}
+.dashboard-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:35px;
+}
+
+.dashboard-header h1{
+    font-size:48px;
+    color:#183625;
+}
+
+.dashboard-header p{
+    color:#777;
+    margin-top:8px;
+}
+
+.filters{
+    display:flex;
+    gap:15px;
+}
+
+.filters input,
+.filters select{
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #ddd;
+    background:white;
+}
+.cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+    padding:0 35px;
+    margin-bottom:30px;
+}
+.card{
+    background:white;
+    padding:25px;
+    border-radius:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.card h3{
+    color:#666;
+    font-size:16px;
+}
+
+.card-value{
+    font-size:42px;
+    font-weight:bold;
+    color:#183625;
+    margin-top:10px;
+}
+
+.positive{
+    color:#2c9f60;
+}
+
+.negative{
+    color:#e74c3c;
+}
+
+.charts{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    padding:30px 35px;
+}
+
+.chart-box{
+    background:white;
+    padding:25px;
+    border-radius:20px;
+    height:500px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.summary{
+    grid-column: 1 / -1;
+    margin:0 35px 35px 35px;
+    background:white;
+    border-radius:20px;
+    padding:25px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.branch-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+.branch-table th{
+    text-align:left;
+    padding:15px;
+    border-bottom:2px solid #ddd;
+}
+
+.branch-table td{
+    padding:15px;
+    border-bottom:1px solid #eee;
+}
+
+.chart-box{
+    height:420px;
+}
+
+#paymentChart{
+    display:block;
+    margin:0 auto;
+}
+.profitability-chart{
+    height:450px;
+}
+
+#salesTrendChart{
+    width:100% !important;
+    height:300px !important;
+}
+
+#hourlySalesChart{
+    width:100% !important;
+    height:300px !important;
+}
+
+#dailySalesChart{
+    width:100% !important;
+    height:300px !important;
+}
+
+#statusChart{
+    width:100% !important;
+    height:350px !important;
+}
+
+#paymentChart{
+    width:100% !important;
+    height:350px !important;
+}
+
+#wastageTrendChart{
+    width:100% !important;
+    height:300px !important;
+}
+
+#wastedItemsChart{
+    width:100% !important;
+    height:300px !important;
+}
+
+#branchLossChart{
+    width:100% !important;
+    height:300px !important;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 90px;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.bar-track {
+    width: 100%;
+    height: 14px;
+    background: #e7e4df;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 999px;
+}
+
+.bar-label {
+    color: #5d6b66;
+}
+
+.bar-value {
+    text-align: right;
+    font-weight: 700;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 90px;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.bar-label {
+    font-size: 15px;
+    color: #5d6b66;
+}
+
+.bar-track {
+    width: 100%;
+    height: 14px;
+    background: #e8e6e1;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+.bar-value {
+    font-weight: 700;
+    text-align: right;
+    color: #263238;
+}
+
+#wastageTrendChart {
+    max-height: 220px;
+}

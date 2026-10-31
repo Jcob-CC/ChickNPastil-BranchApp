@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Trends</title>
+
+    <link rel="stylesheet" href="/assets/analytics.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <aside class="sidebar">
+
+            <div class="logo">
+                <h2>CHICK N PASTIL</h2>
+                <p>TINE'S KITCHEN</p>
+            </div>
+
+            <nav>
+
+                <a href="/analytics/financial-overview">
+                    Financial Overview
+                </a>
+
+                <a href="/analytics/branch-profitability">
+                    Branch Profitability
+                </a>
+
+                <a class="active">
+                    Sales Trends
+                </a>
+
+                <a>
+                    Payment Audit
+                </a>
+
+                <a>
+                    Wastage & Insights
+                </a>
+
+            </nav>
+
+        </aside>
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div class="page-tag">
+                    Sales Trends
+                </div>
+
+                <div class="profile">
+
+                    <div>
+                        <strong>Francis Pablo</strong>
+                        <p>Operations Manager</p>
+                    </div>
+
+                    <div class="avatar"></div>
+
+                </div>
+
+            </header>
+
+            <section class="dashboard-header">
+
+                <div>
+
+                    <h1>Sales Trends & Peak Time Analytics</h1>
+
+                    <p>
+                        Understanding when and where customers buy the most
+                    </p>
+
+                </div>
+
+                <div class="filters">
+
+                    <input type="date">
+
+                    <select>
+                        <option>All Branches</option>
+                        <option>Balagtas</option>
+                        <option>Borol</option>
+                        <option>Bullihan Centro</option>
+                        <option>Pandi</option>
+                        <option>Northville 6</option>
+                        <option>Santol</option>
+                        <option>Pulong Gubat</option>
+                    </select>
+
+                </div>
+
+            </section>
+
+            <section class="cards">
+
+                <div class="card">
+                    <h3>PEAK SALES HOUR</h3>
+                    <div class="card-value" id="peakHour">
+                        N/A
+                    </div>
+                    <p class="positive" id="peakHourNote">
+                        No sales data available
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>PEAK SALES DAY</h3>
+
+                    <div class="card-value" id="peakDay">
+                        N/A
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>HIGHEST SALES BRANCH</h3>
+
+                    <div class="card-value" id="topBranch">
+                        N/A
+                    </div>
+
+                    <p class="positive" id="topBranchSales">
+                        ₱0 (7d)
+                    </p>
+
+                </div>
+
+                <div class="card">
+                    <h3>BEST SALES PERIOD</h3>
+
+                    <div class="card-value" id="bestPeriod">
+                        N/A
+                    </div>
+                </div>
+
+            </section>
+
+            <section class="summary">
+
+                <h2>Sales Trend — Last 7 Days</h2>
+
+                <canvas id="salesTrendChart"></canvas>
+
+            </section>
+
+            <section class="charts">
+
+                <div class="chart-box">
+
+                    <h2>Sales by Hour</h2>
+
+                    <canvas id="hourlySalesChart"></canvas>
+
+                </div>
+
+                <div class="chart-box">
+
+                    <h2>Sales by Day of Week</h2>
+
+                    <canvas id="dailySalesChart"></canvas>
+
+                </div>
+
+            </section>
+
+            <section class="summary">
+
+                <h2>Branch Peak Time Summary</h2>
+
+                <table class="branch-table">
+
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Peak Hour</th>
+                            <th>Peak Day</th>
+                            <th>Sales (7d)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="branchPeakSummaryBody">
+                    </tbody>
+
+                </table>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/sales-trends.js"></script>
+
+</body>
+
+</html>
