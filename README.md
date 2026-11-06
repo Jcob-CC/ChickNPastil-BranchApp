@@ -60,6 +60,26 @@ The user API includes:
 
 The supply API is organized under `/supply`: inventory operations use `/inventory`; stock requests and receiving use `/request_stock` and `/receive_stock`; expense requests use `/request_expenses`; and manager workflows use `/manage_request` and `/manage_expenses`. See `routes/user.js` and `routes/supply.js` for the available HTTP methods and endpoint details.
 
+### POS inventory webhook
+
+Configure a long, random `POS_WEBHOOK_SECRET` in the server environment. POS systems can set an absolute on-hand quantity with `POST /webhooks/pos/inventory`; this endpoint uses bearer-token authentication and does not require a user session.
+
+```http
+POST /webhooks/pos/inventory
+Authorization: Bearer <POS_WEBHOOK_SECRET>
+Content-Type: application/json
+```
+
+```json
+{
+  "branchLocationId": 1,
+  "generalStockItemId": 12,
+  "quantity": 24
+}
+```
+
+`branchLocationId` and `generalStockItemId` are the IDs from this app's `branch_location` and `general_stock_item` tables. `quantity` is the new absolute on-hand quantity, not a quantity delta. The endpoint updates an existing branch inventory item or creates it if it does not exist, preserving any existing low-stock and restock settings. The POS should map its branch and product identifiers to these IDs. Keep the webhook secret private and transmit it only over HTTPS.
+
 Static assets such as stylesheets, scripts, images, and shared HTML are served from `app/`.
 
 ## Project structure

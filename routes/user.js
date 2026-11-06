@@ -30,7 +30,7 @@ router.get('/manager/branches', admin.listBranches);
 router.post('/manager/branches', admin.createBranch);
 router.put('/manager/branches/:id', admin.updateBranch);
 router.get('/manager/stock-items', admin.listStockItems);
-router.post('/manager/stock-items', admin.createStockItem);
+router.post('/manager/stock-items', requireAdminORManager, admin.createStockItem);
 router.put('/manager/stock-items/:id', admin.updateStockItem);
 
 router.get('/session', login.getSessionDetails);

@@ -40,6 +40,7 @@ app.use(session({
 app.use(auth);
 app.use('/supply', require('./routes/supply'));
 app.use('/user', require('./routes/user'));
+app.use('/webhooks', require('./routes/webhooks'));
 
 app.get('/', (req, res) => {
     res.redirect('/user/login');
