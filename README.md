@@ -1,83 +1,71 @@
-## Requirements
+# Chick N Pastil Branch App
 
-- Node.js and npm
-- An SMTP account only if email verification is enabled in the sign-in controller
+## Set up the project
 
-## Getting started
+1. Install Node.js and npm.
+2. From the project folder, install the dependencies:
 
-From the project root, install dependencies and start the server:
+   ```sh
+   npm install
+   ```
 
-```sh
-npm install
-npm start
+3. Copy `.env.example` to `.env` and fill in the credentials for any external services you plan to use:
+
+   | Setting | Purpose |
+   | --- | --- |
+   | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS` | SMTP server details for email notifications. Use an SMTP app password where your provider requires one; do not use your regular Gmail password. |
+   | `PAYMONGO_SECRET_KEY` | PayMongo secret API key for payment features. Use a test key for development. |
+   | `PAYMONGO_WEBHOOK_SECRET` | Reserved for PayMongo webhook signature verification; the current webhook handler does not verify signatures. |
+   | `POS_WEBHOOK_SECRET` | A long, randomly generated secret used to authorize POS inventory updates. |
+   | `PORT` | The example is set to `3000`; the server currently listens on port `3000` regardless of this value. |
+
+   `SESSION_SECRET` is optional but recommended. Set it to a long, random value so sessions remain valid across server restarts. If it is omitted, the server generates a temporary value each time it starts.
+
+   No external account is needed to run the app locally. Email and PayMongo accounts are needed only for their respective integrations. The app's sign-in uses user records in its database; the project does not define a default username or password, so obtain an existing account from an administrator.
+
+4. Start the server:
+
+   ```sh
+   npm start
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000). The app redirects to the sign-in page.
+
+## Request flow and code structure
+
+```text
+Browser page or external webhook
+              |
+              v
+         server.js 
+            and
+         middleware/
+              |
+              v
+routes/ (URL and HTTP method definitions)
+              |
+              v
+controllers/ (request handling, business logic, database or service calls)
+              |
+              v
+         HTTP response
+
+
+
+lib/ (reusable functions)
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The root URL redirects to `/user/login`.
+Browser pages and JavaScript live under `app/`. `server.js` sets up Express and mounts the route modules. Routes connect URLs to controller functions; controllers perform the work and return responses. Webhooks enter through their registered route just like other HTTP requests, although their authentication and processing depend on the individual handler.
 
-At startup, the app opens `database.sqlite` in the project root and executes `schema.sql` to create any missing tables. The schema does not create users, branches, stock items, or inventory records. Set up those records before using the corresponding features. The manager interface can manage users, branches, and general stock items once an administrator or manager account is available.
+## Existing webhook cheat sheet
 
-The repository currently tracks `database.sqlite`, and `.gitignore` does not exclude it. Do not put real personal, credential, or business-sensitive data in the tracked database.
+### POS inventory update
 
-## Configuration
-
-Copy `.env.example` to `.env` and set the SMTP credentials if email delivery is enabled. Set a PayMongo secret key to enable POS payment links:
-
-```env
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
-PAYMONGO_SECRET_KEY=sk_test_replace-with-your-key
-SESSION_SECRET=replace-with-a-long-random-value
-```
-
-Keep `.env` private; it is excluded from Git. `SESSION_SECRET` is optional, but set a long, stable value so sessions can remain valid across server restarts. If it is unset, the server generates a new secret each time it starts.
-
-Although `.env.example` includes `PORT=3000`, the server currently uses port `3000` directly; changing `PORT` has no effect.
-
-### Sign-in verification status
-
-The sign-in flow includes endpoints for password checking, code verification, and branch selection. In the current `controllers/user/login.js`, email delivery is commented out and the verification-code rejection is disabled. Treat email verification as incomplete and do not rely on it as a security control until that flow is implemented and tested.
-
-## Pages and routes
-
-| Page | URL | Access |
-| --- | --- | --- |
-| `app/pages/user/login.html` | `/user/login` | Public |
-| `app/pages/user/profile.html` | `/user/profile` | Signed-in users |
-| `app/pages/user/manager.html` | `/user/manager` | Admins and managers |
-| `app/pages/supply/inventory.html` | `/supply/inventory` | Signed-in users |
-| `app/pages/supply/request_stock.html` | `/supply/request_stock` | Signed-in users |
-| `app/pages/supply/request_expenses.html` | `/supply/request_expenses` | Signed-in users |
-| `app/pages/supply/receive_stock.html` | `/supply/receive_stock` | Signed-in users |
-| `app/pages/supply/manage_request.html` | `/supply/manage_request` | Admins and managers |
-| `app/pages/supply/manage_expenses.html` | `/supply/manage_expenses` | Admins and managers |
-| `app/pages/sales/pos/ordering.html` | `/sales/pos/ordering` | Signed-in users |
-| `app/pages/sales/manager/dashboard.html` | `/sales/manager/dashboard` | Admins and managers |
-| `app/pages/sales/manager/menu.html` | `/sales/manager/menu` | Admins and managers |
-| `app/pages/sales/manager/transaction_reports.html` | `/sales/manager/transactions` | Admins and managers |
-| `app/pages/sales/staff/dashboard.html` | `/sales/staff/dashboard` | Branch staff |
-| `app/pages/sales/staff/transactions.html` | `/sales/staff/transactions` | Branch staff |
-
-The user API includes:
-
-- `POST /user/check_pass`, `POST /user/verify_email`, and `POST /user/start_session` for sign-in and branch selection.
-- `GET /user/session`, `GET /user/profile/details`, `POST /user/profile/password`, `POST /user/profile/deactivate`, and `POST /user/logout` for session and profile actions.
-- `/user/manager/users`, `/user/manager/branches`, and `/user/manager/stock-items` for manager user, branch, and stock-item management.
-
-The supply API is organized under `/supply`: inventory operations use `/inventory`; stock requests and receiving use `/request_stock` and `/receive_stock`; expense requests use `/request_expenses`; and manager workflows use `/manage_request` and `/manage_expenses`. See `routes/user.js` and `routes/supply.js` for the available HTTP methods and endpoint details.
-
-The sales module uses `/sales` for its screens and `/api` for POS menu, order, dashboard, and PayMongo endpoints. Manager pages require an admin or manager account; staff reports and order actions are scoped to the signed-in user's branch. POS screens use the existing root session and branch selection rather than the standalone demo login.
-
-Sales pages are stored in `app/pages/sales/`, sales-specific styles and images in `app/assets/sales/`, server handlers in `controllers/sales/`, and route definitions in `routes/sales.js`. They use the root shared navigation component in `app/assets/html/bars.html` and loader in `app/js/shared/bars.js`. The additive startup migration supplies the default Original/Spicy and Plain/Garlic Rice options only when they are missing. PayMongo endpoints require `PAYMONGO_SECRET_KEY`; GCash payments are marked verified only after the server confirms the linked payment and amount with PayMongo.
-
-### POS inventory webhook
-
-Configure a long, random `POS_WEBHOOK_SECRET` in the server environment. POS systems can set an absolute on-hand quantity with `POST /webhooks/pos/inventory`; this endpoint uses bearer-token authentication and does not require a user session.
+Set `POS_WEBHOOK_SECRET` in `.env`, then send:
 
 ```http
 POST /webhooks/pos/inventory
-Authorization: Bearer <POS_WEBHOOK_SECRET>
+Authorization: Bearer YOUR_POS_WEBHOOK_SECRET
 Content-Type: application/json
 ```
 
@@ -89,42 +77,19 @@ Content-Type: application/json
 }
 ```
 
-`branchLocationId` and `generalStockItemId` are the IDs from this app's `branch_location` and `general_stock_item` tables. `quantity` is the new absolute on-hand quantity, not a quantity delta. The endpoint updates an existing branch inventory item or creates it if it does not exist, preserving any existing low-stock and restock settings. The POS should map its branch and product identifiers to these IDs. Keep the webhook secret private and transmit it only over HTTPS.
+- `branchLocationId` and `generalStockItemId` are IDs from this app's database.
+- `quantity` is the new on-hand total, not an amount to add or subtract.
+- The endpoint updates an existing inventory record or creates one if needed. The referenced branch and stock item must be active.
+- This endpoint does not require a signed-in app user. Keep the secret private and use HTTPS.
 
-Static assets such as stylesheets, scripts, images, and shared HTML are served from `app/`.
+### PayMongo event notification
 
-## Project structure
+Configure PayMongo to send `POST /api/paymongo/webhook` to the server. The current handler checks for an event type, logs it, and acknowledges receipt. It does not verify the webhook signature or apply the event to an order, so do not treat this endpoint as payment verification.
 
-```text
-.
-├── app/
-│   ├── assets/              # CSS, shared HTML, and images
-│   ├── js/                  # Browser-side JavaScript
-│   └── pages/               # User, supply, sales, and template pages
-├── controllers/
-│   ├── sales/               # Menu, order, dashboard, and payment handlers
-│   ├── supply/              # Inventory, stock, and expense handlers
-│   └── user/                # Login, profile, and manager handlers
-├── docs/                    # Project notes and reference documents
-├── lib/                     # Database, email, password, and notification helpers
-├── middleware/              # Middleware
-├── routes/                  # Express route definitions
-├── .env.example             # Example local configuration
-├── database.sqlite          # SQLite application data (currently tracked)
-├── package.json             # Dependencies and npm scripts
-├── schema.sql               # SQLite table definitions
-└── server.js                # Express application entry point
-```
+## Add a page or feature
 
-## Database
-
-`schema.sql` is the authoritative base database structure. On startup, `lib/sales_schema.js` applies additive POS compatibility changes to existing menu, order, and payment tables. It preserves existing records and does not run the standalone `POS-main/schema.sql` initializer, which drops and recreates POS tables.
-
-To create a fresh local database, back up any data you need, then remove or move `database.sqlite` and restart the app. The server creates the database file and applies the schema at startup; the new database will not contain user, branch, or inventory records.
-
-## Development
-
-- `npm start` — starts the Express server with Node.js.
-- `npm test` — not configured; the current script exits with an error.
-
-Stop the server with `Ctrl+C`. Browser code belongs in `app/`; server-side routes, controllers, middleware, and helpers belong in their respective root folders. Never commit credentials or real user or business data.
+1. Copy `app/pages/template/index.html` into the appropriate section under `app/pages/`, for example `app/pages/supply/new_page.html`. Keep the page two folders below `app/` so the template's relative paths to shared assets and `bars.js` continue to work.
+2. Update the page title and `data-page-header`, then add the page content inside `<main class="main-content">`.
+3. Add a page route to the relevant file in `routes/`, returning the new HTML file. If the feature needs API behavior, add its endpoint there too, and implement the request handling in the matching file under `controllers/`.
+4. Add a link to the appropriate submenu in `app/assets/html/bars.html`, using the URL registered in the route. Add a role class such as `role-admin` or `role-manager` when the link should only appear for those roles.
+5. Put browser scripts in `app/js/` and styles in `app/assets/css/` (or the matching feature-specific asset folder), and reference them from the page.
