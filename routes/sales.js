@@ -4,10 +4,11 @@ const menu = require('../controllers/sales/menu');
 const orders = require('../controllers/sales/orders');
 const dashboard = require('../controllers/sales/dashboard');
 const paymongo = require('../controllers/sales/paymongo');
+const analytics = require('../controllers/sales/analytics');
 
 const pages = express.Router();
 const api = express.Router();
-const isManager = req => ['admin', 'manager'].includes(req.session.user.role);
+const isManager = req => ['admin', 'manager'].includes((req.session?.user?.role || '').toLowerCase());
 const requireManager = (req, res, next) => {
     if (!isManager(req)) return res.sendStatus(403);
     next();
@@ -55,6 +56,7 @@ api.patch('/orders/:id/status', orders.updateStatus);
 api.post('/orders/:id/pay', orders.pay);
 
 api.get('/dashboard/stats', dashboard.stats);
+api.get('/analytics/summary', requireManager, analytics.summary);
 api.post('/paymongo/create-link', paymongo.createLink);
 api.get('/paymongo/check-status/:linkId', paymongo.checkStatus);
 api.post('/paymongo/webhook', paymongo.webhook);

@@ -1,6 +1,19 @@
 let currentSessionUser = null;
 window.getCurrentUser = () => currentSessionUser;
 
+// SQLite stores timestamps in UTC without a zone ("YYYY-MM-DD HH:MM:SS"); display them in Philippine time.
+window.APP_TIME_ZONE = "Asia/Manila";
+window.parseDbDate = (value) => {
+  if (!value) return new Date(NaN);
+  const text = String(value).trim().replace(" ", "T");
+  return new Date(/(Z|[+-]\d{2}:?\d{2})$/i.test(text) ? text : `${text}Z`);
+};
+window.formatDbDate = (value, options = {}, method = "toLocaleString") => {
+  const date = value instanceof Date ? value : window.parseDbDate(value);
+  if (Number.isNaN(date.getTime())) return value || "—";
+  return date[method]("en-PH", { ...options, timeZone: window.APP_TIME_ZONE });
+};
+
 document.addEventListener("DOMContentLoaded", function () {
   // 1. Fetch reusable components from bars.html
   fetch("../../assets/html/bars.html")
@@ -69,15 +82,27 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const applyRoleVisibility = (role) => {
+        const normalizedRole = (role || "").trim().toLowerCase();
+        const isStaffRole = ["staff", "vendor", "cashier"].includes(normalizedRole);
+        const isManagerRole = ["admin", "manager"].includes(normalizedRole);
         document.querySelectorAll('[class*="role-"]').forEach((element) => {
           const allowedRoles = Array.from(element.classList)
             .filter((className) => className.startsWith("role-"))
-            .map((className) => className.slice("role-".length));
+            .map((className) => className.slice("role-".length).toLowerCase());
 
           if (allowedRoles.length === 0) return;
 
           const navItem = element.matches(".nav-link") && element.closest("li");
-          (navItem || element).hidden = !allowedRoles.includes(role);
+          let hasAccess = false;
+          if (allowedRoles.includes(normalizedRole)) {
+            hasAccess = true;
+          } else if (isStaffRole && (allowedRoles.includes("staff") || allowedRoles.includes("vendor"))) {
+            hasAccess = true;
+          } else if (isManagerRole && (allowedRoles.includes("admin") || allowedRoles.includes("manager"))) {
+            hasAccess = true;
+          }
+
+          (navItem || element).hidden = !hasAccess;
         });
       };
 
