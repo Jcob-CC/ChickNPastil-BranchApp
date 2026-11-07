@@ -21,6 +21,210 @@ const confirmationModal = bootstrap.Modal.getOrCreateInstance(
 let selectedBranch;
 let isCheckingPassword = false;
 
+const passwordRecoveryModalElement = document.getElementById('passwordRecoveryModal');
+const passwordRecoveryModal = bootstrap.Modal.getOrCreateInstance(passwordRecoveryModalElement);
+const passwordRecoveryRequestForm = document.getElementById('passwordRecoveryRequestForm');
+const passwordRecoveryVerifyForm = document.getElementById('passwordRecoveryVerifyForm');
+const passwordRecoveryCompleteForm = document.getElementById('passwordRecoveryCompleteForm');
+const passwordRecoverySuccess = document.getElementById('passwordRecoverySuccess');
+const recoveryEmail = document.getElementById('recoveryEmail');
+const recoveryCode = document.getElementById('recoveryCode');
+const recoveryRequestMessage = document.getElementById('recoveryRequestMessage');
+const recoveryVerifyMessage = document.getElementById('recoveryVerifyMessage');
+const recoveryCompleteMessage = document.getElementById('recoveryCompleteMessage');
+let isRecoveringPassword = false;
+
+const accountApplicationModalElement = document.getElementById('accountApplicationModal');
+const accountApplicationModal = bootstrap.Modal.getOrCreateInstance(accountApplicationModalElement);
+const accountApplicationForm = document.getElementById('accountApplicationForm');
+const accountApplicationMessage = document.getElementById('accountApplicationMessage');
+const accountApplicationSuccess = document.getElementById('accountApplicationSuccess');
+let isApplyingForAccount = false;
+
+document.getElementById('applyForAccountButton').addEventListener('click', () => {
+    accountApplicationModal.show();
+});
+
+accountApplicationModalElement.addEventListener('hidden.bs.modal', () => {
+    accountApplicationForm.reset();
+    accountApplicationForm.hidden = false;
+    accountApplicationSuccess.hidden = true;
+    accountApplicationMessage.textContent = '';
+});
+
+accountApplicationForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (isApplyingForAccount) return;
+
+    isApplyingForAccount = true;
+    const submitButton = accountApplicationForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    accountApplicationMessage.textContent = '';
+
+    try {
+        const response = await fetch('/user/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                first_name: accountApplicationForm.elements.firstName.value,
+                last_name: accountApplicationForm.elements.lastName.value,
+                email: accountApplicationForm.elements.email.value,
+                password: accountApplicationForm.elements.password.value,
+                confirmPassword: accountApplicationForm.elements.confirmPassword.value,
+            }),
+        });
+
+        if (!response.ok) {
+            const result = await response.json();
+            accountApplicationMessage.textContent = result.message || 'Unable to submit your application right now. Please try again.';
+            return;
+        }
+
+        accountApplicationForm.hidden = true;
+        accountApplicationSuccess.hidden = false;
+    } catch {
+        accountApplicationMessage.textContent = 'Unable to submit your application right now. Please try again.';
+    } finally {
+        isApplyingForAccount = false;
+        submitButton.disabled = false;
+    }
+});
+
+document.getElementById('forgotPasswordButton').addEventListener('click', () => {
+    recoveryEmail.value = loginForm.elements.email.value.trim();
+    passwordRecoveryModal.show();
+});
+
+passwordRecoveryModalElement.addEventListener('hidden.bs.modal', () => {
+    passwordRecoveryRequestForm.reset();
+    passwordRecoveryVerifyForm.reset();
+    passwordRecoveryCompleteForm.reset();
+    passwordRecoveryRequestForm.hidden = false;
+    passwordRecoveryVerifyForm.hidden = true;
+    passwordRecoveryCompleteForm.hidden = true;
+    passwordRecoverySuccess.hidden = true;
+    recoveryRequestMessage.textContent = '';
+    recoveryVerifyMessage.textContent = '';
+    recoveryCompleteMessage.textContent = '';
+});
+
+passwordRecoveryRequestForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (isRecoveringPassword) return;
+
+    isRecoveringPassword = true;
+    const submitButton = passwordRecoveryRequestForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    recoveryRequestMessage.textContent = '';
+
+    try {
+        const response = await fetch('/user/password-reset/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: recoveryEmail.value }),
+        });
+
+        if (!response.ok) {
+            recoveryRequestMessage.textContent = response.status === 400
+                ? 'Enter a valid email address.'
+                : 'Unable to send a verification code right now. Please try again.';
+            return;
+        }
+
+        passwordRecoveryRequestForm.hidden = true;
+        passwordRecoveryVerifyForm.hidden = false;
+        recoveryCode.focus();
+    } catch {
+        recoveryRequestMessage.textContent = 'Unable to send a verification code right now. Please try again.';
+    } finally {
+        isRecoveringPassword = false;
+        submitButton.disabled = false;
+    }
+});
+
+passwordRecoveryVerifyForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (isRecoveringPassword) return;
+
+    isRecoveringPassword = true;
+    const submitButton = passwordRecoveryVerifyForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    recoveryVerifyMessage.textContent = '';
+
+    try {
+        const response = await fetch('/user/password-reset/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: recoveryCode.value }),
+        });
+
+        if (!response.ok) {
+            recoveryVerifyMessage.textContent = response.status === 429
+                ? 'Too many incorrect codes. Request a new code to try again.'
+                : 'The code is incorrect or has expired.';
+            return;
+        }
+
+        passwordRecoveryVerifyForm.hidden = true;
+        passwordRecoveryCompleteForm.hidden = false;
+        document.getElementById('recoveryNewPassword').focus();
+    } catch {
+        recoveryVerifyMessage.textContent = 'Unable to verify the code right now. Please try again.';
+    } finally {
+        isRecoveringPassword = false;
+        submitButton.disabled = false;
+    }
+});
+
+document.getElementById('requestAnotherRecoveryCodeButton').addEventListener('click', () => {
+    passwordRecoveryVerifyForm.hidden = true;
+    passwordRecoveryRequestForm.hidden = false;
+    recoveryCode.value = '';
+    recoveryRequestMessage.textContent = '';
+    recoveryEmail.focus();
+});
+
+passwordRecoveryCompleteForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (isRecoveringPassword) return;
+
+    isRecoveringPassword = true;
+    const submitButton = passwordRecoveryCompleteForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    recoveryCompleteMessage.textContent = '';
+
+    try {
+        const response = await fetch('/user/password-reset/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                newPassword: passwordRecoveryCompleteForm.elements.newPassword.value,
+                confirmPassword: passwordRecoveryCompleteForm.elements.confirmPassword.value,
+            }),
+        });
+
+        if (!response.ok) {
+            if (response.status === 400) {
+                const result = await response.json();
+                recoveryCompleteMessage.textContent = result.message;
+            } else if (response.status === 401) {
+                recoveryCompleteMessage.textContent = 'Your verification has expired. Request a new code and try again.';
+            } else {
+                recoveryCompleteMessage.textContent = 'Unable to reset your password right now. Please try again.';
+            }
+            return;
+        }
+
+        passwordRecoveryCompleteForm.hidden = true;
+        passwordRecoverySuccess.hidden = false;
+    } catch {
+        recoveryCompleteMessage.textContent = 'Unable to reset your password right now. Please try again.';
+    } finally {
+        isRecoveringPassword = false;
+        submitButton.disabled = false;
+    }
+});
+
 loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (isCheckingPassword) return;

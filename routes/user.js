@@ -36,7 +36,11 @@ router.put('/manager/stock-items/:id', admin.updateStockItem);
 
 router.get('/session', login.getSessionDetails);
 router.post('/check_pass', login.checkPassword);
+router.post('/apply', login.applyForAccount);
 router.post('/verify_email', login.verifyEmail);
+router.post('/password-reset/request', login.requestPasswordReset);
+router.post('/password-reset/verify', login.verifyPasswordResetCode);
+router.post('/password-reset/complete', login.resetPassword);
 router.post('/start_session', login.startSession);
 
 router.get('/profile/details', profile.getDetails);

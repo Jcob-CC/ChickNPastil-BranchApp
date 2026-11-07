@@ -23,6 +23,10 @@
 
    No external account is needed to run the app locally. Email and PayMongo accounts are needed only for their respective integrations. The app's sign-in uses user records in its database; the project does not define a default username or password, so obtain an existing account from an administrator.
 
+   The login page's **Forgot password?** flow sends an email verification code to active accounts. Configure the `EMAIL_*` settings above to enable email delivery. Codes expire after 10 minutes, allow at most five incorrect attempts, and can be used once; a verified code lets the user choose a new password of 8–256 characters.
+
+   Users without an account can apply from the login page with their name, email, and password. Applications create inactive vendor accounts; a manager must activate the account before the user can sign in. Applicants should contact their manager for approval. Branch selection remains part of the sign-in flow.
+
 4. Start the server:
 
    ```sh
