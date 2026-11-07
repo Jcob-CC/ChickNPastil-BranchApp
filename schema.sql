@@ -133,8 +133,7 @@ CREATE TABLE IF NOT EXISTS branch_expense_other_item (
 CREATE TABLE IF NOT EXISTS menu_section (
     section_id INTEGER PRIMARY KEY AUTOINCREMENT,
     section_name TEXT NOT NULL,
-    is_available INTEGER NOT NULL DEFAULT 1,
-    is_archived INTEGER NOT NULL DEFAULT 0
+    is_available INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS menu_products (
@@ -146,9 +145,6 @@ CREATE TABLE IF NOT EXISTS menu_products (
     is_available INTEGER NOT NULL DEFAULT 1,
     added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    image_url TEXT,
-    allow_quantity INTEGER NOT NULL DEFAULT 1,
-    is_archived INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (section_id) REFERENCES menu_section(section_id)
 );
 
@@ -158,8 +154,7 @@ CREATE TABLE IF NOT EXISTS product_addons (
     addon_price REAL NOT NULL,
     is_available INTEGER NOT NULL DEFAULT 1,
     added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    addon_category TEXT DEFAULT 'extra'
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -171,11 +166,7 @@ CREATE TABLE IF NOT EXISTS orders (
     order_total REAL NOT NULL DEFAULT 0.00,
     notes TEXT,
     added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    branch_name TEXT NOT NULL,
-    order_type TEXT NOT NULL DEFAULT 'Dine-In',
-    other_contact TEXT,
-    paymongo_link_id TEXT
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS order_items (
@@ -193,12 +184,13 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE TABLE IF NOT EXISTS order_item_addons (
     order_item_addon_id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_item_id INTEGER NOT NULL,
-    addon_id INTEGER,
+    addon_id INTEGER NOT NULL,
     addon_name TEXT NOT NULL,
     addon_price REAL NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 1,
     subtotal REAL NOT NULL,
-    FOREIGN KEY (order_item_id) REFERENCES order_items(order_item_id) ON DELETE CASCADE
+    FOREIGN KEY (order_item_id) REFERENCES order_items(order_item_id) ON DELETE CASCADE,
+    FOREIGN KEY (addon_id) REFERENCES product_addons(addon_id)
 );
 
 CREATE TABLE IF NOT EXISTS payments (
@@ -211,7 +203,6 @@ CREATE TABLE IF NOT EXISTS payments (
     gcash_reference_number TEXT NULL,
     payment_status TEXT NOT NULL DEFAULT 'Pending',
     paid_at DATETIME,
-    paymongo_payment_intent_id TEXT,
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
 );
 

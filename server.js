@@ -1,3 +1,5 @@
+const analyticsApi =
+require('./routes/analytics-api');
 const port = 3000;
 
 require('dotenv').config();
@@ -9,14 +11,21 @@ const path = require('path');
 const fs = require('fs');
 const db = require('./lib/database');
 const auth = require('./middleware/auth');
+const analyticsRoutes = require('./routes/analytics');
+
 
 const app = express();
 
-const schemaPath = path.join(__dirname, 'schema.sql');
-const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-db.exec(schemaSql);
-require('./lib/sales_schema').migrate(db);
-console.log('Database schema initialized successfully.');
+try {
+    const schemaPath = path.join(__dirname, 'schema.sql');
+    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+
+    db.exec(schemaSql);
+    console.log('Database schema initialized successfully.');
+} 
+catch (err) {
+    console.error('Error initializing schema:', err.message);
+}
 
 app.use(express.static(path.join(__dirname, 'app')));
 app.use(express.json());
@@ -35,10 +44,8 @@ app.use(session({
 app.use(auth);
 app.use('/supply', require('./routes/supply'));
 app.use('/user', require('./routes/user'));
-app.use('/webhooks', require('./routes/webhooks'));
-const sales = require('./routes/sales');
-app.use('/sales', sales.pages);
-app.use('/api', sales.api);
+app.use('/', analyticsRoutes);
+app.use('/', analyticsApi);
 
 app.get('/', (req, res) => {
     res.redirect('/user/login');

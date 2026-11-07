@@ -40,8 +40,8 @@ const getInventory = (req, res) => {
     const logPage = getPage(req.query.logPage);
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     const inventorySortOptions = {
-        quantity_asc: 'COALESCE(bii.quantity, 0) ASC, gsi.name COLLATE NOCASE ASC',
-        quantity_desc: 'COALESCE(bii.quantity, 0) DESC, gsi.name COLLATE NOCASE ASC',
+        quantity_asc: 'bii.quantity ASC, gsi.name COLLATE NOCASE ASC',
+        quantity_desc: 'bii.quantity DESC, gsi.name COLLATE NOCASE ASC',
         cost_asc: 'gsi.unit_cost ASC, gsi.name COLLATE NOCASE ASC',
         cost_desc: 'gsi.unit_cost DESC, gsi.name COLLATE NOCASE ASC',
     };
@@ -62,9 +62,10 @@ const getInventory = (req, res) => {
     try {
         const total = db.prepare(`
             SELECT COUNT(*) AS count
-            FROM general_stock_item gsi
-            WHERE gsi.status = 'active' AND gsi.name LIKE ?
-        `).get(inventorySearchPattern).count;
+            FROM branch_inventory_item bii
+            JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
+            WHERE bii.branch_location_id = ? AND gsi.name LIKE ?
+        `).get(branchId, inventorySearchPattern).count;
         const logTotal = db.prepare(`
             SELECT COUNT(*) AS count
             FROM branch_inventory_manager_log bil
@@ -80,16 +81,24 @@ const getInventory = (req, res) => {
               )
         `).get(branchId, logSearchPattern, logSearchPattern, logSearchPattern, logSearchPattern).count;
         const items = db.prepare(`
-            SELECT bii.id AS branch_inventory_item_id, gsi.id AS general_stock_item_id,
-                   gsi.name, gsi.unit_type, COALESCE(bii.quantity, 0) AS quantity,
-                   bii.low_quantity_threshold, bii.restock_target_quantity, gsi.unit_cost
-            FROM general_stock_item gsi
-            LEFT JOIN branch_inventory_item bii
-                ON bii.general_stock_item_id = gsi.id AND bii.branch_location_id = ?
-            WHERE gsi.status = 'active' AND gsi.name LIKE ?
+            SELECT bii.id, gsi.id AS general_stock_item_id, gsi.name, gsi.unit_type,
+                   bii.quantity, bii.low_quantity_threshold, bii.restock_target_quantity, gsi.unit_cost
+            FROM branch_inventory_item bii
+            JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
+            WHERE bii.branch_location_id = ? AND gsi.name LIKE ?
             ORDER BY ${inventorySort}
             LIMIT ? OFFSET ?
         `).all(branchId, inventorySearchPattern, pageSize, offset);
+        const availableItems = db.prepare(`
+            SELECT gsi.id, gsi.name, gsi.unit_type
+            FROM general_stock_item gsi
+            WHERE gsi.status = 'active'
+              AND NOT EXISTS (
+                  SELECT 1 FROM branch_inventory_item bii
+                  WHERE bii.branch_location_id = ? AND bii.general_stock_item_id = gsi.id
+              )
+            ORDER BY gsi.name COLLATE NOCASE
+        `).all(branchId);
         const logs = db.prepare(`
             SELECT bil.date_and_time, gsi.name, gsi.unit_type, bil.value_before, bil.value_after, bil.reason,
                    trim(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) AS user_name
@@ -121,6 +130,7 @@ const getInventory = (req, res) => {
             total,
             page,
             pageCount: Math.ceil(total / pageSize),
+            availableItems,
             logs,
             logTotal,
             logPage,
@@ -281,40 +291,13 @@ const updateItemSettings = (req, res) => {
         return res.status(400).json({ message: 'Enter valid quantities and a restock target at or above the low-stock threshold.' });
     }
 
-    const saveSettings = db.transaction(() => {
-        const catalogItem = db.prepare(`
-            SELECT id FROM general_stock_item WHERE id = ? AND status = 'active'
-        `).get(id);
-        if (!catalogItem) return false;
-
-        const item = db.prepare(`
-            SELECT bii.id
-            FROM branch_inventory_item bii
-            JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
-            WHERE gsi.id = ? AND gsi.status = 'active' AND bii.branch_location_id = ?
-        `).get(id, req.session.user.branchLocationId);
-
-        if (item) {
-            db.prepare(`
-                UPDATE branch_inventory_item
-                SET low_quantity_threshold = ?, restock_target_quantity = ?
-                WHERE id = ? AND branch_location_id = ?
-            `).run(threshold, target, item.id, req.session.user.branchLocationId);
-            return true;
-        }
-
-        return db.prepare(`
-            INSERT INTO branch_inventory_item
-                (branch_location_id, general_stock_item_id, quantity,
-                 low_quantity_threshold, restock_target_quantity)
-            SELECT ?, id, 0, ?, ?
-            FROM general_stock_item
-            WHERE id = ? AND status = 'active'
-        `).run(req.session.user.branchLocationId, threshold, target, id).changes > 0;
-    });
-
     try {
-        if (!saveSettings()) return res.status(404).json({ message: 'Active stock item not found.' });
+        const result = db.prepare(`
+            UPDATE branch_inventory_item
+            SET low_quantity_threshold = ?, restock_target_quantity = ?
+            WHERE id = ? AND branch_location_id = ?
+        `).run(threshold, target, id, req.session.user.branchLocationId);
+        if (result.changes === 0) return res.status(404).json({ message: 'Inventory item not found.' });
         res.json({ message: 'Branch settings saved.' });
     } catch (error) {
         sendDatabaseError(res, error);
@@ -332,57 +315,25 @@ const updateStock = (req, res) => {
     }
 
     const updateInventory = db.transaction(() => {
-        const catalogItem = db.prepare(`
-            SELECT id FROM general_stock_item WHERE id = ? AND status = 'active'
-        `).get(id);
-        if (!catalogItem) return false;
-
         const item = db.prepare(`
-            SELECT bii.id, bii.quantity
-            FROM branch_inventory_item bii
-            JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
-            WHERE gsi.id = ? AND gsi.status = 'active' AND bii.branch_location_id = ?
+            SELECT quantity FROM branch_inventory_item
+            WHERE id = ? AND branch_location_id = ?
         `).get(id, req.session.user.branchLocationId);
+        if (!item) return false;
 
-        let branchInventoryItemId;
-        let valueBefore;
-        if (item) {
-            branchInventoryItemId = item.id;
-            valueBefore = item.quantity;
-            db.prepare(`
-                UPDATE branch_inventory_item SET quantity = ? WHERE id = ?
-            `).run(quantity, branchInventoryItemId);
-        } else {
-            const result = db.prepare(`
-                INSERT INTO branch_inventory_item
-                    (branch_location_id, general_stock_item_id, quantity,
-                     low_quantity_threshold, restock_target_quantity)
-                SELECT ?, id, ?, 0, 0
-                FROM general_stock_item
-                WHERE id = ? AND status = 'active'
-            `).run(req.session.user.branchLocationId, quantity, id);
-            if (result.changes === 0) return false;
-            branchInventoryItemId = Number(result.lastInsertRowid);
-            valueBefore = 0;
-        }
-
+        db.prepare(`
+            UPDATE branch_inventory_item SET quantity = ? WHERE id = ?
+        `).run(quantity, id);
         db.prepare(`
             INSERT INTO branch_inventory_manager_log
                 (branch_location_id, branch_inventory_item_id, user_id, value_before, value_after, reason)
             VALUES (?, ?, ?, ?, ?, ?)
-        `).run(
-            req.session.user.branchLocationId,
-            branchInventoryItemId,
-            req.session.user.id,
-            valueBefore,
-            quantity,
-            reason,
-        );
+        `).run(req.session.user.branchLocationId, id, req.session.user.id, item.quantity, quantity, reason);
         return true;
     });
 
     try {
-        if (!updateInventory()) return res.status(404).json({ message: 'Active stock item not found.' });
+        if (!updateInventory()) return res.status(404).json({ message: 'Inventory item not found.' });
         res.json({ message: 'Stock quantity updated.' });
     } catch (error) {
         sendDatabaseError(res, error);

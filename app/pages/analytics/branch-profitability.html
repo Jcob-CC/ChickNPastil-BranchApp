@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branch Profitability</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="/assets/css/style.css">
+
+    <link rel="stylesheet" href="/assets/analytics.css">
+</head>
+
+<body data-page-header="Branch Profitability">
+
+    <div id="topbar-wrapper"></div>
+
+    <div class="app-container">
+
+        <div id="sidebar-wrapper"></div>
+
+        <main class="main-content">
+
+            <div class="container-fluid py-4">
+
+                <section class="dashboard-header">
+
+                    <p>
+                        Comparing revenue, expenses and margins across branches
+                    </p>
+
+                    <div class="filters">
+                        <input type="date">
+
+                        <select>
+                            <option>All Branches</option>
+                            <option>Balagtas</option>
+                            <option>Borol</option>
+                            <option>Bullihan Centro</option>
+                            <option>Pandi</option>
+                            <option>Northville 6</option>
+                            <option>Santol</option>
+                            <option>Pulong Gubat</option>
+                        </select>
+                    </div>
+
+                </section>
+
+                <section class="cards">
+
+                    <div class="card">
+                        <h3>HIGHEST PERFORMING</h3>
+                        <div class="card-value" id="highest">
+                            Balagtas
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>LOWEST PERFORMING</h3>
+                        <div class="card-value" id="lowest">
+                            Santol
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>AVERAGE PROFIT MARGIN</h3>
+                        <div class="card-value" id="averageMargin">
+                            30%
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>TOTAL ACTIVE BRANCHES</h3>
+                        <div class="card-value" id="branches">
+                            7
+                        </div>
+                    </div>
+
+                </section>
+
+                <section class="charts">
+
+                    <div class="chart-box profitability-chart">
+                        <h2>Branch Revenue Comparison</h2>
+                        <canvas id="branchRevenueChart"></canvas>
+                    </div>
+
+                    <div class="chart-box profitability-chart">
+                        <h2>Profit Margin Ranking</h2>
+                        <canvas id="marginChart"></canvas>
+                    </div>
+
+                </section>
+
+                <section class="summary">
+
+                    <h2>Branch Performance Detail</h2>
+
+                    <table class="branch-table">
+
+                        <thead>
+                            <tr>
+                                <th>Branch</th>
+                                <th>Revenue</th>
+                                <th>Expenses</th>
+                                <th>Profit Margin</th>
+                                <th>Rank</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="branchPerformanceBody">
+                        </tbody>
+
+                    </table>
+
+                </section>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <script src="/js/shared/bars.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="/js/branch-profitability.js"></script>
+
+</body>
+
+</html>

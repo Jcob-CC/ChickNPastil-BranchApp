@@ -1,0 +1,63 @@
+{
+    "raw_materials": [
+        {
+            "id": "#RM-1001",
+            "name": "Dressed Chicken",
+            "category": "Poultry / Raw Meat",
+            "current_stock": 120,
+            "min_limit": 150,
+            "unit": "kg",
+            "status": "Low Stock"
+        },
+        {
+            "id": "#RM-1002",
+            "name": "Jasmine Rice",
+            "category": "Grains",
+            "current_stock": 450,
+            "min_limit": 200,
+            "unit": "kg",
+            "status": "In Stock"
+        }
+    ],
+    "active_batches": [
+        {
+            "id": "#BATCH-2026-004",
+            "recipe_target": "Classic Chicken Pastil Tubs",
+            "target_yield": "300 Tubs",
+            "status": "Low Ingredient Alert"
+        },
+        {
+            "id": "#BATCH-2026-005",
+            "recipe_target": "Spicy Pastil Tubs",
+            "target_yield": "150 Tubs",
+            "status": "Ready to Start"
+        }
+    ],
+    "deliveries": [
+        {
+            "id": "#DEL-2026-001",
+            "branch_name": "Balagtas Branch",
+            "items_summary": "70 Total Units",
+            "status": "Ready to Dispatch"
+        }
+    ],
+    "purchase_orders": [
+        {
+            "id": "#PO-2026-089",
+            "supplier_name": "Magnolia Poultry",
+            "total_value": 45000,
+            "trigger_reason": "Low Stock",
+            "status": "Draft Pending"
+        }
+    ],
+    "wastages": [
+        {
+            "id": "#WASTE-2026-001",
+            "item_name": "Dressed Chicken",
+            "quantity": 5,
+            "unit": "kg",
+            "reason": "Spoiled / Expired",
+            "date": "2026-10-29"
+        }
+    ]
+}
