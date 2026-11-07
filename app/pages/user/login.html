@@ -20,9 +20,7 @@
         <div class="card-body p-4 p-sm-5">
           <header class="text-center mb-4">
             <img class="login-logo" src="../../assets/img/logo.png" alt="Tine's Kitchen Chick Pastil" />
-            <p class="small text-success fw-semibold text-uppercase mb-2">Branch management</p>
             <h1 class="h3 mb-2" id="loginHeading">Welcome back</h1>
-            <p class="text-secondary mb-0">Sign in to manage your branch.</p>
           </header>
 
           <form id="loginForm">
@@ -39,6 +37,18 @@
               Sign in <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
             </button>
           </form>
+
+          <div class="text-center mt-3">
+            <button class="btn btn-link btn-sm text-success text-decoration-none" id="forgotPasswordButton" type="button">
+              Forgot password?
+            </button>
+          </div>
+          <div class="text-center mt-1">
+            <span class="small text-secondary">Need an account?</span>
+            <button class="btn btn-link btn-sm text-success text-decoration-none" id="applyForAccountButton" type="button">
+              Apply here
+            </button>
+          </div>
 
           <p class="small text-secondary text-center mt-4 mb-0">
             <i class="bi bi-shield-check me-1" aria-hidden="true"></i>
@@ -69,6 +79,110 @@
         <div class="modal-footer">
           <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
           <button class="btn btn-success" id="verifyCodeButton" type="button">Verify and continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="passwordRecoveryModal" tabindex="-1" aria-labelledby="passwordRecoveryTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title fs-5" id="passwordRecoveryTitle">Reset your password</h2>
+            <p class="small text-secondary mb-0 mt-1">We’ll email you a verification code.</p>
+          </div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="passwordRecoveryRequestForm">
+            <div class="mb-3">
+              <label class="form-label" for="recoveryEmail">Email address</label>
+              <input class="form-control" id="recoveryEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
+            </div>
+            <div class="small text-secondary mb-3" id="recoveryRequestMessage" role="status" aria-live="polite"></div>
+            <button class="btn btn-success w-100" type="submit">Send verification code</button>
+          </form>
+
+          <form id="passwordRecoveryVerifyForm" hidden>
+            <p class="small text-secondary">If an active account matches that email, a verification code will be sent.</p>
+            <div class="mb-3">
+              <label class="form-label" for="recoveryCode">Verification code</label>
+              <input class="form-control verification-code" id="recoveryCode" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required />
+              <div class="form-text">The code expires after 10 minutes.</div>
+            </div>
+            <div class="small text-danger mb-3" id="recoveryVerifyMessage" role="status" aria-live="polite"></div>
+            <div class="d-grid gap-2">
+              <button class="btn btn-success" type="submit">Verify code</button>
+              <button class="btn btn-outline-secondary" id="requestAnotherRecoveryCodeButton" type="button">Request another code</button>
+            </div>
+          </form>
+
+          <form id="passwordRecoveryCompleteForm" hidden>
+            <div class="mb-3">
+              <label class="form-label" for="recoveryNewPassword">New password</label>
+              <input class="form-control" id="recoveryNewPassword" name="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="256" required />
+              <div class="form-text">Use between 8 and 256 characters.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="recoveryConfirmPassword">Confirm new password</label>
+              <input class="form-control" id="recoveryConfirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="256" required />
+            </div>
+            <div class="small text-danger mb-3" id="recoveryCompleteMessage" role="status" aria-live="polite"></div>
+            <button class="btn btn-success w-100" type="submit">Reset password</button>
+          </form>
+
+          <div id="passwordRecoverySuccess" hidden>
+            <p class="text-success mb-3" role="status">Your password has been reset. You can now sign in.</p>
+            <button class="btn btn-success w-100" type="button" data-bs-dismiss="modal">Back to sign in</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="accountApplicationModal" tabindex="-1" aria-labelledby="accountApplicationTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title fs-5" id="accountApplicationTitle">Apply for an account</h2>
+            <p class="small text-secondary mb-0 mt-1">Your account will need manager activation before you can sign in.</p>
+          </div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="accountApplicationForm">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label" for="applicationFirstName">First name</label>
+                <input class="form-control" id="applicationFirstName" name="firstName" type="text" autocomplete="given-name" maxlength="100" required />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="applicationLastName">Last name</label>
+                <input class="form-control" id="applicationLastName" name="lastName" type="text" autocomplete="family-name" maxlength="100" required />
+              </div>
+            </div>
+            <div class="mt-3">
+              <label class="form-label" for="applicationEmail">Email address</label>
+              <input class="form-control" id="applicationEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
+            </div>
+            <div class="mt-3">
+              <label class="form-label" for="applicationPassword">Password</label>
+              <input class="form-control" id="applicationPassword" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="256" required />
+              <div class="form-text">Use between 8 and 256 characters.</div>
+            </div>
+            <div class="mt-3">
+              <label class="form-label" for="applicationConfirmPassword">Confirm password</label>
+              <input class="form-control" id="applicationConfirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="256" required />
+            </div>
+            <div class="small text-danger mt-3" id="accountApplicationMessage" role="status" aria-live="polite"></div>
+            <button class="btn btn-success w-100 mt-3" type="submit">Submit application</button>
+          </form>
+          <div id="accountApplicationSuccess" hidden>
+            <p class="text-success mb-2" role="status">Your application has been submitted.</p>
+            <p class="mb-0">Wait for your account to be activated. Please contact your manager for approval.</p>
+          </div>
         </div>
       </div>
     </div>

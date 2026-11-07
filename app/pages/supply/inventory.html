@@ -26,8 +26,8 @@
     <main class="main-content">
       <div class="container-fluid py-4">
         <div class="d-flex justify-content-end mb-3">
-          <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#addItemModal">
-            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add item
+          <button class="btn btn-success" id="addGeneralStockItemButton" type="button" data-bs-toggle="modal" data-bs-target="#addGeneralStockItemModal">
+            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add general stock item
           </button>
         </div>
 
@@ -158,24 +158,21 @@
 
   </div>
 
-  <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalTitle" aria-hidden="true">
+  <div class="modal fade" id="addGeneralStockItemModal" tabindex="-1" aria-labelledby="addGeneralStockItemModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <div><h2 class="modal-title fs-5" id="addItemModalTitle">Add item to branch</h2><p class="small text-secondary mb-0 mt-1">Select a catalog item and set its branch inventory values</p></div>
+          <div><h2 class="modal-title fs-5" id="addGeneralStockItemModalTitle">Add general stock item</h2><p class="small text-secondary mb-0 mt-1">Create a shared item for branch inventory</p></div>
           <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <form id="addInventoryForm">
+        <form id="addGeneralStockItemForm">
         <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-12"><label class="form-label" for="newInventoryCatalogItem">General stock item</label><select class="form-select" id="newInventoryCatalogItem" required><option value="">Select a catalog item</option></select></div>
-            <div class="col-6"><label class="form-label" for="newItemStock">Branch quantity</label><input class="form-control" id="newItemStock" type="number" min="0" step="0.01" value="0" required></div>
-            <div class="col-6"><label class="form-label" for="newItemThreshold">Low quantity threshold</label><input class="form-control" id="newItemThreshold" type="number" min="0" step="0.01" value="0" required></div>
-            <div class="col-12"><label class="form-label" for="newItemTarget">Restock target quantity</label><input class="form-control" id="newItemTarget" type="number" min="0" step="0.01" value="0" required></div>
-          </div>
+          <div class="mb-3"><label class="form-label" for="newGeneralStockItemName">Item name</label><input class="form-control" id="newGeneralStockItemName" name="name" maxlength="150" required></div>
+          <div class="mb-3"><label class="form-label" for="newGeneralStockItemUnit">Unit</label><input class="form-control" id="newGeneralStockItemUnit" name="unit_type" maxlength="50" required><div class="form-text">How this item is counted, such as kg, bottle, pack, or sack.</div></div>
+          <div class="mb-3"><label class="form-label" for="newGeneralStockItemCost">Unit cost (PHP)</label><input class="form-control" id="newGeneralStockItemCost" name="unit_cost" type="number" min="0" step="0.01" required></div>
           <div class="small text-danger mt-3" data-modal-error role="alert"></div>
         </div>
-        <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="submit">Add to branch</button></div>
+        <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="submit">Create item</button></div>
         </form>
       </div>
     </div>

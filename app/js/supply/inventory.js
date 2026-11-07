@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inventoryRows = document.getElementById('inventoryRows');
     const inventoryLogRows = document.getElementById('inventoryLogRows');
     const receivedLogRows = document.getElementById('receivedLogRows');
-    const addItemModal = document.getElementById('addItemModal');
+    const addGeneralStockItemModal = document.getElementById('addGeneralStockItemModal');
     const settingsModal = document.getElementById('editBranchSpecsModal');
     const updateStockModal = document.getElementById('updateStockModal');
     const receivedLogDetailsModal = bootstrap.Modal.getOrCreateInstance(
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cell.colSpan = 6;
             cell.className = 'text-center text-secondary py-4';
             cell.textContent = data.total === 0 && !state.search
-                ? 'No items in this branch inventory yet.'
+                ? 'No active general stock items found.'
                 : 'No inventory items match your search.';
             row.appendChild(cell);
             inventoryRows.appendChild(row);
@@ -118,26 +118,37 @@ document.addEventListener('DOMContentLoaded', () => {
             quantity.className = 'fw-semibold';
             quantity.textContent = `${formatQuantity(item.quantity)} ${item.unit_type}`;
             stockCell.appendChild(quantity);
-            if (Number(item.quantity) <= Number(item.low_quantity_threshold)) {
+            if (item.branch_inventory_item_id !== null &&
+                Number(item.quantity) <= Number(item.low_quantity_threshold)) {
                 const badge = document.createElement('span');
                 badge.className = 'badge bg-warning-subtle text-warning-emphasis ms-1';
                 badge.textContent = 'Low';
                 stockCell.appendChild(badge);
             }
             row.appendChild(stockCell);
-            appendCell(row, `${formatQuantity(item.low_quantity_threshold)} ${item.unit_type}`);
-            appendCell(row, `${formatQuantity(item.restock_target_quantity)} ${item.unit_type}`);
+            appendCell(
+                row,
+                item.low_quantity_threshold === null
+                    ? 'N/A'
+                    : `${formatQuantity(item.low_quantity_threshold)} ${item.unit_type}`,
+            );
+            appendCell(
+                row,
+                item.restock_target_quantity === null
+                    ? 'N/A'
+                    : `${formatQuantity(item.restock_target_quantity)} ${item.unit_type}`,
+            );
             appendCell(row, `PHP ${Number(item.unit_cost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 
             const actions = document.createElement('td');
             actions.className = 'text-end pe-3 text-nowrap';
             actions.innerHTML = `
                 <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal"
-                    data-bs-target="#editBranchSpecsModal" data-action="settings" data-id="${item.id}">
+                    data-bs-target="#editBranchSpecsModal" data-action="settings" data-id="${item.general_stock_item_id}">
                     <i class="bi bi-sliders me-1" aria-hidden="true"></i>Edit branch settings
                 </button>
                 <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="modal"
-                    data-bs-target="#updateStockModal" data-action="stock" data-id="${item.id}">
+                    data-bs-target="#updateStockModal" data-action="stock" data-id="${item.general_stock_item_id}">
                     <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Update stock
                 </button>`;
             row.appendChild(actions);
@@ -151,16 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `${data.total} ${data.total === 1 ? 'item' : 'items'}`;
         renderPagination('inventoryPagination', data.page, data.pageCount);
 
-        const catalog = document.getElementById('newInventoryCatalogItem');
-        const selectedValue = catalog.value;
-        catalog.replaceChildren(new Option('Select a catalog item', ''));
-        catalog.disabled = data.availableItems.length === 0;
-        data.availableItems.forEach((item) => {
-            catalog.add(new Option(`${item.name} · ${item.unit_type}`, item.id));
-        });
-        if (data.availableItems.some((item) => String(item.id) === selectedValue)) {
-            catalog.value = selectedValue;
-        }
     };
 
     const renderLogs = (data) => {
@@ -340,37 +341,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    addItemModal.addEventListener('show.bs.modal', () => clearError());
+    addGeneralStockItemModal.addEventListener('show.bs.modal', () => clearError());
     settingsModal.addEventListener('show.bs.modal', (event) => {
         clearError();
-        const item = state.items.find((entry) => String(entry.id) === event.relatedTarget.dataset.id);
+        const item = state.items.find(
+            (entry) => String(entry.general_stock_item_id) === event.relatedTarget.dataset.id,
+        );
         if (!item) return;
 
-        settingsModal.dataset.itemId = item.id;
+        settingsModal.dataset.itemId = item.general_stock_item_id;
         document.getElementById('editBranchSpecsModalTitle').nextElementSibling.textContent = `${item.name} · ${item.unit_type}`;
-        document.getElementById('branchLowThreshold').value = item.low_quantity_threshold;
-        document.getElementById('branchRestockTarget').value = item.restock_target_quantity;
+        document.getElementById('branchLowThreshold').value = item.low_quantity_threshold ?? 0;
+        document.getElementById('branchRestockTarget').value = item.restock_target_quantity ?? 0;
     });
 
     updateStockModal.addEventListener('show.bs.modal', (event) => {
         clearError();
-        const item = state.items.find((entry) => String(entry.id) === event.relatedTarget.dataset.id);
+        const item = state.items.find(
+            (entry) => String(entry.general_stock_item_id) === event.relatedTarget.dataset.id,
+        );
         if (!item) return;
 
-        updateStockModal.dataset.itemId = item.id;
+        updateStockModal.dataset.itemId = item.general_stock_item_id;
         document.getElementById('updateStockModalTitle').nextElementSibling.textContent = `${item.name} · ${item.unit_type}`;
         document.getElementById('currentStock').value = `${formatQuantity(item.quantity)} ${item.unit_type}`;
         document.getElementById('updatedStock').value = item.quantity;
     });
 
-    document.getElementById('addInventoryForm').addEventListener('submit', (event) => {
+    document.getElementById('addGeneralStockItemForm').addEventListener('submit', (event) => {
         event.preventDefault();
-        saveForm('/supply/inventory/items', {
-            generalStockItemId: document.getElementById('newInventoryCatalogItem').value,
-            quantity: document.getElementById('newItemStock').value,
-            lowQuantityThreshold: document.getElementById('newItemThreshold').value,
-            restockTargetQuantity: document.getElementById('newItemTarget').value,
-        }, addItemModal);
+        saveForm('/user/manager/stock-items', {
+            name: document.getElementById('newGeneralStockItemName').value,
+            unit_type: document.getElementById('newGeneralStockItemUnit').value,
+            unit_cost: document.getElementById('newGeneralStockItemCost').value,
+        }, addGeneralStockItemModal);
     });
 
     document.getElementById('branchSettingsForm').addEventListener('submit', (event) => {
