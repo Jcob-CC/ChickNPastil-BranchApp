@@ -182,56 +182,12 @@ router.get(
 );
 
 router.get('/api/analytics/wastage-insights', (req, res) => {
-
-    const wastageCount =
-        commissaryDb.prepare(`
-            SELECT COUNT(*) AS total
-            FROM wastages
-        `).get();
-
-    const totalCost =
-        commissaryDb.prepare(`
-        SELECT IFNULL(
-            SUM(estimated_cost),
-            0
-        ) AS total
-        FROM wastages
-    `).get();
-
-    const topItem = commissaryDb.prepare(`
-    SELECT item_name,
-           SUM(quantity) AS qty
-    FROM wastages
-    GROUP BY item_name
-    ORDER BY qty DESC
-    LIMIT 1
-`).get();
-
-    const wastages = commissaryDb.prepare(`
-    SELECT *
-    FROM wastages
-    ORDER BY date_recorded DESC
-`).all();
-
-    const topBranch =
-        commissaryDb.prepare(`
-        SELECT
-            branch_name,
-            SUM(estimated_cost) AS total_cost
-        FROM wastages
-        GROUP BY branch_name
-        ORDER BY total_cost DESC
-        LIMIT 1
-    `).get();
-
     res.json({
-        totalCost: totalCost.total,
-        incidents: wastageCount.total,
-        topItem: topItem?.item_name || 'N/A',
-        topBranch:
-            topBranch?.branch_name ||
-            'N/A',
-        wastages
+        totalCost: 0,
+        incidents: 0,
+        topItem: 'N/A',
+        topBranch: 'N/A',
+        wastages: []
     });
 });
 
