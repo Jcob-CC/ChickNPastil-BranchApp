@@ -44,7 +44,19 @@ fetch('/api/analytics/sales-insights')
         console.error(error);
     });
 
-fetch('/api/analytics/sales-trends')
+const date =
+    document.getElementById('dateFilter')?.value || '';
+
+const branch =
+    document.getElementById('branchFilter')?.value || 'all';
+
+const query =
+    new URLSearchParams({
+        date,
+        branch
+    });
+
+fetch(`/api/analytics/sales-trends?${query}`)
     .then(response => response.json())
     .then(data => {
 
@@ -67,9 +79,13 @@ fetch('/api/analytics/sales-trends')
 
                         data: data.dailySales,
 
-                        borderColor: '#7b1e1e',
-                        backgroundColor: 'rgba(123,30,30,.10)',
+                        borderColor: '#2D6E36',
+
+                        backgroundColor:
+                            'rgba(123,30,30,.10)',
+
                         fill: true,
+
                         tension: .4
 
                     }]
@@ -77,14 +93,19 @@ fetch('/api/analytics/sales-trends')
                 },
 
                 options: {
+
                     responsive: true,
+
                     maintainAspectRatio: false,
 
                     plugins: {
+
                         legend: {
                             display: false
                         }
+
                     }
+
                 }
 
             });
@@ -116,9 +137,8 @@ if (hourlyCanvas) {
 
                         data: data.sales,
 
-                        backgroundColor: '#d58a1f',
+                        backgroundColor: '#2D6E36',
                         borderRadius: 10
-
                     }]
                 },
 
@@ -169,7 +189,7 @@ if (dayCanvas) {
 
                         data: data.sales,
 
-                        backgroundColor: '#153d29',
+                        backgroundColor: '#BE2D2D',
                         borderRadius: 10
                     }]
                 },

@@ -1,8 +1,30 @@
 console.log("Payment Audit Loaded");
 
-fetch('/api/analytics/payment-audit')
-    .then(response => response.json())
-    .then(data => {
+let statusChart = null;
+let paymentChart = null;
+
+async function loadPaymentAudit() {
+
+    try {
+
+        const date =
+            document.getElementById('dateFilter')?.value || '';
+
+        const branch =
+            document.getElementById('branchFilter')?.value || 'all';
+
+        const status =
+            document.getElementById('statusFilter')?.value || 'all';
+
+        const query = new URLSearchParams({
+            date,
+            branch,
+            status
+        });
+
+        const data = await fetch(
+            `/api/analytics/payment-audit?${query}`
+        ).then(response => response.json());
 
         document.getElementById('transactions').innerText =
             data.transactions;
@@ -14,17 +36,31 @@ fetch('/api/analytics/payment-audit')
             data.review;
 
         document.getElementById('discrepancy').innerText =
-            '₱' + data.discrepancy;
+            `₱${Number(data.discrepancy).toLocaleString()}`;
 
         document.getElementById('matchRate').innerText =
-            data.matchedPercentage + '% match rate';
+            `${data.matchedPercentage}% match rate`;
 
         document.getElementById('flaggedCount').innerText =
-            data.review + ' flagged';
+            `${data.review} flagged`;
 
         createCharts(data);
 
-    });
+        const rows = await fetch(
+            `/api/analytics/payment-log?${query}`
+        ).then(response => response.json());
+
+        renderTable(rows);
+
+    } catch (error) {
+
+        console.error(
+            'Payment Audit Load Error:',
+            error
+        );
+
+    }
+}
 
 function createCharts(data) {
 
@@ -33,7 +69,11 @@ function createCharts(data) {
 
     if (statusCanvas) {
 
-        new Chart(statusCanvas, {
+        if (statusChart) {
+            statusChart.destroy();
+        }
+
+        statusChart = new Chart(statusCanvas, {
 
             type: 'pie',
 
@@ -65,17 +105,27 @@ function createCharts(data) {
             options: {
 
                 responsive: true,
+
                 maintainAspectRatio: false,
 
                 plugins: {
+
                     legend: {
+
                         position: 'right',
+
                         labels: {
+
                             usePointStyle: true,
+
                             pointStyle: 'circle',
+
                             padding: 20
+
                         }
+
                     }
+
                 }
 
             }
@@ -89,7 +139,11 @@ function createCharts(data) {
 
     if (paymentCanvas) {
 
-        new Chart(paymentCanvas, {
+        if (paymentChart) {
+            paymentChart.destroy();
+        }
+
+        paymentChart = new Chart(paymentCanvas, {
 
             type: 'pie',
 
@@ -121,17 +175,27 @@ function createCharts(data) {
             options: {
 
                 responsive: true,
+
                 maintainAspectRatio: false,
 
                 plugins: {
+
                     legend: {
+
                         position: 'right',
+
                         labels: {
+
                             usePointStyle: true,
+
                             pointStyle: 'circle',
+
                             padding: 20
+
                         }
+
                     }
+
                 }
 
             }
@@ -139,71 +203,108 @@ function createCharts(data) {
         });
 
     }
-
 }
 
-fetch('/api/analytics/payment-log')
-    .then(response => response.json())
-    .then(rows => {
+function renderTable(rows) {
 
-        const tbody =
-            document.getElementById('paymentAuditBody');
+    const tbody =
+        document.getElementById('paymentAuditBody');
 
-        if (!tbody) return;
+    if (!tbody) return;
 
-        tbody.innerHTML = '';
+    tbody.innerHTML = '';
 
-        rows.forEach(payment => {
+    if (!rows.length) {
 
-            const difference =
-                payment.amount_paid -
-                payment.amount_due;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center">
+                    No transactions found
+                </td>
+            </tr>
+        `;
 
-            tbody.innerHTML += `
-                <tr>
+        return;
+    }
 
-                    <td>
-                        ${new Date(payment.paid_at)
-                            .toLocaleDateString('en-US', {
+    rows.forEach(payment => {
+
+        const difference =
+            payment.amount_paid -
+            payment.amount_due;
+
+        tbody.innerHTML += `
+            <tr>
+
+                <td>
+                    ${new Date(payment.paid_at)
+                        .toLocaleDateString(
+                            'en-US',
+                            {
                                 month: 'short',
                                 day: '2-digit',
                                 year: 'numeric'
-                            })}
-                    </td>
+                            }
+                        )}
+                </td>
 
-                    <td>
-                        ${payment.payment_method}
-                    </td>
+                <td>
+                    ${payment.payment_method}
+                </td>
 
-                    <td>
-                        ₱${Number(payment.amount_due)
-                            .toLocaleString()}
-                    </td>
+                <td>
+                    ₱${Number(payment.amount_due)
+                        .toLocaleString()}
+                </td>
 
-                    <td>
-                        ₱${Number(payment.amount_paid)
-                            .toLocaleString()}
-                    </td>
+                <td>
+                    ₱${Number(payment.amount_paid)
+                        .toLocaleString()}
+                </td>
 
-                    <td>
-                        ₱${Number(difference)
-                            .toLocaleString()}
-                    </td>
+                <td>
+                    ₱${Number(difference)
+                        .toLocaleString()}
+                </td>
 
-                    <td class="${
+                <td class="${
+                    payment.payment_status === 'Verified'
+                        ? 'positive'
+                        : 'negative'
+                }">
+
+                    ${
                         payment.payment_status === 'Verified'
-                            ? 'positive'
-                            : 'negative'
-                    }">
-                        ${payment.payment_status}
-                    </td>
+                            ? 'Matched'
+                            : 'For Review'
+                    }
 
-                </tr>
-            `;
+                </td>
 
-        });
-
-    })
-    .catch(error => {
-        console.error(error);
+            </tr>
+        `;
     });
+}
+
+document
+    .getElementById('dateFilter')
+    ?.addEventListener(
+        'change',
+        loadPaymentAudit
+    );
+
+document
+    .getElementById('branchFilter')
+    ?.addEventListener(
+        'change',
+        loadPaymentAudit
+    );
+
+document
+    .getElementById('statusFilter')
+    ?.addEventListener(
+        'change',
+        loadPaymentAudit
+    );
+
+loadPaymentAudit();

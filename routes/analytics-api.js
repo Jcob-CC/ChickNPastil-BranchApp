@@ -9,33 +9,73 @@ const path = require('path');
 
 router.get('/api/analytics/financial-overview', (req, res) => {
 
+    const { date, branch } = req.query;
+
+    let whereClause = `
+    WHERE order_status='Completed'
+`;
+
+    const params = [];
+
+    if (date) {
+        whereClause += `
+        AND DATE(order_datetime) = ?
+    `;
+        params.push(date);
+    }
+
+    if (branch && branch !== 'all') {
+        whereClause += `
+        AND branch_name = ?
+    `;
+        params.push(branch);
+    }
+    
     const revenue = db.prepare(`
-        SELECT IFNULL(SUM(order_total),0) AS total
-        FROM orders
-        WHERE order_status='Completed'
-    `).get();
+    SELECT IFNULL(SUM(order_total),0) AS total
+    FROM orders
+    ${whereClause}
+`).get(...params);
 
 
     const transactions = db.prepare(`
-        SELECT COUNT(*) AS total
-        FROM orders
-        WHERE order_status='Completed'
-    `).get();
+    SELECT COUNT(*) AS total
+    FROM orders
+    ${whereClause}
+`).get(...params);
 
 
     const cash = db.prepare(`
-        SELECT COUNT(*) AS total
-        FROM payments
-        WHERE payment_method='Cash'
-        AND payment_status='Verified'
-    `).get();
+    SELECT COUNT(*) AS total
+    FROM payments p
+    JOIN orders o
+        ON o.order_id = p.order_id
+    WHERE p.payment_method='Cash'
+    AND p.payment_status='Verified'
+    ${branch && branch !== 'all'
+            ? 'AND o.branch_name = ?'
+            : ''}
+`).get(...(
+                branch && branch !== 'all'
+                    ? [branch]
+                    : []
+            ));
 
     const gcash = db.prepare(`
-        SELECT COUNT(*) AS total
-        FROM payments
-        WHERE payment_method='GCash'
-        AND payment_status='Verified'
-    `).get();
+    SELECT COUNT(*) AS total
+    FROM payments p
+    JOIN orders o
+        ON o.order_id = p.order_id
+    WHERE p.payment_method='GCash'
+    AND p.payment_status='Verified'
+    ${branch && branch !== 'all'
+            ? 'AND o.branch_name = ?'
+            : ''}
+`).get(...(
+                branch && branch !== 'all'
+                    ? [branch]
+                    : []
+            ));
 
     const expenses = db.prepare(`
         SELECT IFNULL(SUM(total_price),0) AS total
@@ -56,17 +96,41 @@ router.get('/api/analytics/financial-overview', (req, res) => {
 
 router.get('/api/analytics/financial-summary', (req, res) => {
 
-    const rows = db.prepare(`
+    const { date, branch } = req.query;
+
+    let query = `
         SELECT
             DATE(order_datetime) AS date,
             COUNT(*) AS transactions,
             SUM(order_total) AS revenue
         FROM orders
         WHERE order_status = 'Completed'
+    `;
+
+    const params = [];
+
+    if (date) {
+        query += `
+            AND DATE(order_datetime) = ?
+        `;
+        params.push(date);
+    }
+
+    if (branch && branch !== 'all') {
+        query += `
+            AND branch_name = ?
+        `;
+        params.push(branch);
+    }
+
+    query += `
         GROUP BY DATE(order_datetime)
         ORDER BY DATE(order_datetime) DESC
         LIMIT 7
-    `).all();
+    `;
+
+    const rows =
+        db.prepare(query).all(...params);
 
     const result = rows.map(row => ({
         date: row.date,
@@ -119,16 +183,39 @@ router.get('/api/analytics/branch-profitability', (req, res) => {
 
 router.get('/api/analytics/sales-trends', (req, res) => {
 
-    const sales = db.prepare(`
+    const { date, branch } = req.query;
+
+    let query = `
         SELECT
-            DATE(order_datetime) as sales_date,
-            SUM(order_total) as total_sales
+            DATE(order_datetime) AS sales_date,
+            SUM(order_total) AS total_sales
         FROM orders
         WHERE order_status = 'Completed'
+    `;
+
+    const params = [];
+
+    if (date) {
+        query += `
+            AND DATE(order_datetime) = ?
+        `;
+        params.push(date);
+    }
+
+    if (branch && branch !== 'all') {
+        query += `
+            AND branch_name = ?
+        `;
+        params.push(branch);
+    }
+
+    query += `
         GROUP BY DATE(order_datetime)
         ORDER BY sales_date
-        LIMIT 7
-    `).all();
+    `;
+
+    const sales =
+        db.prepare(query).all(...params);
 
     res.json({
         labels: sales.map(item => {
@@ -140,91 +227,121 @@ router.get('/api/analytics/sales-trends', (req, res) => {
             });
         }),
 
-        dailySales: sales.map(item => item.total_sales)
+        dailySales:
+            sales.map(item => item.total_sales)
     });
+
 });
 
-router.get(
-    '/api/analytics/payment-audit',
-    (req, res) => {
+router.get('/api/analytics/payment-audit', (req, res) => {
 
-        const transactions =
-            db.prepare(`
-                SELECT COUNT(*) AS total
-                FROM payments
-            `).get();
+    const {
+        date,
+        branch,
+        status
+    } = req.query;
 
-        const matched =
-            db.prepare(`
-                SELECT COUNT(*) AS total
-                FROM payments
-                WHERE payment_status='Verified'
-            `).get();
+    let query = `
+        SELECT
+            p.*,
+            o.branch_name
+        FROM payments p
+        JOIN orders o
+            ON o.order_id = p.order_id
+        WHERE 1=1
+    `;
 
-        const review =
-            db.prepare(`
-                SELECT COUNT(*) AS total
-                FROM payments
-                WHERE payment_status!='Verified'
-            `).get();
+    const params = [];
 
-        const cash =
-            db.prepare(`
-                SELECT COUNT(*) AS total
-                FROM payments
-                WHERE payment_method='Cash'
-            `).get();
-
-        const gcash =
-            db.prepare(`
-                SELECT COUNT(*) AS total
-                FROM payments
-                WHERE payment_method='GCash'
-            `).get();
-
-        const discrepancy =
-            db.prepare(`
-                SELECT
-                    IFNULL(
-                        SUM(
-                            ABS(amount_paid - amount_due)
-                        ),
-                        0
-                    ) AS total
-                FROM payments
-            `).get();
-
-        const totalPayments =
-            transactions.total || 1;
-
-        res.json({
-
-            transactions: transactions.total,
-
-            matched: matched.total,
-
-            review: review.total,
-
-            discrepancy: discrepancy.total,
-
-            matchedPercentage:
-                Math.round(
-                    (matched.total / totalPayments) * 100
-                ),
-
-            reviewPercentage:
-                Math.round(
-                    (review.total / totalPayments) * 100
-                ),
-
-            cash: cash.total,
-
-            gcash: gcash.total
-
-        });
-
+    if (date) {
+        query += `
+            AND DATE(p.paid_at) = ?
+        `;
+        params.push(date);
     }
-);
+
+    if (branch && branch !== 'all') {
+        query += `
+            AND o.branch_name = ?
+        `;
+        params.push(branch);
+    }
+
+    if (status === 'matched') {
+        query += `
+            AND p.payment_status = 'Verified'
+        `;
+    }
+
+    if (status === 'review') {
+        query += `
+            AND p.payment_status != 'Verified'
+        `;
+    }
+
+    const rows =
+        db.prepare(query).all(...params);
+
+    const transactions =
+        rows.length;
+
+    const matched =
+        rows.filter(
+            row => row.payment_status === 'Verified'
+        ).length;
+
+    const review =
+        rows.filter(
+            row => row.payment_status !== 'Verified'
+        ).length;
+
+    const discrepancy =
+        rows.reduce(
+            (sum, row) =>
+                sum +
+                Math.abs(
+                    Number(row.amount_paid) -
+                    Number(row.amount_due)
+                ),
+            0
+        );
+
+    const cash =
+        rows.filter(
+            row => row.payment_method === 'Cash'
+        ).length;
+
+    const gcash =
+        rows.filter(
+            row => row.payment_method === 'GCash'
+        ).length;
+
+    const matchedPercentage =
+        transactions > 0
+            ? Math.round(
+                (matched / transactions) * 100
+            )
+            : 0;
+
+    const reviewPercentage =
+        transactions > 0
+            ? Math.round(
+                (review / transactions) * 100
+            )
+            : 0;
+
+    res.json({
+        transactions,
+        matched,
+        review,
+        discrepancy,
+        cash,
+        gcash,
+        matchedPercentage,
+        reviewPercentage
+    });
+
+});
 
 router.get('/api/analytics/wastage-insights', (req, res) => {
     res.json({
@@ -430,7 +547,7 @@ router.get('/api/analytics/branch-peak-summary', (req, res) => {
                         year: 'numeric'
                     })
                 : 'N/A',
-                 sales: peakDay?.sales || 0
+            sales: peakDay?.sales || 0
         };
     });
 
@@ -539,19 +656,62 @@ router.get('/api/analytics/daily-sales', (req, res) => {
 
 router.get('/api/analytics/payment-log', (req, res) => {
 
-    const rows = db.prepare(`
+    const {
+        date,
+        branch,
+        status
+    } = req.query;
+
+    let query = `
         SELECT
-            payment_method,
-            amount_due,
-            amount_paid,
-            payment_status,
-            paid_at
-        FROM payments
-        ORDER BY paid_at DESC
-        LIMIT 20
-    `).all();
+            p.payment_method,
+            p.amount_due,
+            p.amount_paid,
+            p.payment_status,
+            p.paid_at,
+            o.branch_name
+        FROM payments p
+        JOIN orders o
+            ON o.order_id = p.order_id
+        WHERE 1 = 1
+    `;
+
+    const params = [];
+
+    if (date) {
+        query += `
+            AND DATE(p.paid_at) = ?
+        `;
+        params.push(date);
+    }
+
+    if (branch && branch !== 'all') {
+        query += `
+            AND o.branch_name = ?
+        `;
+        params.push(branch);
+    }
+
+    if (status === 'matched') {
+        query += `
+            AND p.payment_status = 'Verified'
+        `;
+    }
+
+    if (status === 'review') {
+        query += `
+            AND p.payment_status != 'Verified'
+        `;
+    }
+
+    query += `
+        ORDER BY p.paid_at DESC
+    `;
+
+    const rows =
+        db.prepare(query).all(...params);
 
     res.json(rows);
-
 });
+
 module.exports = router;
