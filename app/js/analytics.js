@@ -59,44 +59,48 @@ function createCharts(data) {
 
     if (revenueCanvas) {
 
-        new Chart(revenueCanvas, {
+        fetch('/api/analytics/sales-trends')
+            .then(response => response.json())
+            .then(chartData => {
 
-            type: 'line',
+                new Chart(revenueCanvas, {
 
-            data: {
-                labels: [
-                    'Sep 19',
-                    'Sep 20',
-                    'Sep 21',
-                    'Sep 22',
-                    'Sep 23',
-                    'Sep 24',
-                    'Sep 25',
-                ],
+                    type: 'line',
 
-                datasets: [
-                    {
-                        label: 'Revenue',
-                        data: [95000, 85000, 42000, 40000, 50000, 60000, 78000],
-                        borderColor: '#2c9f60',
-                        fill: true,
-                        tension: .4
+                    data: {
+                        labels: chartData.labels,
+
+                        datasets: [
+                            {
+                                label: 'Revenue',
+                                data: chartData.dailySales,
+                                borderColor: '#2c9f60',
+                                backgroundColor: 'rgba(44,159,96,0.15)',
+                                fill: true,
+                                tension: 0.4
+                            }
+                        ]
                     },
 
-                ]
-            },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
 
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                layout: {
-                    padding: {
-                        bottom: 30
+                        layout: {
+                            padding: {
+                                bottom: 30
+                            }
+                        }
                     }
-                }
-            }
 
-        });
+                });
+
+            })
+            .catch(error => {
+                console.error('Sales chart error:', error);
+            });
+
+    
     }
 
     const paymentCanvas =
@@ -112,8 +116,8 @@ function createCharts(data) {
                 datasets: [{
                     data: [data.cash, data.gcash],
                     backgroundColor: [
-                        '#2c9f60',
-                        '#133d2a'
+                        '#2D6E36',
+                        '#BE2D2D'
                     ]
                 }]
             },
@@ -137,3 +141,44 @@ function createCharts(data) {
 
     }
 }
+
+fetch('/api/analytics/financial-summary')
+    .then(response => response.json())
+    .then(rows => {
+
+        const tbody =
+            document.getElementById('financialSummaryBody');
+
+        if (!tbody) return;
+
+        tbody.innerHTML = rows.map(row => `
+            <tr>
+                <td>${row.date}</td>
+                <td>₱${Number(row.revenue).toLocaleString()}</td>
+                <td>₱${Number(row.expenses).toLocaleString()}</td>
+                <td>₱${Number(row.profit).toLocaleString()}</td>
+                <td>${row.margin}%</td>
+            </tr>
+        `).join('');
+
+    })
+    .catch(error => {
+        console.error('Financial summary error:', error);
+    });
+
+    document.querySelectorAll('.summary-tab').forEach(button => {
+
+    button.addEventListener('click', () => {
+
+        document.querySelectorAll('.summary-tab')
+            .forEach(btn => btn.classList.remove('active'));
+
+        button.classList.add('active');
+
+        const period = button.dataset.period;
+
+        console.log('Selected:', period);
+
+    });
+
+});

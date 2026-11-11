@@ -11,7 +11,7 @@ fetch('/api/analytics/branch-profitability')
             data.lowest;
 
         document.getElementById('averageMargin').innerText =
-            data.averageMargin + '%';
+            data.averageMargin;
 
         document.getElementById('branches').innerText =
             data.activeBranches;
@@ -74,46 +74,20 @@ function createCharts(data) {
                         branch => branch.revenue
                     ),
 
-                    backgroundColor: '#2c9f60'
+                    backgroundColor: '#2D6E36'
                 }]
             }
         }
     );
 
-    new Chart(
-        document.getElementById('marginChart'),
-        {
-            type: 'bar',
-
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            },
-
-            data: {
-                labels: data.branches.map(
-                    branch => branch.branch_name
-                ),
-
-                datasets: [{
-                    label: 'Profit Margin %',
-
-                    data: data.branches.map(
-                        branch => branch.margin
-                    ),
-
-                    backgroundColor: '#133d2a'
-                }]
-            }
-        }
-    );
+    document.getElementById('marginChart')
+    .parentElement.innerHTML =
+    `
+        <h2>Profit Margin Ranking</h2>
+        <p style="padding:20px;color:#777;">
+            No expense data available.
+        </p>
+    `;
 }
 
 fetch('/api/analytics/branch-performance')
@@ -132,14 +106,30 @@ fetch('/api/analytics/branch-performance')
         data.forEach(branch => {
 
             tbody.innerHTML += `
-                <tr>
-                    <td>${branch.branch}</td>
-                    <td>₱${branch.revenue}</td>
-                    <td>₱${branch.expenses}</td>
-                    <td>${branch.margin}%</td>
-                    <td>#${branch.rank}</td>
-                </tr>
-            `;
+    <tr>
+        <td>${branch.branch}</td>
+
+        <td>
+            ₱${Number(branch.revenue).toLocaleString()}
+        </td>
+
+        <td>
+            ${branch.expenses === null
+                    ? 'N/A'
+                    : '₱' + Number(branch.expenses).toLocaleString()
+                }
+        </td>
+
+        <td>
+            ${branch.margin === null
+                    ? 'N/A'
+                    : branch.margin + '%'
+                }
+        </td>
+
+        <td>#${branch.rank}</td>
+    </tr>
+`;
 
         });
 

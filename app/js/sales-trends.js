@@ -2,11 +2,24 @@ fetch('/api/analytics/sales-insights')
     .then(response => response.json())
     .then(data => {
 
+        const [hour] = data.peakSalesHour.split(':');
+
         document.getElementById('peakHour').innerText =
-            data.peakSalesHour;
+            new Date(
+                `2000-01-01 ${hour}:00:00`
+            ).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
 
         document.getElementById('peakDay').innerText =
-            data.peakSalesDay;
+            new Date(data.peakSalesDay)
+                .toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric'
+                });
 
         document.getElementById('topBranch').innerText =
             data.highestSalesBranch;
@@ -85,58 +98,52 @@ const hourlyCanvas =
 
 if (hourlyCanvas) {
 
-    new Chart(hourlyCanvas, {
+    fetch('/api/analytics/hourly-sales')
+        .then(response => response.json())
+        .then(data => {
 
-        type: 'bar',
+            new Chart(hourlyCanvas, {
 
-        data: {
+                type: 'bar',
 
-            labels: [
-                '9AM',
-                '11AM',
-                '1PM',
-                '3PM',
-                '5PM',
-                '7PM',
-                '9PM'
-            ],
+                data: {
 
-            datasets: [{
+                    labels: data.labels,
 
-                label: 'Sales',
+                    datasets: [{
 
-                data: [
-                    32300,
-                    82800,
-                    124200,
-                    55200,
-                    96600,
-                    149700,
-                    63100
-                ],
+                        label: 'Sales',
 
-                backgroundColor: '#d58a1f',
-                borderRadius: 10
+                        data: data.sales,
 
-            }]
+                        backgroundColor: '#d58a1f',
+                        borderRadius: 10
 
-        },
+                    }]
+                },
 
-        options: {
+                options: {
 
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
+                    indexAxis: 'y',
 
-            plugins: {
-                legend: {
-                    display: false
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+
                 }
-            }
 
-        }
+            });
 
-    });
+        })
+        .catch(error => {
+            console.error(error);
+        });
 
 }
 
@@ -145,62 +152,54 @@ const dayCanvas =
 
 if (dayCanvas) {
 
-    new Chart(dayCanvas, {
+    fetch('/api/analytics/daily-sales')
+        .then(response => response.json())
+        .then(data => {
 
-        type: 'bar',
+            new Chart(dayCanvas, {
 
-        data: {
+                type: 'bar',
 
-            labels: [
-                'Mon',
-                'Tue',
-                'Wed',
-                'Thu',
-                'Fri',
-                'Sat',
-                'Sun'
-            ],
+                data: {
 
-            datasets: [{
+                    labels: data.labels,
 
-                label: 'Sales',
+                    datasets: [{
+                        label: 'Sales',
 
-                data: [
-                    68600,
-                    66700,
-                    73000,
-                    79200,
-                    95700,
-                    116300,
-                    104400
-                ],
+                        data: data.sales,
 
-                backgroundColor: '#153d29',
-                borderRadius: 10
+                        backgroundColor: '#153d29',
+                        borderRadius: 10
+                    }]
+                },
 
-            }]
+                options: {
 
-        },
+                    indexAxis: 'y',
 
-        options: {
+                    responsive: true,
 
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
+                    maintainAspectRatio: false,
 
-            plugins: {
-                legend: {
-                    display: false
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+
                 }
-            }
 
-        }
+            });
 
-    });
+        })
+        .catch(error => {
+            console.error(error);
+        });
 
 }
 
-fetch('/api/analytics/branch-sales-summary')
+fetch('/api/analytics/branch-peak-summary')
     .then(response => response.json())
     .then(data => {
 
@@ -215,24 +214,24 @@ fetch('/api/analytics/branch-sales-summary')
 
         data.forEach(branch => {
 
-    const status =
-        branch.sales >= 3000
-            ? 'Strong'
-            : branch.sales >= 1000
-            ? 'Stable'
-            : 'Watch';
+            const status =
+                branch.sales >= 3000
+                    ? 'Strong'
+                    : branch.sales >= 1000
+                        ? 'Stable'
+                        : 'Watch';
 
-    tbody.innerHTML += `
-        <tr>
-            <td>${branch.branch_name}</td>
-            <td>06:00</td>
-            <td>2026-10-24</td>
-            <td>₱${Number(branch.sales).toLocaleString()}</td>
-            <td>${status}</td>
-        </tr>
-    `;
+            tbody.innerHTML += `
+    <tr>
+        <td>${branch.branch_name}</td>
+        <td>${branch.peakHour}</td>
+        <td>${branch.peakDay}</td>
+        <td>₱${Number(branch.sales).toLocaleString()}</td>
+        <td>${status}</td>
+    </tr>
+`;
 
-});
+        });
 
     })
     .catch(error => {

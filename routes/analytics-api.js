@@ -54,6 +54,32 @@ router.get('/api/analytics/financial-overview', (req, res) => {
 
 });
 
+router.get('/api/analytics/financial-summary', (req, res) => {
+
+    const rows = db.prepare(`
+        SELECT
+            DATE(order_datetime) AS date,
+            COUNT(*) AS transactions,
+            SUM(order_total) AS revenue
+        FROM orders
+        WHERE order_status = 'Completed'
+        GROUP BY DATE(order_datetime)
+        ORDER BY DATE(order_datetime) DESC
+        LIMIT 7
+    `).all();
+
+    const result = rows.map(row => ({
+        date: row.date,
+        revenue: row.revenue,
+        expenses: 0,
+        profit: row.revenue,
+        margin: 100
+    }));
+
+    res.json(result);
+
+});
+
 router.get('/api/analytics/branch-profitability', (req, res) => {
 
     const branches = db.prepare(`
@@ -84,7 +110,7 @@ router.get('/api/analytics/branch-profitability', (req, res) => {
         highestMargin: highest.revenue,
         lowest: lowest.branch_name,
         lowestMargin: lowest.revenue,
-        averageMargin: 0,
+        averageMargin: 'N/A',
         activeBranches: branches.length,
         branches
     });
@@ -105,10 +131,17 @@ router.get('/api/analytics/sales-trends', (req, res) => {
     `).all();
 
     res.json({
-        labels: sales.map(item => item.sales_date),
+        labels: sales.map(item => {
+            const date = new Date(item.sales_date);
+
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: '2-digit'
+            });
+        }),
+
         dailySales: sales.map(item => item.total_sales)
     });
-
 });
 
 router.get(
@@ -117,37 +150,49 @@ router.get(
 
         const transactions =
             db.prepare(`
-            SELECT COUNT(*) AS total
-            FROM payments
-        `).get();
+                SELECT COUNT(*) AS total
+                FROM payments
+            `).get();
 
         const matched =
             db.prepare(`
-            SELECT COUNT(*) AS total
-            FROM payments
-            WHERE payment_status='Verified'
-        `).get();
+                SELECT COUNT(*) AS total
+                FROM payments
+                WHERE payment_status='Verified'
+            `).get();
 
         const review =
             db.prepare(`
-            SELECT COUNT(*) AS total
-            FROM payments
-            WHERE payment_status!='Verified'
-        `).get();
+                SELECT COUNT(*) AS total
+                FROM payments
+                WHERE payment_status!='Verified'
+            `).get();
 
         const cash =
             db.prepare(`
-            SELECT COUNT(*) AS total
-            FROM payments
-            WHERE payment_method='Cash'
-        `).get();
+                SELECT COUNT(*) AS total
+                FROM payments
+                WHERE payment_method='Cash'
+            `).get();
 
         const gcash =
             db.prepare(`
-            SELECT COUNT(*) AS total
-            FROM payments
-            WHERE payment_method='GCash'
-        `).get();
+                SELECT COUNT(*) AS total
+                FROM payments
+                WHERE payment_method='GCash'
+            `).get();
+
+        const discrepancy =
+            db.prepare(`
+                SELECT
+                    IFNULL(
+                        SUM(
+                            ABS(amount_paid - amount_due)
+                        ),
+                        0
+                    ) AS total
+                FROM payments
+            `).get();
 
         const totalPayments =
             transactions.total || 1;
@@ -160,7 +205,7 @@ router.get(
 
             review: review.total,
 
-            discrepancy: 0,
+            discrepancy: discrepancy.total,
 
             matchedPercentage:
                 Math.round(
@@ -206,17 +251,11 @@ router.get('/api/analytics/branch-performance', (req, res) => {
 
     const result = branches.map((branch, index) => {
 
-        const expenses = {
-            total: 0
-        };
+        const expenses = null;
 
-        const profit =
-            branch.revenue - expenses.total;
+        const profit = null;
 
-        const margin =
-            branch.revenue > 0
-                ? ((profit / branch.revenue) * 100)
-                : 0;
+        const margin = null;
 
         return {
             rank: index + 1,
@@ -338,4 +377,181 @@ router.get('/api/analytics/branch-sales-summary', (req, res) => {
 
 });
 
+router.get('/api/analytics/branch-peak-summary', (req, res) => {
+
+    const branches = db.prepare(`
+        SELECT DISTINCT branch_name
+        FROM orders
+        WHERE order_status = 'Completed'
+    `).all();
+
+    const result = branches.map(branch => {
+
+        const peakHour = db.prepare(`
+            SELECT
+                strftime('%H', order_datetime) AS hour,
+                COUNT(*) AS total_orders
+            FROM orders
+            WHERE order_status = 'Completed'
+            AND branch_name = ?
+            GROUP BY hour
+            ORDER BY total_orders DESC
+            LIMIT 1
+        `).get(branch.branch_name);
+
+        const peakDay = db.prepare(`
+            SELECT
+                DATE(order_datetime) AS sales_day,
+                SUM(order_total) AS sales
+            FROM orders
+            WHERE order_status = 'Completed'
+            AND branch_name = ?
+            GROUP BY DATE(order_datetime)
+            ORDER BY sales DESC
+            LIMIT 1
+        `).get(branch.branch_name);
+
+        return {
+            branch_name: branch.branch_name,
+            peakHour: peakHour?.hour
+                ? new Date(
+                    `2000-01-01 ${peakHour.hour}:00:00`
+                ).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                })
+                : 'N/A',
+            peakDay: peakDay?.sales_day
+                ? new Date(peakDay.sales_day)
+                    .toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: '2-digit',
+                        year: 'numeric'
+                    })
+                : 'N/A',
+                 sales: peakDay?.sales || 0
+        };
+    });
+
+    res.json(result);
+
+});
+
+
+router.get('/api/analytics/branch-peak-summary', (req, res) => {
+
+    const branches = db.prepare(`
+        SELECT DISTINCT branch_name
+        FROM orders
+        WHERE order_status = 'Completed'
+    `).all();
+
+    const result = branches.map(branch => {
+
+        const peakHour = db.prepare(`
+            SELECT
+                strftime('%H', order_datetime) AS hour,
+                COUNT(*) AS total_orders
+            FROM orders
+            WHERE order_status = 'Completed'
+            AND branch_name = ?
+            GROUP BY hour
+            ORDER BY total_orders DESC
+            LIMIT 1
+        `).get(branch.branch_name);
+
+        const peakDay = db.prepare(`
+            SELECT
+                DATE(order_datetime) AS sales_day,
+                SUM(order_total) AS sales
+            FROM orders
+            WHERE order_status = 'Completed'
+            AND branch_name = ?
+            GROUP BY DATE(order_datetime)
+            ORDER BY sales DESC
+            LIMIT 1
+        `).get(branch.branch_name);
+
+        return {
+            branch_name: branch.branch_name,
+            peakHour: peakHour?.hour
+                ? `${peakHour.hour}:00`
+                : 'N/A',
+            peakDay: peakDay?.sales_day || 'N/A',
+            sales: peakDay?.sales || 0
+        };
+
+    });
+
+    res.json(result);
+
+});
+
+
+router.get('/api/analytics/hourly-sales', (req, res) => {
+
+    const rows = db.prepare(`
+        SELECT
+            strftime('%H', order_datetime) AS hour,
+            SUM(order_total) AS sales
+        FROM orders
+        WHERE order_status = 'Completed'
+        GROUP BY hour
+        ORDER BY hour
+    `).all();
+
+    res.json({
+        labels: rows.map(row => `${row.hour}:00`),
+        sales: rows.map(row => row.sales)
+    });
+
+});
+
+router.get('/api/analytics/daily-sales', (req, res) => {
+
+    const rows = db.prepare(`
+        SELECT
+            strftime('%w', order_datetime) AS day_num,
+            SUM(order_total) AS sales
+        FROM orders
+        WHERE order_status = 'Completed'
+        GROUP BY day_num
+        ORDER BY day_num
+    `).all();
+
+    const dayNames = [
+        'Sun',
+        'Mon',
+        'Tue',
+        'Wed',
+        'Thu',
+        'Fri',
+        'Sat'
+    ];
+
+    res.json({
+        labels: rows.map(row => dayNames[Number(row.day_num)]),
+        sales: rows.map(row => row.sales)
+    });
+
+});
+
+router.get('/api/analytics/payment-log', (req, res) => {
+
+    const rows = db.prepare(`
+        SELECT
+            payment_method,
+            amount_due,
+            amount_paid,
+            payment_status,
+            paid_at
+        FROM payments
+        ORDER BY paid_at DESC
+        LIMIT 20
+    `).all();
+
+    res.json(rows);
+
+});
 module.exports = router;

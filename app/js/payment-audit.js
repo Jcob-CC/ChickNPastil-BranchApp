@@ -52,8 +52,8 @@ function createCharts(data) {
                     ],
 
                     backgroundColor: [
-                        '#2c9f60',
-                        '#e74c3c'
+                        '#2D6E36',
+                        '#BE2D2D'
                     ],
 
                     radius: '70%'
@@ -108,8 +108,8 @@ function createCharts(data) {
                     ],
 
                     backgroundColor: [
-                        '#133d2a',
-                        '#d58a1f'
+                        '#2D6E36',
+                        '#BE2D2D'
                     ],
 
                     radius: '70%'
@@ -141,3 +141,69 @@ function createCharts(data) {
     }
 
 }
+
+fetch('/api/analytics/payment-log')
+    .then(response => response.json())
+    .then(rows => {
+
+        const tbody =
+            document.getElementById('paymentAuditBody');
+
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        rows.forEach(payment => {
+
+            const difference =
+                payment.amount_paid -
+                payment.amount_due;
+
+            tbody.innerHTML += `
+                <tr>
+
+                    <td>
+                        ${new Date(payment.paid_at)
+                            .toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: '2-digit',
+                                year: 'numeric'
+                            })}
+                    </td>
+
+                    <td>
+                        ${payment.payment_method}
+                    </td>
+
+                    <td>
+                        ₱${Number(payment.amount_due)
+                            .toLocaleString()}
+                    </td>
+
+                    <td>
+                        ₱${Number(payment.amount_paid)
+                            .toLocaleString()}
+                    </td>
+
+                    <td>
+                        ₱${Number(difference)
+                            .toLocaleString()}
+                    </td>
+
+                    <td class="${
+                        payment.payment_status === 'Verified'
+                            ? 'positive'
+                            : 'negative'
+                    }">
+                        ${payment.payment_status}
+                    </td>
+
+                </tr>
+            `;
+
+        });
+
+    })
+    .catch(error => {
+        console.error(error);
+    });

@@ -211,3 +211,51 @@ body{
         flex-wrap:wrap;
     }
 }
+
+.financial-summary-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.summary-tabs{
+    display:flex;
+    gap:8px;
+    background:#f5f5f5;
+    padding:4px;
+    border-radius:12px;
+}
+
+.summary-tab{
+    border:none;
+    background:transparent;
+    padding:8px 16px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+}
+
+.summary-tab.active{
+    background:#2D6E36;
+    color:white;
+    box-shadow:0 2px 8px rgba(0,0,0,0.2);
+}
+
+.financial-summary-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.financial-summary-table th{
+    text-align:left;
+    padding:15px;
+    color:#666;
+    border-bottom:1px solid #eee;
+    font-size:13px;
+}
+
+.financial-summary-table td{
+    padding:15px;
+    border-bottom:1px solid #f2f2f2;
+}
