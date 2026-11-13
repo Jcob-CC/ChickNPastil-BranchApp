@@ -13,13 +13,17 @@ fetch('/api/analytics/wastage-insights')
             )[0];
 
         document.getElementById('topBranch').innerText =
-            highestBranch.branch_name;
+            highestBranch?.branch_name || 'N/A';
 
         document.getElementById('topBranchCost').innerText =
             '₱' +
             Number(
-                highestBranch.estimated_cost
+                highestBranch?.estimated_cost || 0
             ).toLocaleString();
+
+        if (!data.wastages || data.wastages.length === 0) {
+            return;
+        }
 
         document.getElementById('incidents').innerText =
             data.incidents;
@@ -103,9 +107,9 @@ fetch('/api/analytics/wastage-insights')
 
             const maxValue = Math.max(
                 ...data.wastages.map(
-                    item =>
-                        item.estimated_cost
-                )
+                    item => item.estimated_cost
+                ),
+                1
             );
 
             data.wastages.forEach(item => {

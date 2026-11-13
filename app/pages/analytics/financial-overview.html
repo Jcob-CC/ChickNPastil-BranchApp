@@ -34,13 +34,13 @@
                     </p>
 
                     <div class="filters">
-                        <input type="date">
+                        <input type="date" id="dateFilter">
 
                         <select id="branchFilter">
                             <option value="all">All Branches</option>
                             <option value="Balagtas">Balagtas</option>
                             <option value="Borol">Borol</option>
-                            <option value="Bullihan Centro">Bullihan Centro</option>
+                            <option value="Bulihan Centro">Bullihan Centro</option>
                             <option value="Pandi">Pandi</option>
                             <option value="Northville 6">Northville 6</option>
                             <option value="Santol">Santol</option>
@@ -104,11 +104,44 @@
 
                 <section class="summary">
 
-                    <h2>Financial Summary</h2>
+                    <div class="financial-summary-header">
+                        <h2>Financial Summary</h2>
 
-                    <p id="summaryText">
-                        Analytics insights will appear here.
-                    </p>
+                        <div class="summary-tabs">
+                            <button class="summary-tab active" data-period="daily">
+                                Daily
+                            </button>
+
+                            <button class="summary-tab" data-period="weekly">
+                                Weekly
+                            </button>
+                            
+                            <button class="summary-tab" data-period="monthly">
+                                Monthly</button>
+                        </div>
+                    </div>
+
+                    <table class="financial-summary-table">
+                        <thead>
+                            <tr>
+                                <th>DATE</th>
+                                <th>REVENUE</th>
+                                <th>EXPENSES</th>
+                                <th>PROFIT</th>
+                                <th>MARGIN</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="financialSummaryBody">
+
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    Loading financial data...
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
 
                 </section>
 

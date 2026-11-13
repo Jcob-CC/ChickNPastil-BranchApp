@@ -35,8 +35,7 @@
 
                     <div class="filters">
 
-                        <input type="date">
-
+                        <input type="date" id="dateFilter">
                         <select id="branchFilter">
                             <option value="all">All Branches</option>
                             <option value="Balagtas">Balagtas</option>
@@ -48,10 +47,10 @@
                             <option value="Pulong Gubat">Pulong Gubat</option>
                         </select>
 
-                        <select>
-                            <option>All Status</option>
-                            <option>Matched</option>
-                            <option>For Review</option>
+                        <select id="statusFilter">
+                            <option value="all">All Statuses</option>
+                            <option value="matched">Matched</option>
+                            <option value="review">For Review</option>
                         </select>
 
                     </div>
@@ -111,7 +110,7 @@
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Branch</th>
+                                <th>Payment Method</th>
                                 <th>Recorded</th>
                                 <th>Actual</th>
                                 <th>Difference</th>
@@ -119,24 +118,12 @@
                             </tr>
                         </thead>
 
-                        <tbody>
+                        <tbody id="paymentAuditBody">
 
                             <tr>
-                                <td>Sep 24</td>
-                                <td>Balagtas</td>
-                                <td>₱23,400</td>
-                                <td>₱23,400</td>
-                                <td>-</td>
-                                <td class="positive">Matched</td>
-                            </tr>
-
-                            <tr>
-                                <td>Sep 25</td>
-                                <td>Santol</td>
-                                <td>₱18,760</td>
-                                <td>₱18,330</td>
-                                <td class="negative">₱430</td>
-                                <td class="negative">For Review</td>
+                                <td colspan="6" class="text-center">
+                                    Loading payment records...
+                                </td>
                             </tr>
 
                         </tbody>
