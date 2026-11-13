@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Audit</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="/assets/css/style.css">
+
+    <link rel="stylesheet" href="/assets/analytics.css">
+</head>
+
+<body data-page-header="Payment Audit">
+
+    <div id="topbar-wrapper"></div>
+
+    <div class="app-container">
+
+        <div id="sidebar-wrapper"></div>
+
+        <main class="main-content">
+
+            <div class="container-fluid py-4">
+
+                <section class="dashboard-header">
+
+                    <p>
+                        Recorded transactions vs actual cash and GCash collected
+                    </p>
+
+                    <div class="filters">
+
+                        <input type="date" id="dateFilter">
+                        <select id="branchFilter">
+                            <option value="all">All Branches</option>
+                            <option value="Balagtas">Balagtas</option>
+                            <option value="Borol">Borol</option>
+                            <option value="Bullihan Centro">Bullihan Centro</option>
+                            <option value="Pandi">Pandi</option>
+                            <option value="Northville 6">Northville 6</option>
+                            <option value="Santol">Santol</option>
+                            <option value="Pulong Gubat">Pulong Gubat</option>
+                        </select>
+
+                        <select id="statusFilter">
+                            <option value="all">All Statuses</option>
+                            <option value="matched">Matched</option>
+                            <option value="review">For Review</option>
+                        </select>
+
+                    </div>
+
+                </section>
+
+                <section class="cards">
+
+                    <div class="card">
+                        <h3>TOTAL TRANSACTIONS</h3>
+                        <div class="card-value" id="transactions">7</div>
+                    </div>
+
+                    <div class="card">
+                        <h3>MATCHED TRANSACTIONS</h3>
+                        <div class="card-value" id="matched">5</div>
+                        <span class="positive" id="matchRate">
+                            0% match rate
+                        </span>
+                    </div>
+
+                    <div class="card">
+                        <h3>FOR REVIEW</h3>
+                        <div class="card-value" id="review">2</div>
+                        <p class="negative" id="flaggedCount">
+                            0 flagged
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h3>TOTAL DISCREPANCY</h3>
+                        <div class="card-value" id="discrepancy">₱430</div>
+                    </div>
+
+                </section>
+
+                <section class="charts">
+
+                    <div class="chart-box">
+                        <h2>Reconciliation Status Overview</h2>
+                        <canvas id="statusChart"></canvas>
+                    </div>
+
+                    <div class="chart-box">
+                        <h2>Cash vs GCash Comparison</h2>
+                        <canvas id="paymentAuditChart"></canvas>
+                    </div>
+
+                </section>
+
+                <section class="summary">
+
+                    <h2>Transaction Reconciliation Log</h2>
+
+                    <table class="branch-table">
+
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Payment Method</th>
+                                <th>Recorded</th>
+                                <th>Actual</th>
+                                <th>Difference</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="paymentAuditBody">
+
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    Loading payment records...
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </section>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <script src="/js/shared/bars.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="/js/payment-audit.js"></script>
+
+</body>
+
+</html>
