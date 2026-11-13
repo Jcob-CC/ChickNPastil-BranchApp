@@ -41,58 +41,86 @@ fetch('/api/analytics/wastage-insights')
 
             insightsBody.innerHTML = '';
 
+            const branchSummary = {};
+
             data.wastages.forEach(item => {
 
-                let recommendation =
-                    'Review branch wastage controls';
+                const branch =
+                    item.branch_name || 'Unknown';
 
-                if (
-                    item.reason
-                        .toLowerCase()
-                        .includes('overproduction')
-                ) {
+                const reason =
+                    item.reason || 'Unspecified expense';
 
-                    recommendation =
-                        'Reduce weekday lunch rice batch by 10%';
+                if (!branchSummary[branch]) {
 
-                } else if (
-                    item.reason
-                        .toLowerCase()
-                        .includes('spoilage')
-                ) {
+                    branchSummary[branch] = {
+                        totalCost: 0,
+                        reasons: []
+                    };
 
-                    recommendation =
-                        'Add cold-chain check at handover';
-
-                } else if (
-                    item.reason
-                        .toLowerCase()
-                        .includes('expiry')
-                ) {
-
-                    recommendation =
-                        'Bundle promo before expiration window';
-
-                } else if (
-                    item.reason
-                        .toLowerCase()
-                        .includes('surplus')
-                ) {
-
-                    recommendation =
-                        'Adjust afternoon production forecast';
                 }
 
-                insightsBody.innerHTML += `
-                    <tr>
-                        <td>${item.branch_name}</td>
-                        <td>₱${Number(item.estimated_cost).toLocaleString()}</td>
-                        <td>₱${Number(item.estimated_cost).toLocaleString()}</td>
-                        <td>${item.reason}</td>
-                        <td>${recommendation}</td>
-                    </tr>
-                `;
+                branchSummary[branch].totalCost +=
+                    Number(item.estimated_cost || 0);
+
+                branchSummary[branch].reasons.push(reason);
+
             });
+
+            Object.entries(branchSummary)
+                .sort(
+                    (a, b) =>
+                        b[1].totalCost -
+                        a[1].totalCost
+                )
+                .forEach(([branch, stats]) => {
+
+                    const issues =
+                        [...new Set(stats.reasons)]
+                            .join(', ');
+
+                    let recommendation =
+                        'Review recurring operational expenses and strengthen loss prevention controls';
+
+                    if (
+                        issues
+                            .toLowerCase()
+                            .includes('overproduction')
+                    ) {
+
+                        recommendation =
+                            'Reduce production quantities and improve demand forecasting';
+
+                    } else if (
+                        issues
+                            .toLowerCase()
+                            .includes('spoilage')
+                    ) {
+
+                        recommendation =
+                            'Improve storage monitoring and cold-chain procedures';
+
+                    } else if (
+                        issues
+                            .toLowerCase()
+                            .includes('expiry')
+                    ) {
+
+                        recommendation =
+                            'Review inventory turnover and replenishment schedules';
+
+                    }
+
+                    insightsBody.innerHTML += `
+                <tr>
+                    <td>${branch}</td>
+                    <td>₱${stats.totalCost.toLocaleString()}</td>
+                    <td>₱${stats.totalCost.toLocaleString()}</td>
+                    <td>${issues}</td>
+                    <td>${recommendation}</td>
+                </tr>
+            `;
+                });
 
         }
 
@@ -105,48 +133,60 @@ fetch('/api/analytics/wastage-insights')
 
             branchBars.innerHTML = '';
 
-            const maxValue = Math.max(
-                ...data.wastages.map(
-                    item => item.estimated_cost
-                ),
-                1
-            );
+            const branchTotals = {};
 
             data.wastages.forEach(item => {
 
-                const width =
-                    (item.estimated_cost /
-                        maxValue) * 100;
+                const branch =
+                    item.branch_name || 'Unknown';
 
-                branchBars.innerHTML += `
-                    <div class="bar-row">
+                if (!branchTotals[branch]) {
+                    branchTotals[branch] = 0;
+                }
 
-                        <span class="bar-label">
-                            ${item.branch_name}
-                        </span>
-
-                        <div class="bar-track">
-
-                            <div
-                                class="bar-fill"
-                                style="
-                                    width:${width}%;
-                                    background:#d94b3d;
-                                ">
-                            </div>
-
-                        </div>
-
-                        <span class="bar-value">
-                            ₱${Number(
-                    item.estimated_cost
-                ).toLocaleString()}
-                        </span>
-
-                    </div>
-                `;
+                branchTotals[branch] +=
+                    Number(item.estimated_cost || 0);
 
             });
+
+            const maxValue = Math.max(
+                ...Object.values(branchTotals),
+                1
+            );
+
+            Object.entries(branchTotals)
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([branch, total]) => {
+
+                    const width =
+                        (total / maxValue) * 100;
+
+                    branchBars.innerHTML += `
+                <div class="bar-row">
+
+                    <span class="bar-label">
+                        ${branch}
+                    </span>
+
+                    <div class="bar-track">
+
+                        <div
+                            class="bar-fill"
+                            style="
+                                width:${width}%;
+                                background:#2D6E36;
+                            ">
+                        </div>
+
+                    </div>
+
+                    <span class="bar-value">
+                        ₱${Number(total).toLocaleString()}
+                    </span>
+
+                </div>
+            `;
+                });
 
         }
 
@@ -159,48 +199,60 @@ fetch('/api/analytics/wastage-insights')
 
             profitBars.innerHTML = '';
 
-            const maxValue = Math.max(
-                ...data.wastages.map(
-                    item =>
-                        item.estimated_cost
-                )
-            );
+            const branchTotals = {};
 
             data.wastages.forEach(item => {
 
-                const width =
-                    (item.estimated_cost /
-                        maxValue) * 100;
+                const branch =
+                    item.branch_name || 'Unknown';
 
-                profitBars.innerHTML += `
-                    <div class="bar-row">
+                if (!branchTotals[branch]) {
+                    branchTotals[branch] = 0;
+                }
 
-                        <span class="bar-label">
-                            ${item.branch_name}
-                        </span>
-
-                        <div class="bar-track">
-
-                            <div
-                                class="bar-fill"
-                                style="
-                                    width:${width}%;
-                                    background:#d58a1f;
-                                ">
-                            </div>
-
-                        </div>
-
-                        <span class="bar-value">
-                            ₱${Number(
-                    item.estimated_cost
-                ).toLocaleString()}
-                        </span>
-
-                    </div>
-                `;
+                branchTotals[branch] +=
+                    Number(item.estimated_cost || 0);
 
             });
+
+            const maxValue = Math.max(
+                ...Object.values(branchTotals),
+                1
+            );
+
+            Object.entries(branchTotals)
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([branch, total]) => {
+
+                    const width =
+                        (total / maxValue) * 100;
+
+                    profitBars.innerHTML += `
+                <div class="bar-row">
+
+                    <span class="bar-label">
+                        ${branch}
+                    </span>
+
+                    <div class="bar-track">
+
+                        <div
+                            class="bar-fill"
+                            style="
+                                width:${width}%;
+                                background:#BE2D2D;
+                            ">
+                        </div>
+
+                    </div>
+
+                    <span class="bar-value">
+                        ₱${Number(total).toLocaleString()}
+                    </span>
+
+                </div>
+            `;
+                });
 
         }
 
@@ -276,14 +328,7 @@ fetch('/api/analytics/wastage-insights')
                     scales: {
 
                         y: {
-
-                            min: 1400,
-                            max: 2400,
-
-                            ticks: {
-                                stepSize: 200
-                            }
-
+                            beginAtZero: true
                         }
 
                     }
@@ -298,3 +343,91 @@ fetch('/api/analytics/wastage-insights')
     .catch(error => {
         console.error(error);
     });
+
+async function loadStrategicInsights() {
+
+    try {
+
+        const response =
+            await fetch(
+                '/api/analytics/strategic-insights'
+            );
+
+        const insights =
+            await response.json();
+
+        const container =
+            document.getElementById(
+                'strategicInsightsContainer'
+            );
+
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        insights.forEach(insight => {
+
+            container.innerHTML += `
+                <div class="strategic-insight-item">
+                    <span class="insight-dot"></span>
+                    <strong>${insight.branch}:</strong>
+                    ${insight.recommendation}
+                </div>
+            `;
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            'Strategic Insights Error',
+            error
+        );
+
+    }
+
+}
+
+loadStrategicInsights();
+
+const refreshButton =
+    document.getElementById(
+        'refreshInsights'
+    );
+
+if (refreshButton) {
+
+    refreshButton.addEventListener(
+        'click',
+        async () => {
+
+            refreshButton.disabled = true;
+
+            refreshButton.innerHTML = `
+                <i class="bi bi-arrow-repeat"></i>
+                Refreshing...
+            `;
+
+            try {
+
+                await loadStrategicInsights();
+
+            } finally {
+
+                setTimeout(() => {
+
+                    refreshButton.disabled = false;
+
+                    refreshButton.innerHTML = `
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Regenerate Insights
+                    `;
+
+                }, 1000);
+
+            }
+
+        }
+    );
+
+}

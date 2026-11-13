@@ -30,7 +30,7 @@ router.get('/api/analytics/financial-overview', (req, res) => {
     `;
         params.push(branch);
     }
-    
+
     const revenue = db.prepare(`
     SELECT IFNULL(SUM(order_total),0) AS total
     FROM orders
@@ -344,13 +344,47 @@ router.get('/api/analytics/payment-audit', (req, res) => {
 });
 
 router.get('/api/analytics/wastage-insights', (req, res) => {
+
+    const wastages = db.prepare(`
+        SELECT
+            ber.id,
+            bl.location_name AS branch_name,
+            ber.total_price AS estimated_cost,
+            ber.request_note AS reason,
+            ber.date_and_time AS date_recorded,
+            ber.status
+        FROM branch_expense_request ber
+        LEFT JOIN branch_location bl
+            ON bl.id = ber.branch_location_id
+        WHERE ber.status = 'approved'
+        ORDER BY ber.date_and_time DESC
+    `).all();
+
+    const totalCost =
+        wastages.reduce(
+            (sum, item) =>
+                sum + Number(item.estimated_cost || 0),
+            0
+        );
+
+    const topBranch =
+        wastages.length
+            ? wastages.reduce(
+                (max, item) =>
+                    item.estimated_cost >
+                        max.estimated_cost
+                        ? item
+                        : max
+            ).branch_name
+            : 'N/A';
+
     res.json({
-        totalCost: 0,
-        incidents: 0,
-        topItem: 'N/A',
-        topBranch: 'N/A',
-        wastages: []
+        totalCost,
+        incidents: wastages.length,
+        topBranch,
+        wastages
     });
+
 });
 
 
@@ -712,6 +746,73 @@ router.get('/api/analytics/payment-log', (req, res) => {
         db.prepare(query).all(...params);
 
     res.json(rows);
+});
+
+router.get('/api/analytics/strategic-insights', (req, res) => {
+
+    const wastages = db.prepare(`
+        SELECT
+            bl.location_name AS branch_name,
+            ber.total_price AS estimated_cost,
+            ber.request_note AS reason,
+            ber.date_and_time AS date_recorded
+        FROM branch_expense_request ber
+        LEFT JOIN branch_location bl
+            ON bl.id = ber.branch_location_id
+        WHERE ber.status = 'approved'
+    `).all();
+
+    if (!wastages.length) {
+        return res.json([
+            {
+                branch: 'All Branches',
+                recommendation:
+                    'No approved expense records available for strategic analysis.'
+            }
+        ]);
+    }
+
+    const branchSummary = {};
+
+    wastages.forEach(item => {
+
+        const branch = item.branch_name || 'Unknown';
+
+        if (!branchSummary[branch]) {
+
+            branchSummary[branch] = {
+                totalCost: 0,
+                incidents: 0
+            };
+
+        }
+
+        branchSummary[branch].totalCost +=
+            Number(item.estimated_cost || 0);
+
+        branchSummary[branch].incidents++;
+
+    });
+
+const insights = [];
+
+Object.entries(branchSummary)
+    .sort(
+        (a, b) =>
+            b[1].totalCost -
+            a[1].totalCost
+    )
+    .forEach(([branch, stats]) => {
+
+        insights.push({
+            branch,
+            recommendation:
+    `${branch} recorded ₱${stats.totalCost.toLocaleString()} in operational losses across ${stats.incidents} approved incident(s). Priority should be given to identifying recurring expense causes and reducing preventable losses.`
+        });
+
+    });
+    res.json(insights);
+
 });
 
 module.exports = router;
