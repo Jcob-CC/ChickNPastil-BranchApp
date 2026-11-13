@@ -14,12 +14,9 @@ fetch('/api/analytics/sales-insights')
             });
 
         document.getElementById('peakDay').innerText =
-            new Date(data.peakSalesDay)
-                .toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: '2-digit',
-                    year: 'numeric'
-                });
+            new Date(data.peakSalesDay).toLocaleDateString('en-US', {
+                weekday: 'long'
+            });
 
         document.getElementById('topBranch').innerText =
             data.highestSalesBranch;
@@ -114,51 +111,66 @@ fetch(`/api/analytics/sales-trends?${query}`)
 
     });
 
-const hourlyCanvas =
-    document.getElementById('hourlySalesChart');
+const salesHourBars =
+    document.getElementById('salesHourBars');
 
-if (hourlyCanvas) {
+if (salesHourBars) {
 
     fetch('/api/analytics/hourly-sales')
         .then(response => response.json())
         .then(data => {
 
-            new Chart(hourlyCanvas, {
+            const topHours =
+                data.labels.map((hour, index) => ({
+                    hour,
+                    sales: data.sales[index]
+                }))
+                    .sort((a, b) => b.sales - a.sales)
+                    .slice(0, 7);
 
-                type: 'bar',
+            const maxSales =
+                Math.max(
+                    ...topHours.map(item => item.sales),
+                    0
+                );
 
-                data: {
+            salesHourBars.innerHTML =
+                topHours.map(item => {
 
-                    labels: data.labels,
+                    const value = item.sales;
+                    const width =
+                        maxSales > 0
+                            ? (value / maxSales) * 100
+                            : 0;
 
-                    datasets: [{
+                    return `
+            <div class="bar-row">
+                <div class="bar-label">
+                    ${new Date(`2000-01-01 ${item.hour}:00`)
+                            .toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                            })}
+                </div>
 
-                        label: 'Sales',
+                <div class="bar-track">
+                    <div
+                        class="bar-fill"
+                        style="
+                            width:${width}%;
+                            background:#2D6E36;
+                        ">
+                    </div>
+                </div>
 
-                        data: data.sales,
+                <div class="bar-value">
+                    ₱${Number(value).toLocaleString()}
+                </div>
+            </div>
+        `;
+                }).join('');
 
-                        backgroundColor: '#2D6E36',
-                        borderRadius: 10
-                    }]
-                },
-
-                options: {
-
-                    indexAxis: 'y',
-
-                    responsive: true,
-
-                    maintainAspectRatio: false,
-
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-
-                }
-
-            });
 
         })
         .catch(error => {
@@ -167,50 +179,75 @@ if (hourlyCanvas) {
 
 }
 
-const dayCanvas =
-    document.getElementById('dailySalesChart');
+const salesDayBars =
+    document.getElementById('salesDayBars');
 
-if (dayCanvas) {
+if (salesDayBars) {
 
     fetch('/api/analytics/daily-sales')
         .then(response => response.json())
         .then(data => {
 
-            new Chart(dayCanvas, {
+            const allDays = [
+                'Mon',
+                'Tue',
+                'Wed',
+                'Thu',
+                'Fri',
+                'Sat',
+                'Sun'
+            ];
 
-                type: 'bar',
+            const daySales = {};
 
-                data: {
-
-                    labels: data.labels,
-
-                    datasets: [{
-                        label: 'Sales',
-
-                        data: data.sales,
-
-                        backgroundColor: '#BE2D2D',
-                        borderRadius: 10
-                    }]
-                },
-
-                options: {
-
-                    indexAxis: 'y',
-
-                    responsive: true,
-
-                    maintainAspectRatio: false,
-
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-
-                }
-
+            data.labels.forEach((day, index) => {
+                daySales[day] = data.sales[index];
             });
+
+            const completeData =
+                allDays.map(day => ({
+                    day,
+                    sales: daySales[day] || 0
+                }));
+
+            const maxSales =
+                Math.max(
+                    ...completeData.map(item => item.sales),
+                    0
+                );
+
+            salesDayBars.innerHTML =
+                completeData.map(item => {
+
+                    const value = item.sales;
+
+                    const width =
+                        maxSales > 0
+                            ? (value / maxSales) * 100
+                            : 0;
+
+                    return `
+                        <div class="bar-row">
+                            <div class="bar-label">
+                                ${item.day}
+                            </div>
+
+                            <div class="bar-track">
+                                <div
+                                    class="bar-fill"
+                                    style="
+                                        width:${width}%;
+                                        background:#BE2D2D;
+                                    ">
+                                </div>
+                            </div>
+
+                            <div class="bar-value">
+                                ₱${Number(value).toLocaleString()}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
 
         })
         .catch(error => {
@@ -242,13 +279,24 @@ fetch('/api/analytics/branch-peak-summary')
                         : 'Watch';
 
             tbody.innerHTML += `
-    <tr>
-        <td>${branch.branch_name}</td>
-        <td>${branch.peakHour}</td>
-        <td>${branch.peakDay}</td>
-        <td>₱${Number(branch.sales).toLocaleString()}</td>
-        <td>${status}</td>
-    </tr>
+            <tr>
+                <td>${branch.branch_name}</td>
+
+               <td>
+                     ${new Date(`2000-01-01 ${branch.peakHour}:00`)
+                    .toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    })}
+                </td>
+
+    <td>${branch.peakDay}</td>
+
+    <td>₱${Number(branch.sales).toLocaleString()}</td>
+
+    <td>${status}</td>
+</tr>
 `;
 
         });

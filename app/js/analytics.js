@@ -136,21 +136,21 @@ function createCharts(data) {
 
     if (revenueCanvas) {
 
-    if (revenueChart) {
-        revenueChart.destroy();
-    }
+        if (revenueChart) {
+            revenueChart.destroy();
+        }
 
-    const date =
-        document.getElementById('dateFilter')?.value || '';
+        const date =
+            document.getElementById('dateFilter')?.value || '';
 
-    const branch =
-        document.getElementById('branchFilter')?.value || 'all';
+        const branch =
+            document.getElementById('branchFilter')?.value || 'all';
 
-    const query =
-        new URLSearchParams({
-            date,
-            branch
-        });
+        const query =
+            new URLSearchParams({
+                date,
+                branch
+            });
         fetch(`/api/analytics/sales-trends?${query}`)
             .then(response => response.json())
             .then(chartData => {
@@ -208,8 +208,7 @@ function createCharts(data) {
     }
 
     const paymentCanvas =
-        document.getElementById('paymentChart');
-
+    document.getElementById('financialPaymentChart');
     if (paymentCanvas) {
 
         if (paymentChart) {

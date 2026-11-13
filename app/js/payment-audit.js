@@ -103,31 +103,23 @@ function createCharts(data) {
             },
 
             options: {
-
                 responsive: true,
-
                 maintainAspectRatio: false,
 
                 plugins: {
-
                     legend: {
-
-                        position: 'right',
-
-                        labels: {
-
-                            usePointStyle: true,
-
-                            pointStyle: 'circle',
-
-                            padding: 20
-
-                        }
-
+                        position: 'right'
                     }
+                },
 
+                layout: {
+                    padding: {
+                        top: 20,
+                        bottom: 20,
+                        left: 20,
+                        right: 20
+                    }
                 }
-
             }
 
         });
@@ -135,8 +127,7 @@ function createCharts(data) {
     }
 
     const paymentCanvas =
-        document.getElementById('paymentChart');
-
+    document.getElementById('paymentAuditChart')
     if (paymentCanvas) {
 
         if (paymentChart) {
@@ -173,33 +164,24 @@ function createCharts(data) {
             },
 
             options: {
-
                 responsive: true,
-
                 maintainAspectRatio: false,
 
                 plugins: {
-
                     legend: {
-
-                        position: 'right',
-
-                        labels: {
-
-                            usePointStyle: true,
-
-                            pointStyle: 'circle',
-
-                            padding: 20
-
-                        }
-
+                        position: 'right'
                     }
+                },
 
+                layout: {
+                    padding: {
+                        top: 20,
+                        bottom: 20,
+                        left: 20,
+                        right: 20
+                    }
                 }
-
             }
-
         });
 
     }
@@ -238,14 +220,14 @@ function renderTable(rows) {
 
                 <td>
                     ${new Date(payment.paid_at)
-                        .toLocaleDateString(
-                            'en-US',
-                            {
-                                month: 'short',
-                                day: '2-digit',
-                                year: 'numeric'
-                            }
-                        )}
+                .toLocaleDateString(
+                    'en-US',
+                    {
+                        month: 'short',
+                        day: '2-digit',
+                        year: 'numeric'
+                    }
+                )}
                 </td>
 
                 <td>
@@ -254,30 +236,28 @@ function renderTable(rows) {
 
                 <td>
                     ₱${Number(payment.amount_due)
-                        .toLocaleString()}
+                .toLocaleString()}
                 </td>
 
                 <td>
                     ₱${Number(payment.amount_paid)
-                        .toLocaleString()}
+                .toLocaleString()}
                 </td>
 
                 <td>
                     ₱${Number(difference)
-                        .toLocaleString()}
+                .toLocaleString()}
                 </td>
 
-                <td class="${
-                    payment.payment_status === 'Verified'
-                        ? 'positive'
-                        : 'negative'
-                }">
+                <td class="${payment.payment_status === 'Verified'
+                ? 'positive'
+                : 'negative'
+            }">
 
-                    ${
-                        payment.payment_status === 'Verified'
-                            ? 'Matched'
-                            : 'For Review'
-                    }
+                    ${payment.payment_status === 'Verified'
+                ? 'Matched'
+                : 'For Review'
+            }
 
                 </td>
 
