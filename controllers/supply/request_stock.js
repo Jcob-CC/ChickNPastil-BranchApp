@@ -8,11 +8,14 @@ const getNonNegativeNumber = (value) => {
 const getRequestData = (req, res) => {
     try {
         const items = db.prepare(`
-            SELECT bii.id, gsi.name, gsi.unit_type, bii.quantity,
-                   bii.low_quantity_threshold, bii.restock_target_quantity
-            FROM branch_inventory_item bii
-            JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
-            WHERE bii.branch_location_id = ? AND gsi.status = 'active'
+            SELECT gsi.id, bii.id AS branch_inventory_item_id, gsi.name, gsi.unit_type,
+                   COALESCE(bii.quantity, 0) AS quantity,
+                   COALESCE(bii.low_quantity_threshold, 0) AS low_quantity_threshold,
+                   COALESCE(bii.restock_target_quantity, 0) AS restock_target_quantity
+            FROM general_stock_item gsi
+            LEFT JOIN branch_inventory_item bii
+                ON bii.general_stock_item_id = gsi.id AND bii.branch_location_id = ?
+            WHERE gsi.status = 'active'
             ORDER BY gsi.name COLLATE NOCASE
         `).all(req.session.user.branchLocationId);
 
@@ -23,7 +26,7 @@ const getRequestData = (req, res) => {
         });
     } catch (error) {
         console.error('Unable to load requisition inventory:', error);
-        res.status(500).json({ message: 'Unable to load branch inventory.' });
+        res.status(500).json({ message: 'Unable to load active stock items.' });
     }
 };
 
@@ -37,31 +40,29 @@ const createRequest = (req, res) => {
     }
 
     const requestItems = items.map((item) => ({
-        inventoryItemId: Number(item && item.inventoryItemId),
+        generalStockItemId: Number(item && item.generalStockItemId),
         quantity: getNonNegativeNumber(item && item.quantity),
     }));
     if (requestItems.some((item) =>
-        !Number.isSafeInteger(item.inventoryItemId) ||
-        item.inventoryItemId < 1 ||
+        !Number.isSafeInteger(item.generalStockItemId) ||
+        item.generalStockItemId < 1 ||
         item.quantity === null ||
         item.quantity <= 0
     )) {
         return res.status(400).json({ message: 'Enter a positive quantity for each requested item.' });
     }
-    if (new Set(requestItems.map((item) => item.inventoryItemId)).size !== requestItems.length) {
-        return res.status(400).json({ message: 'Each inventory item can only be requested once.' });
+    if (new Set(requestItems.map((item) => item.generalStockItemId)).size !== requestItems.length) {
+        return res.status(400).json({ message: 'Each stock item can only be requested once.' });
     }
 
     const saveRequest = db.transaction(() => {
-        const findInventoryItem = db.prepare(`
-            SELECT bii.general_stock_item_id
-            FROM branch_inventory_item bii
-            JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
-            WHERE bii.id = ? AND bii.branch_location_id = ? AND gsi.status = 'active'
+        const findStockItem = db.prepare(`
+            SELECT id FROM general_stock_item
+            WHERE id = ? AND status = 'active'
         `);
         const stockItemIds = requestItems.map((item) => {
-            const inventoryItem = findInventoryItem.get(item.inventoryItemId, req.session.user.branchLocationId);
-            return inventoryItem && inventoryItem.general_stock_item_id;
+            const stockItem = findStockItem.get(item.generalStockItemId);
+            return stockItem && stockItem.id;
         });
         if (stockItemIds.some((id) => !id)) return false;
 
@@ -102,32 +103,42 @@ const confirmInventory = (req, res) => {
     }
 
     const updates = items.map((item) => ({
-        id: Number(item && item.id),
+        generalStockItemId: Number(item && item.generalStockItemId),
         quantity: getNonNegativeNumber(item && item.quantity),
         target: getNonNegativeNumber(item && item.restockTargetQuantity),
     }));
     if (updates.some((item) =>
-        !Number.isSafeInteger(item.id) ||
-        item.id < 1 ||
+        !Number.isSafeInteger(item.generalStockItemId) ||
+        item.generalStockItemId < 1 ||
         item.quantity === null ||
         item.target === null
     )) {
         return res.status(400).json({ message: 'Enter valid on-hand and target quantities.' });
     }
-    if (new Set(updates.map((item) => item.id)).size !== updates.length) {
-        return res.status(400).json({ message: 'Each inventory item can only be updated once.' });
+    if (new Set(updates.map((item) => item.generalStockItemId)).size !== updates.length) {
+        return res.status(400).json({ message: 'Each stock item can only be updated once.' });
     }
 
     const saveInventory = db.transaction(() => {
         const selectItem = db.prepare(`
-            SELECT quantity, low_quantity_threshold
-            FROM branch_inventory_item
-            WHERE id = ? AND branch_location_id = ?
+            SELECT gsi.id, bii.id AS branch_inventory_item_id,
+                   COALESCE(bii.quantity, 0) AS quantity,
+                   COALESCE(bii.low_quantity_threshold, 0) AS low_quantity_threshold
+            FROM general_stock_item gsi
+            LEFT JOIN branch_inventory_item bii
+                ON bii.general_stock_item_id = gsi.id AND bii.branch_location_id = ?
+            WHERE gsi.id = ? AND gsi.status = 'active'
         `);
         const updateItem = db.prepare(`
             UPDATE branch_inventory_item
             SET quantity = ?, restock_target_quantity = ?
-            WHERE id = ?
+            WHERE id = ? AND branch_location_id = ?
+        `);
+        const addItem = db.prepare(`
+            INSERT INTO branch_inventory_item
+                (branch_location_id, general_stock_item_id, quantity,
+                 low_quantity_threshold, restock_target_quantity)
+            VALUES (?, ?, ?, 0, ?)
         `);
         const addLog = db.prepare(`
             INSERT INTO branch_inventory_manager_log
@@ -136,7 +147,7 @@ const confirmInventory = (req, res) => {
         `);
 
         const currentItems = updates.map((item) =>
-            selectItem.get(item.id, req.session.user.branchLocationId)
+            selectItem.get(req.session.user.branchLocationId, item.generalStockItemId)
         );
         if (currentItems.some((current, index) =>
             !current || updates[index].target < current.low_quantity_threshold
@@ -144,11 +155,21 @@ const confirmInventory = (req, res) => {
 
         for (const [index, item] of updates.entries()) {
             const current = currentItems[index];
-            updateItem.run(item.quantity, item.target, item.id);
+            let inventoryItemId = current.branch_inventory_item_id;
+            if (inventoryItemId) {
+                updateItem.run(item.quantity, item.target, inventoryItemId, req.session.user.branchLocationId);
+            } else {
+                inventoryItemId = addItem.run(
+                    req.session.user.branchLocationId,
+                    item.generalStockItemId,
+                    item.quantity,
+                    item.target,
+                ).lastInsertRowid;
+            }
             if (item.quantity !== current.quantity) {
                 addLog.run(
                     req.session.user.branchLocationId,
-                    item.id,
+                    inventoryItemId,
                     req.session.user.id,
                     current.quantity,
                     item.quantity,
@@ -160,7 +181,7 @@ const confirmInventory = (req, res) => {
 
     try {
         if (!saveInventory()) {
-            return res.status(400).json({ message: 'Check that each item is in this branch and targets meet the low-stock thresholds.' });
+            return res.status(400).json({ message: 'Check that each stock item is active and targets meet the low-stock thresholds.' });
         }
         res.json({ message: 'Branch inventory confirmed.' });
     } catch (error) {

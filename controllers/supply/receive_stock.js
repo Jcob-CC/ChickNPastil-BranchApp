@@ -175,7 +175,7 @@ const receiveDelivery = (req, res) => {
         const itemsById = new Map(requestItems.map((item) => [item.id, item]));
         for (const receivedItem of receivedItems) {
             const requestItem = itemsById.get(receivedItem.requestItemId);
-            if (!requestItem || requestItem.inventory_item_id === null) return 'invalid-items';
+            if (!requestItem) return 'invalid-items';
             const total = receivedItem.received + receivedItem.missing + receivedItem.damaged;
             if (Math.abs(total - requestItem.quantity) > 0.0000001) return 'invalid-quantities';
         }
@@ -198,6 +198,11 @@ const receiveDelivery = (req, res) => {
         const updateInventory = db.prepare(`
             UPDATE branch_inventory_item SET quantity = ? WHERE id = ?
         `);
+        const addInventory = db.prepare(`
+            INSERT INTO branch_inventory_item
+                (branch_location_id, general_stock_item_id, quantity)
+            VALUES (?, ?, 0)
+        `);
         const addInventoryLog = db.prepare(`
             INSERT INTO branch_inventory_manager_log
                 (branch_location_id, branch_inventory_item_id, user_id, value_before, value_after, reason)
@@ -211,14 +216,19 @@ const receiveDelivery = (req, res) => {
 
         details.forEach((item) => {
             const inventoryItem = item.requestItem;
+            const inventoryItemId = inventoryItem.inventory_item_id || addInventory.run(
+                req.session.user.branchLocationId,
+                inventoryItem.general_stock_item_id,
+            ).lastInsertRowid;
+            const quantityBefore = inventoryItem.inventory_quantity || 0;
             if (item.received > 0) {
-                const updatedQuantity = inventoryItem.inventory_quantity + item.received;
-                updateInventory.run(updatedQuantity, inventoryItem.inventory_item_id);
+                const updatedQuantity = quantityBefore + item.received;
+                updateInventory.run(updatedQuantity, inventoryItemId);
                 addInventoryLog.run(
                     req.session.user.branchLocationId,
-                    inventoryItem.inventory_item_id,
+                    inventoryItemId,
                     req.session.user.id,
-                    inventoryItem.inventory_quantity,
+                    quantityBefore,
                     updatedQuantity,
                 );
             }

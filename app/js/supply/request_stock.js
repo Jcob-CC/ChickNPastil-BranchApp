@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const receiptRows = document.getElementById('receiptItems');
         receiptRows.replaceChildren();
         items.forEach((item) => {
-            const inventoryItem = state.items.find((current) => current.id === item.inventoryItemId);
+            const inventoryItem = state.items.find((current) => current.id === item.generalStockItemId);
             const row = document.createElement('tr');
             const name = document.createElement('td');
             name.textContent = inventoryItem ? inventoryItem.name : 'Inventory item';
@@ -92,13 +92,13 @@ document.addEventListener('DOMContentLoaded', () => {
             `${requestedItems.length} ${requestedItems.length === 1 ? 'item' : 'items'} · quantities for this request`;
 
         if (requestedItems.length === 0) {
-            showEmptyRow(requestRows, 5, 'Add items from your branch inventory to start a requisition.');
+            showEmptyRow(requestRows, 5, 'Add items from the stock catalog to start a requisition.');
             return;
         }
 
         requestedItems.forEach((item) => {
             const row = document.createElement('tr');
-            row.dataset.inventoryId = item.id;
+            row.dataset.stockItemId = item.id;
             addItemName(row, item);
             appendCell(row, `${formatQuantity(item.quantity)} ${item.unit_type}`);
             appendCell(row, `${formatQuantity(item.restock_target_quantity)} ${item.unit_type}`);
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         availableRows.replaceChildren();
         const available = state.items.filter((item) => !state.requested.has(item.id));
         if (available.length === 0) {
-            showEmptyRow(availableRows, 4, 'All branch inventory items have been added.');
+            showEmptyRow(availableRows, 4, 'All active stock items have been added.');
             return;
         }
 
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inventoryRows.replaceChildren();
         inventoryButton.disabled = state.items.length === 0;
         if (state.items.length === 0) {
-            showEmptyRow(inventoryRows, 3, 'No inventory items are available for this branch.');
+            showEmptyRow(inventoryRows, 3, 'No active stock items are available.');
             return;
         }
 
@@ -171,8 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
             quantityInput.min = '0';
             quantityInput.step = '0.01';
             quantityInput.value = item.quantity;
-            quantityInput.dataset.inventoryId = item.id;
-            quantityInput.dataset.inventoryField = 'quantity';
+            quantityInput.dataset.stockItemId = item.id;
+            quantityInput.dataset.stockItemField = 'quantity';
             quantityInput.setAttribute('aria-label', `${item.name} current quantity`);
             quantityCell.appendChild(quantityInput);
 
@@ -183,8 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
             targetInput.min = item.low_quantity_threshold;
             targetInput.step = '0.01';
             targetInput.value = item.restock_target_quantity;
-            targetInput.dataset.inventoryId = item.id;
-            targetInput.dataset.inventoryField = 'target';
+            targetInput.dataset.stockItemId = item.id;
+            targetInput.dataset.stockItemField = 'target';
             targetInput.setAttribute('aria-label', `${item.name} target quantity`);
             targetCell.appendChild(targetInput);
             inventoryRows.appendChild(row);
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('requestLocation').value = data.branchName;
         document.getElementById('requestStaff').value = data.staffName || '—';
         if (initializePage) {
-            state.items.filter(isLowStock).forEach((item) => {
+            state.items.filter((item) => item.branch_inventory_item_id && isLowStock(item)).forEach((item) => {
                 state.requested.set(item.id, getRestockQuantity(item));
             });
         }
@@ -227,9 +227,9 @@ document.addEventListener('DOMContentLoaded', () => {
     requestForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         message.classList.add('d-none');
-        const items = Array.from(requestRows.querySelectorAll('tr[data-inventory-id]'))
+        const items = Array.from(requestRows.querySelectorAll('tr[data-stock-item-id]'))
             .map((row) => ({
-                inventoryItemId: Number(row.dataset.inventoryId),
+                generalStockItemId: Number(row.dataset.stockItemId),
                 quantity: Number(row.querySelector('input').value),
             }))
             .filter((item) => item.quantity > 0);
@@ -265,13 +265,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!inventoryInputs.every((input) => input.reportValidity())) return;
 
         const items = state.items.map((item) => ({
-            id: item.id,
-            quantity: Number(inventoryRows.querySelector(`[data-inventory-id="${item.id}"][data-inventory-field="quantity"]`).value),
-            restockTargetQuantity: Number(inventoryRows.querySelector(`[data-inventory-id="${item.id}"][data-inventory-field="target"]`).value),
+            generalStockItemId: item.id,
+            quantity: Number(inventoryRows.querySelector(`[data-stock-item-id="${item.id}"][data-stock-item-field="quantity"]`).value),
+            restockTargetQuantity: Number(inventoryRows.querySelector(`[data-stock-item-id="${item.id}"][data-stock-item-field="target"]`).value),
         }));
 
         inventoryButton.disabled = true;
         try {
+            const existingInventoryItems = new Set(
+                state.items.filter((item) => item.branch_inventory_item_id).map((item) => item.id)
+            );
             await sendRequest('/supply/request_stock/confirm-inventory', {
                 method: 'PUT',
                 body: JSON.stringify({ items }),
@@ -279,7 +282,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectedItems = new Set(state.requested.keys());
             await loadInventory();
             state.requested.clear();
-            state.items.filter((item) => isLowStock(item) || selectedItems.has(item.id)).forEach((item) => {
+            state.items.filter((item) =>
+                (existingInventoryItems.has(item.id) && isLowStock(item)) || selectedItems.has(item.id)
+            ).forEach((item) => {
                 state.requested.set(item.id, getRestockQuantity(item));
             });
             renderRequestedItems();

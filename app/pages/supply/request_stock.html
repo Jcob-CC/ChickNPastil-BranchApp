@@ -41,7 +41,7 @@
                     <span class="badge rounded-pill bg-success-subtle text-success p-2"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
                     <div>
                       <h2 class="h5 mb-1" id="itemsHeading">Requested items</h2>
-                      <p class="small text-secondary mb-0" id="itemCount">Loading branch inventory…</p>
+                      <p class="small text-secondary mb-0" id="itemCount">Loading stock catalog…</p>
                     </div>
                   </div>
                   <div class="d-flex align-items-center gap-2">
@@ -160,7 +160,7 @@
         <div class="modal-header">
           <div>
             <h2 class="modal-title fs-5" id="inventoryModalTitle">Confirm inventory data</h2>
-            <p class="small text-secondary mb-0 mt-1" id="inventoryModalDescription">Check on-hand counts and target quantities before building the requisition.</p>
+            <p class="small text-secondary mb-0 mt-1" id="inventoryModalDescription">Review on-hand counts and target quantities for all active stock items. Saving adds missing items to this branch's inventory.</p>
           </div>
         </div>
         <div class="modal-body p-0">
@@ -168,7 +168,7 @@
             <table class="table align-middle mb-0">
               <thead class="table-light">
                 <tr>
-                  <th class="ps-3" scope="col">Inventory item</th>
+                  <th class="ps-3" scope="col">Stock item</th>
                   <th scope="col" style="min-width: 145px;">Current on hand</th>
                   <th class="pe-3" scope="col" style="min-width: 145px;">Target quantity</th>
                 </tr>
@@ -195,7 +195,7 @@
         <div class="modal-header">
           <div>
             <h2 class="modal-title fs-5" id="itemsModalTitle">Available items</h2>
-            <p class="small text-secondary mb-0 mt-1">Inventory items available for requisition</p>
+            <p class="small text-secondary mb-0 mt-1">Active stock items available for requisition</p>
           </div>
           <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
