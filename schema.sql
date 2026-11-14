@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS branch_inventory_item (
     restock_target_quantity REAL NOT NULL DEFAULT 0.00 CHECK (
         restock_target_quantity >= low_quantity_threshold
     ),
+    auto_restock_target INTEGER NOT NULL DEFAULT 0 CHECK (auto_restock_target IN (0, 1)),
     CONSTRAINT unique_branch_stock_item UNIQUE (branch_location_id, general_stock_item_id)
 );
 

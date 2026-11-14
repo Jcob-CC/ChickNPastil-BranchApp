@@ -1,4 +1,8 @@
 const db = require('../../lib/database');
+const {
+    getAverageDailyReductions,
+    getEffectiveRestockTarget,
+} = require('../../lib/inventory_restock_target');
 
 const getNonNegativeNumber = (value) => {
     const number = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
@@ -11,16 +15,23 @@ const getRequestData = (req, res) => {
             SELECT gsi.id, bii.id AS branch_inventory_item_id, gsi.name, gsi.unit_type,
                    COALESCE(bii.quantity, 0) AS quantity,
                    COALESCE(bii.low_quantity_threshold, 0) AS low_quantity_threshold,
-                   COALESCE(bii.restock_target_quantity, 0) AS restock_target_quantity
+                   COALESCE(bii.restock_target_quantity, 0) AS restock_target_quantity,
+                   COALESCE(bii.auto_restock_target, 0) AS auto_restock_target
             FROM general_stock_item gsi
             LEFT JOIN branch_inventory_item bii
                 ON bii.general_stock_item_id = gsi.id AND bii.branch_location_id = ?
             WHERE gsi.status = 'active'
             ORDER BY gsi.name COLLATE NOCASE
         `).all(req.session.user.branchLocationId);
+        const averageDailyReductions = getAverageDailyReductions(db, req.session.user.branchLocationId);
 
         res.json({
-            items,
+            items: items.map((item) => ({
+                ...item,
+                average_daily_quantity_reduction:
+                    averageDailyReductions.get(item.branch_inventory_item_id) || 0,
+                restock_target_quantity: getEffectiveRestockTarget(item, averageDailyReductions),
+            })),
             branchName: req.session.user.branchLocationName,
             staffName: [req.session.user.firstName, req.session.user.lastName].filter(Boolean).join(' '),
         });
@@ -123,7 +134,8 @@ const confirmInventory = (req, res) => {
         const selectItem = db.prepare(`
             SELECT gsi.id, bii.id AS branch_inventory_item_id,
                    COALESCE(bii.quantity, 0) AS quantity,
-                   COALESCE(bii.low_quantity_threshold, 0) AS low_quantity_threshold
+                   COALESCE(bii.low_quantity_threshold, 0) AS low_quantity_threshold,
+                   COALESCE(bii.auto_restock_target, 0) AS auto_restock_target
             FROM general_stock_item gsi
             LEFT JOIN branch_inventory_item bii
                 ON bii.general_stock_item_id = gsi.id AND bii.branch_location_id = ?
@@ -131,7 +143,11 @@ const confirmInventory = (req, res) => {
         `);
         const updateItem = db.prepare(`
             UPDATE branch_inventory_item
-            SET quantity = ?, restock_target_quantity = ?
+            SET quantity = ?,
+                restock_target_quantity = CASE
+                    WHEN auto_restock_target = 1 THEN restock_target_quantity
+                    ELSE ?
+                END
             WHERE id = ? AND branch_location_id = ?
         `);
         const addItem = db.prepare(`

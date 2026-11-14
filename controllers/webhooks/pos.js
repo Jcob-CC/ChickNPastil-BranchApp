@@ -80,7 +80,7 @@ const updateInventory = (req, res) => {
                 userId,
                 inventoryItem.quantity,
                 quantityAfter,
-                'sold menu item',
+                'Sold menu item',
             );
 
             return {

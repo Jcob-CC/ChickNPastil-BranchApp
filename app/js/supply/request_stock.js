@@ -186,7 +186,14 @@ document.addEventListener('DOMContentLoaded', () => {
             targetInput.dataset.stockItemId = item.id;
             targetInput.dataset.stockItemField = 'target';
             targetInput.setAttribute('aria-label', `${item.name} target quantity`);
+            targetInput.disabled = Boolean(Number(item.auto_restock_target));
             targetCell.appendChild(targetInput);
+            if (item.auto_restock_target) {
+                const note = document.createElement('small');
+                note.className = 'd-block text-secondary mt-1';
+                note.textContent = 'Automatic sales average';
+                targetCell.appendChild(note);
+            }
             inventoryRows.appendChild(row);
         });
     };

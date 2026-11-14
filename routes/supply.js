@@ -41,6 +41,8 @@ router.get('/inventory/received-log', inventory.getReceivedLogs);
 router.get('/inventory/received-log/:id', inventory.getReceivedLogDetails);
 router.post('/inventory/items', inventory.addInventoryItem);
 router.put('/inventory/items/:id/settings', inventory.updateItemSettings);
+router.get('/inventory/items/:id/automatic-target', inventory.getAutomaticTargetPreview);
+router.put('/inventory/items/:id/automatic-target', inventory.updateAutomaticTarget);
 router.put('/inventory/items/:id/stock', inventory.updateStock);
 
 router.get('/request_stock/data', requestStock.getRequestData);

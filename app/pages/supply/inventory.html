@@ -188,11 +188,33 @@
         <form id="branchSettingsForm">
         <div class="modal-body">
           <div class="mb-2"><label class="form-label" for="branchLowThreshold">Low-stock threshold</label><input class="form-control" id="branchLowThreshold" type="number" min="0" step="0.01" required></div>
-          <div><label class="form-label" for="branchRestockTarget">Restock target</label><input class="form-control" id="branchRestockTarget" type="number" min="0" step="0.01" required></div>
+          <div><label class="form-label" for="branchRestockTarget">Restock target</label><input class="form-control" id="branchRestockTarget" type="number" min="0" step="0.01" required><div class="form-text" id="branchRestockTargetHelp">Set the target quantity manually.</div></div>
           <div class="small text-danger mt-3" data-modal-error role="alert"></div>
         </div>
         <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="submit">Save settings</button></div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="automaticRestockTargetModal" tabindex="-1" aria-labelledby="automaticRestockTargetTitle" aria-describedby="automaticRestockTargetDescription" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title fs-5" id="automaticRestockTargetTitle">Automatic restock target</h2>
+            <p class="small text-secondary mb-0 mt-1" id="automaticRestockTargetDescription"></p>
+          </div>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info mb-0" id="automaticRestockTargetPreview" role="status" aria-live="polite"></div>
+          <div class="small text-danger mt-3" data-modal-error role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-success" id="confirmAutomaticRestockTarget" type="button">Enable automatic target</button>
+        </div>
       </div>
     </div>
   </div>

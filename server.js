@@ -16,6 +16,7 @@ const schemaPath = path.join(__dirname, 'schema.sql');
 const schemaSql = fs.readFileSync(schemaPath, 'utf8');
 db.exec(schemaSql);
 require('./lib/sales_schema').migrate(db);
+require('./lib/inventory_schema').migrate(db);
 console.log('Database schema initialized successfully.');
 
 app.use(express.static(path.join(__dirname, 'app')));

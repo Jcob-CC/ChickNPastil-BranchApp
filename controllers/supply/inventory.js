@@ -1,4 +1,8 @@
 const db = require('../../lib/database');
+const {
+    getAverageDailyReductions,
+    getEffectiveRestockTarget,
+} = require('../../lib/inventory_restock_target');
 
 const pageSize = 6;
 const logPageSize = 3;
@@ -82,7 +86,8 @@ const getInventory = (req, res) => {
         const items = db.prepare(`
             SELECT bii.id AS branch_inventory_item_id, gsi.id AS general_stock_item_id,
                    gsi.name, gsi.unit_type, COALESCE(bii.quantity, 0) AS quantity,
-                   bii.low_quantity_threshold, bii.restock_target_quantity, gsi.unit_cost
+                   bii.low_quantity_threshold, bii.restock_target_quantity,
+                   bii.auto_restock_target, gsi.unit_cost
             FROM general_stock_item gsi
             LEFT JOIN branch_inventory_item bii
                 ON bii.general_stock_item_id = gsi.id AND bii.branch_location_id = ?
@@ -115,9 +120,16 @@ const getInventory = (req, res) => {
             logPageSize,
             logOffset,
         );
+        const averageDailyReductions = getAverageDailyReductions(db, branchId);
 
         res.json({
-            items,
+            items: items.map((item) => ({
+                ...item,
+                auto_restock_target: item.auto_restock_target || 0,
+                average_daily_quantity_reduction:
+                    averageDailyReductions.get(item.branch_inventory_item_id) || 0,
+                restock_target_quantity: getEffectiveRestockTarget(item, averageDailyReductions),
+            })),
             total,
             page,
             pageCount: Math.ceil(total / pageSize),
@@ -277,7 +289,7 @@ const updateItemSettings = (req, res) => {
     const target = getNonNegativeNumber(req.body && req.body.restockTargetQuantity);
 
     if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: 'Invalid inventory item ID.' });
-    if (threshold === null || target === null || target < threshold) {
+    if (threshold === null || target === null) {
         return res.status(400).json({ message: 'Enter valid quantities and a restock target at or above the low-stock threshold.' });
     }
 
@@ -288,34 +300,174 @@ const updateItemSettings = (req, res) => {
         if (!catalogItem) return false;
 
         const item = db.prepare(`
-            SELECT bii.id
+            SELECT bii.id, bii.restock_target_quantity, bii.auto_restock_target
             FROM branch_inventory_item bii
             JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
             WHERE gsi.id = ? AND gsi.status = 'active' AND bii.branch_location_id = ?
         `).get(id, req.session.user.branchLocationId);
 
         if (item) {
+            let targetToSave = target;
+            if (item.auto_restock_target) {
+                const average = getAverageDailyReductions(
+                    db,
+                    req.session.user.branchLocationId,
+                ).get(item.id);
+                targetToSave = average !== undefined && average >= threshold
+                    ? Math.ceil(average)
+                    : item.restock_target_quantity;
+                if (targetToSave < threshold) return 'thresholdConflict';
+            } else if (target < threshold) {
+                return 'invalidTarget';
+            }
+
             db.prepare(`
                 UPDATE branch_inventory_item
                 SET low_quantity_threshold = ?, restock_target_quantity = ?
                 WHERE id = ? AND branch_location_id = ?
-            `).run(threshold, target, item.id, req.session.user.branchLocationId);
-            return true;
+            `).run(threshold, targetToSave, item.id, req.session.user.branchLocationId);
+            return 'saved';
         }
 
-        return db.prepare(`
+        if (target < threshold) return 'invalidTarget';
+        const result = db.prepare(`
             INSERT INTO branch_inventory_item
                 (branch_location_id, general_stock_item_id, quantity,
                  low_quantity_threshold, restock_target_quantity)
             SELECT ?, id, 0, ?, ?
             FROM general_stock_item
             WHERE id = ? AND status = 'active'
-        `).run(req.session.user.branchLocationId, threshold, target, id).changes > 0;
+        `).run(req.session.user.branchLocationId, threshold, target, id);
+        return result.changes > 0 ? 'saved' : 'notFound';
     });
 
     try {
-        if (!saveSettings()) return res.status(404).json({ message: 'Active stock item not found.' });
+        const result = saveSettings();
+        if (result === 'notFound' || result === false) {
+            return res.status(404).json({ message: 'Active stock item not found.' });
+        }
+        if (result === 'thresholdConflict') {
+            return res.status(400).json({
+                message: 'The low-stock threshold cannot be above the last valid automatic restock target.',
+            });
+        }
+        if (result === 'invalidTarget') {
+            return res.status(400).json({
+                message: 'Enter valid quantities and a restock target at or above the low-stock threshold.',
+            });
+        }
         res.json({ message: 'Branch settings saved.' });
+    } catch (error) {
+        sendDatabaseError(res, error);
+    }
+};
+
+const getAutomaticTargetPreview = (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) {
+        return res.status(400).json({ message: 'Invalid inventory item ID.' });
+    }
+
+    try {
+        const item = db.prepare(`
+            SELECT bii.id AS branch_inventory_item_id, gsi.id AS general_stock_item_id,
+                   gsi.name, gsi.unit_type, bii.low_quantity_threshold,
+                   bii.restock_target_quantity, bii.auto_restock_target
+            FROM branch_inventory_item bii
+            JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
+            WHERE gsi.id = ? AND gsi.status = 'active' AND bii.branch_location_id = ?
+        `).get(id, req.session.user.branchLocationId);
+        if (!item) return res.status(404).json({ message: 'Branch inventory item not found.' });
+
+        const averageDailyReductions = getAverageDailyReductions(
+            db,
+            req.session.user.branchLocationId,
+        );
+        res.json({
+            item: {
+                ...item,
+                average_daily_quantity_reduction:
+                    averageDailyReductions.get(item.branch_inventory_item_id) || 0,
+                restock_target_quantity: getEffectiveRestockTarget(item, averageDailyReductions),
+            },
+        });
+    } catch (error) {
+        sendDatabaseError(res, error);
+    }
+};
+
+const updateAutomaticTarget = (req, res) => {
+    const id = Number(req.params.id);
+    const enabled = req.body && req.body.enabled;
+
+    if (!Number.isSafeInteger(id) || id < 1) {
+        return res.status(400).json({ message: 'Invalid inventory item ID.' });
+    }
+    if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ message: 'Choose whether automatic restock targeting is enabled.' });
+    }
+
+    const updateTargetMode = db.transaction(() => {
+        const item = db.prepare(`
+            SELECT bii.id, bii.restock_target_quantity, bii.low_quantity_threshold,
+                   bii.auto_restock_target
+            FROM branch_inventory_item bii
+            JOIN general_stock_item gsi ON gsi.id = bii.general_stock_item_id
+            WHERE gsi.id = ? AND gsi.status = 'active' AND bii.branch_location_id = ?
+        `).get(id, req.session.user.branchLocationId);
+        if (!item) return { status: 'notFound' };
+
+        const average = getAverageDailyReductions(
+            db,
+            req.session.user.branchLocationId,
+        ).get(item.id);
+
+        if (enabled) {
+            if (average === undefined) return { status: 'noHistory' };
+            if (average < item.low_quantity_threshold) return { status: 'belowThreshold' };
+            const target = Math.ceil(average);
+            db.prepare(`
+                UPDATE branch_inventory_item
+                SET auto_restock_target = 1, restock_target_quantity = ?
+                WHERE id = ? AND branch_location_id = ?
+            `).run(target, item.id, req.session.user.branchLocationId);
+            return { status: 'saved', enabled: true, restockTargetQuantity: target };
+        }
+
+        const target = item.auto_restock_target &&
+            average !== undefined && average >= item.low_quantity_threshold
+            ? Math.ceil(average)
+            : item.restock_target_quantity;
+        db.prepare(`
+            UPDATE branch_inventory_item
+            SET auto_restock_target = 0, restock_target_quantity = ?
+            WHERE id = ? AND branch_location_id = ?
+        `).run(target, item.id, req.session.user.branchLocationId);
+        return { status: 'saved', enabled: false, restockTargetQuantity: target };
+    });
+
+    try {
+        const result = updateTargetMode();
+        if (result.status === 'notFound') {
+            return res.status(404).json({ message: 'Branch inventory item not found.' });
+        }
+        if (result.status === 'noHistory') {
+            return res.status(409).json({
+                message: 'There are no qualifying sales reductions for this item in the last seven days.',
+            });
+        }
+        if (result.status === 'belowThreshold') {
+            return res.status(409).json({
+                message: 'The calculated average daily reduction is below the low-stock threshold.',
+            });
+        }
+        res.json({
+            message: result.enabled
+                ? 'Automatic restock target enabled.'
+                : 'Automatic restock target disabled.',
+            enabled: result.enabled,
+            restockTargetQuantity: result.restockTargetQuantity,
+        });
     } catch (error) {
         sendDatabaseError(res, error);
     }
@@ -395,5 +547,7 @@ module.exports = {
     getReceivedLogDetails,
     addInventoryItem,
     updateItemSettings,
+    getAutomaticTargetPreview,
+    updateAutomaticTarget,
     updateStock,
 };

@@ -18,12 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const receivedLogRows = document.getElementById('receivedLogRows');
     const addGeneralStockItemModal = document.getElementById('addGeneralStockItemModal');
     const settingsModal = document.getElementById('editBranchSpecsModal');
+    const automaticTargetModal = document.getElementById('automaticRestockTargetModal');
+    const automaticTargetModalInstance = bootstrap.Modal.getOrCreateInstance(automaticTargetModal);
     const updateStockModal = document.getElementById('updateStockModal');
     const receivedLogDetailsModal = bootstrap.Modal.getOrCreateInstance(
         document.getElementById('receivedLogDetailsModal'),
     );
 
     const formatQuantity = (value) => Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const formatAverageQuantity = (value) =>
+        Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 });
     const formatDate = (value) => new Date(`${value.replace(' ', 'T')}Z`).toLocaleString();
 
     const showError = (message) => {
@@ -132,12 +136,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? 'N/A'
                     : `${formatQuantity(item.low_quantity_threshold)} ${item.unit_type}`,
             );
-            appendCell(
+            const targetCell = appendCell(
                 row,
                 item.restock_target_quantity === null
                     ? 'N/A'
-                    : `${formatQuantity(item.restock_target_quantity)} ${item.unit_type}`,
+                    : `${item.auto_restock_target
+                        ? formatAverageQuantity(item.restock_target_quantity)
+                        : formatQuantity(item.restock_target_quantity)} ${item.unit_type}`,
             );
+            if (item.auto_restock_target) {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-info-subtle text-info-emphasis ms-1';
+                const average = Number(item.average_daily_quantity_reduction);
+                const targetHeld = average <= 0 || average < Number(item.low_quantity_threshold);
+                badge.textContent = targetHeld ? 'Auto · held' : 'Auto';
+                if (targetHeld) badge.title = 'Average is below the low-stock threshold; keeping the last valid target.';
+                targetCell.appendChild(document.createElement('br'));
+                targetCell.appendChild(badge);
+            }
             appendCell(row, `PHP ${Number(item.unit_cost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 
             const actions = document.createElement('td');
@@ -146,6 +162,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal"
                     data-bs-target="#editBranchSpecsModal" data-action="settings" data-id="${item.general_stock_item_id}">
                     <i class="bi bi-sliders me-1" aria-hidden="true"></i>Edit branch settings
+                </button>
+                <button class="btn btn-sm btn-outline-info" type="button"
+                    data-action="automatic-target" data-id="${item.general_stock_item_id}"
+                    ${item.branch_inventory_item_id === null ? 'disabled title="Add branch settings first"' : ''}>
+                    <i class="bi bi-graph-up me-1" aria-hidden="true"></i>${item.auto_restock_target ? 'Disable auto target' : 'Enable auto target'}
                 </button>
                 <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="modal"
                     data-bs-target="#updateStockModal" data-action="stock" data-id="${item.general_stock_item_id}">
@@ -341,6 +362,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const showAutomaticTargetConfirmation = (item) => {
+        clearError();
+        const enabled = Boolean(Number(item.auto_restock_target));
+        const average = Number(item.average_daily_quantity_reduction) || 0;
+        const threshold = Number(item.low_quantity_threshold) || 0;
+        const hasHistory = average > 0;
+        const confirmation = document.getElementById('confirmAutomaticRestockTarget');
+        const preview = document.getElementById('automaticRestockTargetPreview');
+
+        automaticTargetModal.dataset.itemId = item.general_stock_item_id;
+        automaticTargetModal.dataset.enabled = String(!enabled);
+        document.getElementById('automaticRestockTargetDescription').textContent =
+            `${item.name} · ${item.unit_type}`;
+
+        if (enabled) {
+            confirmation.textContent = 'Disable automatic target';
+            preview.textContent = hasHistory && average >= threshold
+                ? `The current rolling seven-day average is ${formatAverageQuantity(average)} ${item.unit_type} per day. Disabling automatic mode keeps this target as the manual target.`
+                : `There are no qualifying reductions or the rolling average is below the low-stock threshold, so the last valid target (${formatAverageQuantity(item.restock_target_quantity)} ${item.unit_type}) is being kept. Disabling automatic mode keeps that target as manual.`;
+        } else {
+            confirmation.textContent = 'Enable automatic target';
+            if (!hasHistory) {
+                preview.textContent =
+                    'There are not enough data for this item in the last seven days.';
+            } else if (average < threshold) {
+                preview.textContent =
+                    `The calculated average (${formatAverageQuantity(average)} ${item.unit_type} per day) is below the low-stock threshold (${formatAverageQuantity(threshold)} ${item.unit_type}). Automatic mode cannot be enabled.`;
+            } else {
+                preview.textContent =
+                    `The average daily reduction is ${formatAverageQuantity(average)} ${item.unit_type}. The restock target will be rounded up to ${formatQuantity(Math.ceil(average))} ${item.unit_type}. The average uses Offline sale and Sold menu item reductions over the last seven days, divided by seven including days with no reduction. The target will keep updating as the rolling average changes.`;
+            }
+        }
+
+        confirmation.disabled = !enabled && (!hasHistory || average < threshold);
+        automaticTargetModalInstance.show();
+    };
+
     addGeneralStockItemModal.addEventListener('show.bs.modal', () => clearError());
     settingsModal.addEventListener('show.bs.modal', (event) => {
         clearError();
@@ -353,6 +411,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('editBranchSpecsModalTitle').nextElementSibling.textContent = `${item.name} · ${item.unit_type}`;
         document.getElementById('branchLowThreshold').value = item.low_quantity_threshold ?? 0;
         document.getElementById('branchRestockTarget').value = item.restock_target_quantity ?? 0;
+        document.getElementById('branchRestockTarget').disabled = Boolean(Number(item.auto_restock_target));
+        document.getElementById('branchRestockTarget').step =
+            item.auto_restock_target ? '1' : '0.01';
+        document.getElementById('branchRestockTargetHelp').textContent = item.auto_restock_target
+            ? 'Managed automatically from the rolling seven-day average daily sales reduction.'
+            : 'Set the target quantity manually.';
     });
 
     updateStockModal.addEventListener('show.bs.modal', (event) => {
@@ -391,6 +455,46 @@ document.addEventListener('DOMContentLoaded', () => {
             quantity: document.getElementById('updatedStock').value,
             reason: document.getElementById('stockUpdateReason').value,
         }, updateStockModal, 'PUT');
+    });
+
+    inventoryRows.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-action="automatic-target"]');
+        if (!button || button.disabled) return;
+        button.disabled = true;
+        try {
+            const data = await request(
+                `/supply/inventory/items/${button.dataset.id}/automatic-target`,
+            );
+            showAutomaticTargetConfirmation(data.item);
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            if (button.isConnected) button.disabled = false;
+        }
+    });
+
+    document.getElementById('confirmAutomaticRestockTarget').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        clearError();
+        button.disabled = true;
+        try {
+            await request(
+                `/supply/inventory/items/${automaticTargetModal.dataset.itemId}/automatic-target`,
+                {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        enabled: automaticTargetModal.dataset.enabled === 'true',
+                    }),
+                },
+            );
+            automaticTargetModalInstance.hide();
+            await loadInventory();
+        } catch (error) {
+            showError(error.message);
+            automaticTargetModal.querySelector('[data-modal-error]').textContent = error.message;
+        } finally {
+            button.disabled = false;
+        }
     });
 
     document.getElementById('inventoryPagination').addEventListener('click', (event) => {
