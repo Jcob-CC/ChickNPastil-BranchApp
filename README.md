@@ -16,7 +16,7 @@
    | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS` | SMTP server details for email notifications. Use an SMTP app password where your provider requires one; do not use your regular Gmail password. |
    | `PAYMONGO_SECRET_KEY` | PayMongo secret API key for payment features. Use a test key for development. |
    | `PAYMONGO_WEBHOOK_SECRET` | Reserved for PayMongo webhook signature verification; the current webhook handler does not verify signatures. |
-   | `POS_WEBHOOK_SECRET` | A long, randomly generated secret used to authorize POS inventory updates. |
+   | `POS_WEBHOOK_SECRET` | A long, randomly generated secret used to authorize POS sold-menu-item webhook requests. |
    | `PORT` | The example is set to `3000`; the server currently listens on port `3000` regardless of this value. |
 
    `SESSION_SECRET` is optional but recommended. Set it to a long, random value so sessions remain valid across server restarts. If it is omitted, the server generates a temporary value each time it starts.
@@ -63,12 +63,12 @@ Browser pages and JavaScript live under `app/`. `server.js` sets up Express and 
 
 ## Existing webhook cheat sheet
 
-### POS inventory update
+### POS sold menu item
 
 Set `POS_WEBHOOK_SECRET` in `.env`, then send:
 
 ```http
-POST /webhooks/pos/inventory
+POST /webhooks/pos/sold-menu-item
 Authorization: Bearer YOUR_POS_WEBHOOK_SECRET
 Content-Type: application/json
 ```
@@ -77,14 +77,16 @@ Content-Type: application/json
 {
   "branchLocationId": 1,
   "generalStockItemId": 12,
-  "quantity": 24
+  "userId": 4,
+  "quantity": 2
 }
 ```
 
-- `branchLocationId` and `generalStockItemId` are IDs from this app's database.
-- `quantity` is the new on-hand total, not an amount to add or subtract.
-- The endpoint updates an existing inventory record or creates one if needed. The referenced branch and stock item must be active.
-- This endpoint does not require a signed-in app user. Keep the secret private and use HTTPS.
+- `branchLocationId`, `generalStockItemId`, and `userId` are IDs from this app's database; the branch, stock item, and user must be active.
+- `quantity` is the positive amount sold and is subtracted from the branch's on-hand total. If the branch does not have enough stock, the endpoint responds with `409` and leaves inventory and the log unchanged.
+- The inventory log records each sale with the fixed reason `sold menu item`. The request does not accept a reason.
+- Each request is treated as a separate sale; retries are not deduplicated.
+- This endpoint does not require a signed-in app session. Keep the secret private and use HTTPS.
 
 ### PayMongo event notification
 
