@@ -3,6 +3,6 @@ const posWebhook = require('../controllers/webhooks/pos');
 
 const router = express.Router();
 
-router.post('/pos/inventory', posWebhook.updateInventory);
+router.post('/pos/sold-menu-item', posWebhook.updateInventory);
 
 module.exports = router;

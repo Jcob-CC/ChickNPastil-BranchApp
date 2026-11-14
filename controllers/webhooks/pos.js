@@ -1,9 +1,9 @@
 const { timingSafeEqual } = require('crypto');
 const db = require('../../lib/database');
 
-const getNonNegativeNumber = (value) => {
+const getPositiveNumber = (value) => {
     const number = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
-    return typeof number === 'number' && Number.isFinite(number) && number >= 0 ? number : null;
+    return typeof number === 'number' && Number.isFinite(number) && number > 0 ? number : null;
 };
 
 const isAuthorized = (authorization, secret) => {
@@ -26,13 +26,15 @@ const updateInventory = (req, res) => {
 
     const branchLocationId = Number(req.body && req.body.branchLocationId);
     const generalStockItemId = Number(req.body && req.body.generalStockItemId);
-    const quantity = getNonNegativeNumber(req.body && req.body.quantity);
+    const userId = Number(req.body && req.body.userId);
+    const quantitySold = getPositiveNumber(req.body && req.body.quantity);
 
     if (!Number.isSafeInteger(branchLocationId) || branchLocationId < 1 ||
         !Number.isSafeInteger(generalStockItemId) || generalStockItemId < 1 ||
-        quantity === null) {
+        !Number.isSafeInteger(userId) || userId < 1 ||
+        quantitySold === null) {
         return res.status(400).json({
-            message: 'Provide valid branchLocationId, generalStockItemId, and non-negative quantity values.',
+            message: 'Provide valid branchLocationId, generalStockItemId, userId, and a positive quantity sold.',
         });
     }
 
@@ -41,36 +43,65 @@ const updateInventory = (req, res) => {
             const branch = db.prepare(`
                 SELECT id FROM branch_location WHERE id = ? AND status = 'active'
             `).get(branchLocationId);
-            if (!branch) return null;
+            if (!branch) return { status: 'not-found' };
 
             const stockItem = db.prepare(`
                 SELECT id FROM general_stock_item WHERE id = ? AND status = 'active'
             `).get(generalStockItemId);
-            if (!stockItem) return null;
+            if (!stockItem) return { status: 'not-found' };
 
-            db.prepare(`
-                INSERT INTO branch_inventory_item
-                    (branch_location_id, general_stock_item_id, quantity)
-                VALUES (?, ?, ?)
-                ON CONFLICT (branch_location_id, general_stock_item_id)
-                DO UPDATE SET quantity = excluded.quantity
-            `).run(branchLocationId, generalStockItemId, quantity);
+            const user = db.prepare(`
+                SELECT id FROM "user" WHERE id = ? AND status = 'active'
+            `).get(userId);
+            if (!user) return { status: 'not-found' };
 
-            return db.prepare(`
-                SELECT id AS branchInventoryItemId, quantity
+            const inventoryItem = db.prepare(`
+                SELECT id, quantity
                 FROM branch_inventory_item
                 WHERE branch_location_id = ? AND general_stock_item_id = ?
             `).get(branchLocationId, generalStockItemId);
-        });
-        const inventoryItem = saveInventory();
+            if (!inventoryItem || inventoryItem.quantity < quantitySold) {
+                return { status: 'insufficient-stock' };
+            }
 
-        if (!inventoryItem) {
-            return res.status(404).json({ message: 'Active branch or stock item not found.' });
+            const quantityAfter = inventoryItem.quantity - quantitySold;
+            db.prepare(`
+                UPDATE branch_inventory_item SET quantity = ? WHERE id = ?
+            `).run(quantityAfter, inventoryItem.id);
+
+            db.prepare(`
+                INSERT INTO branch_inventory_manager_log
+                    (branch_location_id, branch_inventory_item_id, user_id,
+                     value_before, value_after, reason)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `).run(
+                branchLocationId,
+                inventoryItem.id,
+                userId,
+                inventoryItem.quantity,
+                quantityAfter,
+                'sold menu item',
+            );
+
+            return {
+                status: 'updated',
+                branchInventoryItemId: inventoryItem.id,
+                quantity: quantityAfter,
+            };
+        });
+        const result = saveInventory.immediate();
+
+        if (result.status === 'insufficient-stock') {
+            return res.status(409).json({ message: 'Insufficient branch inventory for this sale.' });
+        }
+        if (result.status === 'not-found') {
+            return res.status(404).json({ message: 'Active branch, stock item, or user not found.' });
         }
 
         return res.json({
-            message: 'Branch inventory quantity updated.',
-            ...inventoryItem,
+            message: 'POS sale recorded and branch inventory updated.',
+            branchInventoryItemId: result.branchInventoryItemId,
+            quantity: result.quantity,
             branchLocationId,
             generalStockItemId,
         });
