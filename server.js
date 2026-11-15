@@ -9,7 +9,8 @@ const path = require('path');
 const fs = require('fs');
 const db = require('./lib/database');
 const auth = require('./middleware/auth');
-
+const analyticsRoutes = require('./routes/analytics');
+const analyticsApi = require('./routes/analytics-api');
 const app = express();
 
 const schemaPath = path.join(__dirname, 'schema.sql');
@@ -40,6 +41,8 @@ app.use('/webhooks', require('./routes/webhooks'));
 const sales = require('./routes/sales');
 app.use('/sales', sales.pages);
 app.use('/api', sales.api);
+app.use('/', analyticsRoutes);
+app.use('/', analyticsApi);
 
 app.get('/', (req, res) => {
     res.redirect('/user/login');
