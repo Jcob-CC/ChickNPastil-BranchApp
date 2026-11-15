@@ -1,60 +1,75 @@
-console.log("Branch Profitability Loaded");
+function loadBranchProfitability() {
 
-fetch('/api/analytics/branch-profitability')
-    .then(response => response.json())
-    .then(data => {
+    const date =
+        document.getElementById('dateFilter')?.value || '';
 
-        document.getElementById('highest').innerText =
-            data.highest;
+    const branch =
+        document.getElementById('branchFilter')?.value || 'all';
 
-        document.getElementById('lowest').innerText =
-            data.lowest;
-
-        document.getElementById('averageMargin').innerText =
-            data.averageMargin;
-
-        document.getElementById('branches').innerText =
-            data.activeBranches;
-
-        createCharts(data);
-
+    const query = new URLSearchParams({
+        date,
+        branch
     });
 
-function createCharts(data) {
+    fetch(`/api/analytics/branch-profitability?${query}`)
+        .then(response => response.json())
+        .then(data => {
 
-    if (!data.branches || data.branches.length === 0) {
+            document.getElementById('highest').innerText =
+                data.highest;
 
-        document.getElementById('branchRevenueChart')
-            .parentElement.innerHTML =
-            `
+            document.getElementById('lowest').innerText =
+                data.lowest;
+
+            document.getElementById('averageMargin').innerText =
+                data.averageMargin;
+
+            document.getElementById('branches').innerText =
+                data.activeBranches;
+
+            createCharts(data);
+
+        });
+
+    function createCharts(data) {
+
+        if (!data.branches || data.branches.length === 0) {
+
+            document.getElementById('branchRevenueChart')
+                .parentElement.innerHTML =
+                `
             <h2>Branch Revenue Comparison</h2>
             <p style="padding:20px;color:#777;">
                 No branch revenue data available.
             </p>
             `;
 
-        document.getElementById('marginChart')
-            .parentElement.innerHTML =
-            `
-            <h2>Profit Margin Ranking</h2>
-            <p style="padding:20px;color:#777;">
-                No profit margin data available.
+            const marginContainer =
+                document.querySelectorAll(
+                    '.chart-box.profitability-chart'
+                )[1];
+
+            marginContainer.innerHTML = `
+                <h2>Profit Margin Ranking</h2>
+                <p style="padding:20px;color:#777;">
+                No expense data available.
             </p>
-            `;
+`;
 
-        return;
-    }
+            return;
+        }
 
-    const container =
-        document.getElementById('branchRevenueChart')
-            .parentElement;
+        const container =
+            document.querySelector(
+                '.chart-box.profitability-chart'
+            );
 
-    const maxRevenue = Math.max(
-        ...data.branches.map(branch => branch.revenue),
-        0
-    );
+        const maxRevenue = Math.max(
+            ...data.branches.map(branch => branch.revenue),
+            0
+        );
 
-    container.innerHTML = `
+        container.innerHTML = `
     <h2>Branch Revenue Comparison</h2>
 
     <div class="sales-bars">
@@ -70,9 +85,9 @@ function createCharts(data) {
                         class="sales-fill"
                         style="
                             width:${maxRevenue > 0
-            ? (branch.revenue / maxRevenue) * 100
-            : 0
-        }%;
+                ? (branch.revenue / maxRevenue) * 100
+                : 0
+            }%;
                         ">
                     </div>
                 </div>
@@ -86,32 +101,35 @@ function createCharts(data) {
     </div>
 `;
 
-    document.getElementById('marginChart')
-        .parentElement.innerHTML =
-        `
-        <h2>Profit Margin Ranking</h2>
-        <p style="padding:20px;color:#777;">
+        const marginContainer =
+            document.querySelectorAll(
+                '.chart-box.profitability-chart'
+            )[1];
+
+        marginContainer.innerHTML = `
+            <h2>Profit Margin Ranking</h2>
+            <p style="padding:20px;color:#777;">
             No expense data available.
-        </p>
-    `;
-}
+            </p>
+`;
+    }
 
-fetch('/api/analytics/branch-performance')
-    .then(response => response.json())
-    .then(data => {
+    fetch(`/api/analytics/branch-performance?${query}`)
+        .then(response => response.json())
+        .then(data => {
 
-    const tbody =
-        document.getElementById(
-            'branchPerformanceBody'
-        );
+            const tbody =
+                document.getElementById(
+                    'branchPerformanceBody'
+                );
 
-    if (!tbody) return;
+            if (!tbody) return;
 
-    tbody.innerHTML = '';
+            tbody.innerHTML = '';
 
-    data.forEach(branch => {
+            data.forEach(branch => {
 
-        tbody.innerHTML += `
+                tbody.innerHTML += `
             <tr>
                 <td>${branch.branch}</td>
 
@@ -141,6 +159,17 @@ fetch('/api/analytics/branch-performance')
             </tr>
         `;
 
-    });
+            });
 
-});
+        });
+}
+
+document
+    .getElementById('dateFilter')
+    ?.addEventListener('change', loadBranchProfitability);
+
+document
+    .getElementById('branchFilter')
+    ?.addEventListener('change', loadBranchProfitability);
+
+loadBranchProfitability();

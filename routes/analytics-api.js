@@ -182,21 +182,49 @@ router.get('/api/analytics/financial-summary', (req, res) => {
 
 router.get('/api/analytics/branch-profitability', (req, res) => {
 
-    const branches = db.prepare(`
+    const { date, branch } = req.query;
+
+    let query = `
         SELECT
             branch_name,
             SUM(order_total) AS revenue
         FROM orders
-        WHERE order_status='Completed'
+        WHERE order_status = 'Completed'
+    `;
+
+    const params = [];
+
+    if (date) {
+        query += `
+            AND DATE(order_datetime) = ?
+        `;
+        params.push(date);
+    }
+
+    if (
+        branch &&
+        branch !== 'all' &&
+        branch !== 'All Branches'
+    ) {
+        query += `
+            AND branch_name = ?
+        `;
+        params.push(branch);
+    }
+
+    query += `
         GROUP BY branch_name
         ORDER BY revenue DESC
-    `).all();
+    `;
+
+    const branches =
+        db.prepare(query).all(...params);
 
     if (branches.length === 0) {
         return res.json({
             highest: 'N/A',
             lowest: 'N/A',
-            averageMargin: 100,
+            averageMargin: 0,
             activeBranches: 0,
             branches: []
         });
@@ -205,12 +233,21 @@ router.get('/api/analytics/branch-profitability', (req, res) => {
     const highest = branches[0];
     const lowest = branches[branches.length - 1];
 
+    const averageRevenue =
+        branches.reduce(
+            (sum, branch) =>
+                sum + Number(branch.revenue || 0),
+            0
+        ) / branches.length;
+
     res.json({
         highest: highest.branch_name,
         highestMargin: highest.revenue,
         lowest: lowest.branch_name,
         lowestMargin: lowest.revenue,
-        averageMargin: 'N/A',
+        averageMargin: Number(
+            averageRevenue.toFixed(0)
+        ),
         activeBranches: branches.length,
         branches
     });
@@ -425,14 +462,43 @@ router.get('/api/analytics/wastage-insights', (req, res) => {
 
 router.get('/api/analytics/branch-performance', (req, res) => {
 
-    const revenueData = db.prepare(`
+    const { date, branch } = req.query;
+
+    let revenueQuery = `
         SELECT
             branch_name,
             SUM(order_total) AS revenue
         FROM orders
         WHERE order_status = 'Completed'
+    `;
+
+    const revenueParams = [];
+
+    if (date) {
+        revenueQuery += `
+            AND DATE(order_datetime) = ?
+        `;
+        revenueParams.push(date);
+    }
+
+    if (
+        branch &&
+        branch !== 'all' &&
+        branch !== 'All Branches'
+    ) {
+        revenueQuery += `
+            AND branch_name = ?
+        `;
+        revenueParams.push(branch);
+    }
+
+    revenueQuery += `
         GROUP BY branch_name
-    `).all();
+    `;
+
+    const revenueData =
+        db.prepare(revenueQuery)
+            .all(...revenueParams);
 
     const expenseData = db.prepare(`
         SELECT
@@ -453,7 +519,7 @@ router.get('/api/analytics/branch-performance', (req, res) => {
     });
 
     const result = revenueData
-        .map((branch) => {
+        .map(branch => {
 
             const revenue =
                 Number(branch.revenue || 0);
@@ -466,7 +532,7 @@ router.get('/api/analytics/branch-performance', (req, res) => {
 
             const margin =
                 revenue > 0
-                    ? ((profit / revenue) * 100)
+                    ? (profit / revenue) * 100
                     : 0;
 
             return {
@@ -474,8 +540,11 @@ router.get('/api/analytics/branch-performance', (req, res) => {
                 revenue,
                 expenses,
                 profit,
-                margin: Number(margin.toFixed(1))
+                margin: Number(
+                    margin.toFixed(1)
+                )
             };
+
         })
         .sort((a, b) => b.profit - a.profit)
         .map((branch, index) => ({
