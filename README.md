@@ -14,6 +14,7 @@
    | Setting | Purpose |
    | --- | --- |
    | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS` | SMTP server details for email notifications. Use an SMTP app password where your provider requires one; do not use your regular Gmail password. |
+   | `DISABLE_SIGN_IN_EMAIL_VERIFICATION` | Set to `true` to skip sign-in email-code delivery and code checks. Defaults to `false`; use only in trusted development environments. Password-reset verification is unaffected. |
    | `PAYMONGO_SECRET_KEY` | PayMongo secret API key for payment features. Use a test key for development. |
    | `PAYMONGO_WEBHOOK_SECRET` | Reserved for PayMongo webhook signature verification; the current webhook handler does not verify signatures. |
    | `POS_WEBHOOK_SECRET` | A long, randomly generated secret used to authorize POS sold-menu-item webhook requests. |
@@ -38,6 +39,16 @@
 ## Create an account from the terminal
 
 Run `npm run create-user` from the project folder and follow the prompts. The script creates an account in the local `database.sqlite` database, hashes the password using the app's password helper, and does not display the password as you type. Available roles are `admin`, `manager`, `Cook`, and `Vendor`; status defaults to `active`.
+
+## Disable email sign in verification
+
+For trusted development environments, add this setting to `.env` to skip the sign-in email code:
+
+```env
+DISABLE_SIGN_IN_EMAIL_VERIFICATION=true
+```
+
+Restart the server after changing the setting. Verification is enabled by default, and password-reset verification is unaffected. Disabling sign-in verification removes an extra layer of account protection; do not use this setting in production.
 
 ## Request flow and code structure
 

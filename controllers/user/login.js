@@ -4,6 +4,7 @@ const sendEmail = require('../../lib/emailer');
 const { hashPassword, verifyPassword } = require('../../lib/password');
 
 const passwordRecoveryMessage = 'If an active account matches that email, a verification code will be sent.';
+const signInEmailVerificationDisabled = process.env.DISABLE_SIGN_IN_EMAIL_VERIFICATION === 'true';
 
 const applyForAccount = (req, res) => {
     const {
@@ -83,11 +84,13 @@ const checkPassword = async (req, res) => {
         expiresAt: Date.now() + 10 * 60 * 1000,
     };
 
-    await sendEmail({
-        to: user.email,
-        subject: 'Your sign-in verification code',
-        text: `Your Chick N Pastil sign-in verification code is ${code}. It expires in 10 minutes.`,
-    });
+    if (!signInEmailVerificationDisabled) {
+        await sendEmail({
+            to: user.email,
+            subject: 'Your sign-in verification code',
+            text: `Your Chick N Pastil sign-in verification code is ${code}. It expires in 10 minutes.`,
+        });
+    }
 
     res.json({ message: 'Verification code sent.' });
 };
@@ -98,10 +101,12 @@ const verifyEmail = (req, res) => {
 
     if (
         !req.session.pendingUserId ||
-        typeof code !== 'string' ||
-        !verificationCode ||
-        Date.now() > verificationCode.expiresAt ||
-        code !== verificationCode.value
+        (!signInEmailVerificationDisabled && (
+            typeof code !== 'string' ||
+            !verificationCode ||
+            Date.now() > verificationCode.expiresAt ||
+            code !== verificationCode.value
+        ))
     ) {
         return res.sendStatus(401);
     }
