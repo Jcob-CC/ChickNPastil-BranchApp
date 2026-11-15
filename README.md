@@ -35,6 +35,10 @@
 
 5. Open [http://localhost:3000](http://localhost:3000). The app redirects to the sign-in page.
 
+## Create an account from the terminal
+
+Run `npm run create-user` from the project folder and follow the prompts. The script creates an account in the local `database.sqlite` database, hashes the password using the app's password helper, and does not display the password as you type. Available roles are `admin`, `manager`, `Cook`, and `Vendor`; status defaults to `active`.
+
 ## Request flow and code structure
 
 ```text
