@@ -96,41 +96,77 @@ router.get('/api/analytics/financial-overview', (req, res) => {
 
 router.get('/api/analytics/financial-summary', (req, res) => {
 
-    const { date, branch } = req.query;
+    const { branch, period = 'daily' } = req.query;
 
-    let query = `
+    let query = '';
+    const params = [];
+
+    if (period === 'daily') {
+
+        query = `
+            SELECT
+                DATE(order_datetime) AS date,
+                SUM(order_total) AS revenue
+            FROM orders
+            WHERE order_status = 'Completed'
+        `;
+
+        if (branch && branch !== 'all') {
+            query += ` AND branch_name = ?`;
+            params.push(branch);
+        }
+
+        query += `
+            GROUP BY DATE(order_datetime)
+            ORDER BY DATE(order_datetime) DESC
+            LIMIT 31
+        `;
+
+    } else if (period === 'weekly') {
+
+        query = `
         SELECT
-            DATE(order_datetime) AS date,
-            COUNT(*) AS transactions,
+            DATE(order_datetime, 'weekday 0', '-6 days') AS date,
             SUM(order_total) AS revenue
         FROM orders
         WHERE order_status = 'Completed'
     `;
 
-    const params = [];
+        if (branch && branch !== 'all') {
+            query += ` AND branch_name = ?`;
+            params.push(branch);
+        }
 
-    if (date) {
         query += `
-            AND DATE(order_datetime) = ?
-        `;
-        params.push(date);
-    }
-
-    if (branch && branch !== 'all') {
-        query += `
-            AND branch_name = ?
-        `;
-        params.push(branch);
-    }
-
-    query += `
-        GROUP BY DATE(order_datetime)
-        ORDER BY DATE(order_datetime) DESC
-        LIMIT 7
+        GROUP BY DATE(order_datetime, 'weekday 0', '-6 days')
+        ORDER BY date DESC
+        LIMIT 12
     `;
 
-    const rows =
-        db.prepare(query).all(...params);
+    } else {
+
+
+        query = `
+            SELECT
+                strftime('%Y-%m', order_datetime) AS date,
+                SUM(order_total) AS revenue
+            FROM orders
+            WHERE order_status = 'Completed'
+        `;
+
+        if (branch && branch !== 'all') {
+            query += ` AND branch_name = ?`;
+            params.push(branch);
+        }
+
+        query += `
+            GROUP BY strftime('%Y-%m', order_datetime)
+            ORDER BY date DESC
+            LIMIT 12
+        `;
+    }
+
+    const rows = db.prepare(query).all(...params);
 
     const result = rows.map(row => ({
         date: row.date,
@@ -387,37 +423,65 @@ router.get('/api/analytics/wastage-insights', (req, res) => {
 
 });
 
-
 router.get('/api/analytics/branch-performance', (req, res) => {
 
-    const branches = db.prepare(`
+    const revenueData = db.prepare(`
         SELECT
             branch_name,
-            IFNULL(SUM(order_total),0) AS revenue
+            SUM(order_total) AS revenue
         FROM orders
-        WHERE order_status='Completed'
+        WHERE order_status = 'Completed'
         GROUP BY branch_name
-        ORDER BY revenue DESC
     `).all();
 
-    const result = branches.map((branch, index) => {
+    const expenseData = db.prepare(`
+        SELECT
+            bl.location_name AS branch_name,
+            SUM(ber.total_price) AS expenses
+        FROM branch_expense_request ber
+        JOIN branch_location bl
+            ON bl.id = ber.branch_location_id
+        WHERE ber.status = 'approved'
+        GROUP BY bl.location_name
+    `).all();
 
-        const expenses = null;
+    const expenseMap = {};
 
-        const profit = null;
-
-        const margin = null;
-
-        return {
-            rank: index + 1,
-            branch: branch.branch_name,
-            revenue: branch.revenue,
-            expenses: expenses.total,
-            profit,
-            margin: margin.toFixed(1)
-        };
-
+    expenseData.forEach(row => {
+        expenseMap[row.branch_name] =
+            Number(row.expenses || 0);
     });
+
+    const result = revenueData
+        .map((branch) => {
+
+            const revenue =
+                Number(branch.revenue || 0);
+
+            const expenses =
+                expenseMap[branch.branch_name] || 0;
+
+            const profit =
+                revenue - expenses;
+
+            const margin =
+                revenue > 0
+                    ? ((profit / revenue) * 100)
+                    : 0;
+
+            return {
+                branch: branch.branch_name,
+                revenue,
+                expenses,
+                profit,
+                margin: Number(margin.toFixed(1))
+            };
+        })
+        .sort((a, b) => b.profit - a.profit)
+        .map((branch, index) => ({
+            ...branch,
+            rank: index + 1
+        }));
 
     res.json(result);
 
@@ -794,23 +858,23 @@ router.get('/api/analytics/strategic-insights', (req, res) => {
 
     });
 
-const insights = [];
+    const insights = [];
 
-Object.entries(branchSummary)
-    .sort(
-        (a, b) =>
-            b[1].totalCost -
-            a[1].totalCost
-    )
-    .forEach(([branch, stats]) => {
+    Object.entries(branchSummary)
+        .sort(
+            (a, b) =>
+                b[1].totalCost -
+                a[1].totalCost
+        )
+        .forEach(([branch, stats]) => {
 
-        insights.push({
-            branch,
-            recommendation:
-    `${branch} recorded ₱${stats.totalCost.toLocaleString()} in operational losses across ${stats.incidents} approved incident(s). Priority should be given to identifying recurring expense causes and reducing preventable losses.`
+            insights.push({
+                branch,
+                recommendation:
+                    `${branch} recorded ₱${stats.totalCost.toLocaleString()} in operational losses across ${stats.incidents} approved incident(s). Priority should be given to identifying recurring expense causes and reducing preventable losses.`
+            });
+
         });
-
-    });
     res.json(insights);
 
 });
