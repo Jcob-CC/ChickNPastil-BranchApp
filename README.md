@@ -99,3 +99,11 @@ Configure PayMongo to send `POST /api/paymongo/webhook` to the server. The curre
 3. Add a page route to the relevant file in `routes/`, returning the new HTML file. If the feature needs API behavior, add its endpoint there too, and implement the request handling in the matching file under `controllers/`.
 4. Add a link to the appropriate submenu in `app/assets/html/bars.html`, using the URL registered in the route. Add a role class such as `role-admin` or `role-manager` when the link should only appear for those roles.
 5. Put browser scripts in `app/js/` and styles in `app/assets/css/` (or the matching feature-specific asset folder), and reference them from the page.
+
+## AI Generated Commissary module
+
+The commissary is available at `/commissary` to signed-in `admin`, `manager`, and `cook` users. Its warehouse inventory is stored separately from branch supply inventory. Admins and managers maintain stock items and recipes, create purchase orders and deliveries, approve purchase orders, and dispatch deliveries. Cooks can adjust stock, record wastage, plan and run production batches, and receive approved purchase orders.
+
+The module records stock changes and their associated production, wastage, receipt, and delivery status changes in SQLite transactions. Batch start deducts recipe ingredients; batch completion adds finished goods. Receiving an approved purchase order adds raw materials to the commissary warehouse. Dispatch deducts finished goods from commissary stock only; it does not change branch inventory.
+
+Barcode/QR scanning is available from the stock page when the browser can access a camera (for local development, use `localhost`; otherwise use HTTPS). If camera access or the scanner library is unavailable, enter the item's saved barcode/QR value manually. A scan only identifies the item and never changes stock without a confirmed adjustment.

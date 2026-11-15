@@ -43,8 +43,14 @@
       </ul>
     </li>
     <li class="nav-item">
-      <a href="/commissary" class="nav-link">Commissary</a>
-      <ul class="subnav" id="commissary-subnav" hidden></ul>
+      <a href="/commissary" class="nav-link role-admin role-manager role-cook">Commissary</a>
+      <ul class="subnav" id="commissary-subnav" hidden>
+        <li><a href="/commissary#inventory" class="nav-link role-admin role-manager role-cook">Raw Materials</a></li>
+        <li><a href="/commissary#production" class="nav-link role-admin role-manager role-cook">Production</a></li>
+        <li><a href="/commissary#deliveries" class="nav-link role-admin role-manager role-cook">Deliveries</a></li>
+        <li><a href="/commissary#procurement" class="nav-link role-admin role-manager role-cook">Purchase Orders</a></li>
+        <li><a href="/commissary#wastage" class="nav-link role-admin role-manager role-cook">Wastage &amp; Logs</a></li>
+      </ul>
     </li>
     <li class="nav-item">
       <a href="/sales" class="nav-link">Sales</a>

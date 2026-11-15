@@ -1,0 +1,53 @@
+.commissary-page {
+  max-width: 1500px;
+}
+
+.commissary-tabs {
+  gap: 0.4rem;
+}
+
+.commissary-tabs .nav-link {
+  white-space: nowrap;
+}
+
+.commissary-panel {
+  min-width: 0;
+}
+
+.commissary-page .card {
+  border-radius: 0.85rem;
+}
+
+.commissary-page .table {
+  min-width: 680px;
+}
+
+.commissary-page .table th {
+  white-space: nowrap;
+}
+
+.commissary-page .status-badge {
+  text-transform: capitalize;
+}
+
+#scannerReader {
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+#scannerReader video {
+  border-radius: 0.5rem;
+}
+
+.ingredient-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(5rem, 8rem) auto;
+  gap: 0.5rem;
+}
+
+@media (max-width: 575.98px) {
+  .commissary-page {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+}

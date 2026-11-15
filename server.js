@@ -18,6 +18,7 @@ const schemaSql = fs.readFileSync(schemaPath, 'utf8');
 db.exec(schemaSql);
 require('./lib/sales_schema').migrate(db);
 require('./lib/inventory_schema').migrate(db);
+require('./lib/commissary_schema').migrate(db);
 console.log('Database schema initialized successfully.');
 
 app.use(express.static(path.join(__dirname, 'app')));
@@ -35,6 +36,7 @@ app.use(session({
 }));
 
 app.use(auth);
+app.use('/commissary', require('./routes/commissary'));
 app.use('/supply', require('./routes/supply'));
 app.use('/user', require('./routes/user'));
 app.use('/webhooks', require('./routes/webhooks'));

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commissary | Chick N Pastil</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+  <link rel="stylesheet" href="../../assets/css/commissary.css" />
+</head>
+<body data-page-header="Commissary">
+  <div id="topbar-wrapper"></div>
+  <div class="app-container">
+    <div id="sidebar-wrapper"></div>
+    <main class="main-content">
+      <div class="container-fluid py-4 commissary-page">
+
+        <div class="alert alert-danger d-none" id="commissaryError" role="alert"></div>
+        <div class="alert alert-success d-none" id="commissaryNotice" role="status" aria-live="polite"></div>
+
+        <nav class="commissary-tabs nav nav-pills flex-nowrap overflow-auto mb-4" aria-label="Commissary sections" id="commissaryTabs" hidden>
+          <button class="nav-link active" type="button" data-tab="inventory">Raw materials</button>
+          <button class="nav-link" type="button" data-tab="production">Production</button>
+          <button class="nav-link" type="button" data-tab="deliveries">Deliveries</button>
+          <button class="nav-link" type="button" data-tab="procurement">Purchase orders</button>
+          <button class="nav-link" type="button" data-tab="wastage">Wastage &amp; logs</button>
+        </nav>
+
+        <section class="commissary-panel" id="tab-inventory">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+              <h2 class="h5 mb-1">Warehouse stock</h2>
+              <p class="small text-secondary mb-0">Raw materials and finished goods are tracked separately from branch inventory.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <button class="btn btn-outline-success" type="button" id="scannerToggle"><i class="bi bi-qr-code-scan me-1" aria-hidden="true"></i>Scan barcode / QR</button>
+              <button class="btn btn-success manager-only" type="button" data-bs-toggle="modal" data-bs-target="#stockItemModal"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add stock item</button>
+            </div>
+          </div>
+          <div class="card border-0 shadow-sm mb-3 d-none" id="scannerPanel">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="h6 mb-0">Identify stock item</h3>
+                <button class="btn btn-sm btn-outline-secondary" type="button" id="scannerStop">Close scanner</button>
+              </div>
+              <div class="row g-3">
+                <div class="col-12 col-lg-6"><div id="scannerReader"></div></div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="manualBarcode">Manual barcode / QR value</label>
+                  <div class="input-group">
+                    <input class="form-control" id="manualBarcode" maxlength="120" autocomplete="off">
+                    <button class="btn btn-outline-success" id="manualBarcodeLookup" type="button">Find item</button>
+                  </div>
+                  <p class="form-text">Scanning only identifies an item. Confirm the quantity and reason before stock changes.</p>
+                  <div class="small text-danger" id="scannerMessage" role="status"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Item</th><th>Type</th><th>Stock</th><th>Low threshold</th><th>Barcode</th><th class="text-end">Actions</th></tr></thead>
+                <tbody id="stockRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="commissary-panel d-none" id="tab-production">
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-xl-5 manager-only">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                  <h2 class="h5">Create recipe</h2>
+                  <form id="recipeForm">
+                    <div class="mb-3"><label class="form-label" for="recipeName">Recipe name</label><input class="form-control" id="recipeName" maxlength="150" required></div>
+                    <div class="mb-3"><label class="form-label" for="recipeDescription">Description <span class="text-secondary">(optional)</span></label><input class="form-control" id="recipeDescription" maxlength="500"></div>
+                    <div class="row g-2">
+                      <div class="col-7"><label class="form-label" for="recipeOutput">Finished good</label><select class="form-select" id="recipeOutput" required></select></div>
+                      <div class="col-5"><label class="form-label" for="recipeYield">Yield quantity</label><input class="form-control" id="recipeYield" type="number" min="0.01" step="any" required></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+                      <span class="form-label mb-0">Raw material requirements</span>
+                      <button class="btn btn-sm btn-outline-success" type="button" id="addIngredient">Add ingredient</button>
+                    </div>
+                    <div id="recipeIngredients" class="vstack gap-2"></div>
+                    <button class="btn btn-success w-100 mt-3" type="submit">Save recipe</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-xl-7">
+              <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                  <h2 class="h5">Plan production batch</h2>
+                  <form id="batchForm" class="row g-2 align-items-end">
+                    <div class="col-12 col-md-7"><label class="form-label" for="batchRecipe">Recipe</label><select class="form-select" id="batchRecipe" required></select></div>
+                    <div class="col-8 col-md-3"><label class="form-label" for="batchYield">Target yield</label><input class="form-control" id="batchYield" type="number" min="0.01" step="any" required></div>
+                    <div class="col-4 col-md-2"><button class="btn btn-success w-100" type="submit">Plan</button></div>
+                  </form>
+                  <div class="table-responsive mt-4">
+                    <table class="table table-hover align-middle mb-0">
+                      <thead class="table-light"><tr><th>Batch</th><th>Recipe / yield</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+                      <tbody id="batchRows"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h2 class="h5">Recipes</h2>
+              <div class="row g-3" id="recipeCards"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="commissary-panel d-none" id="tab-deliveries">
+          <div class="card border-0 shadow-sm mb-4 manager-only">
+            <div class="card-body">
+              <h2 class="h5">Prepare branch delivery</h2>
+              <form id="deliveryForm" class="row g-2 align-items-end">
+                <div class="col-12 col-md-4"><label class="form-label" for="deliveryBranch">Destination branch</label><select class="form-select" id="deliveryBranch" required></select></div>
+                <div class="col-7 col-md-4"><label class="form-label" for="deliveryItem">Finished good</label><select class="form-select" id="deliveryItem" required></select></div>
+                <div class="col-5 col-md-2"><label class="form-label" for="deliveryQuantity">Quantity</label><input class="form-control" id="deliveryQuantity" type="number" min="0.01" step="any" required></div>
+                <div class="col-12 col-md-2"><button class="btn btn-success w-100" type="submit">Create delivery</button></div>
+              </form>
+            </div>
+          </div>
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h2 class="h5">Deliveries &amp; logistics</h2>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light"><tr><th>Delivery</th><th>Branch</th><th>Items</th><th>Status</th><th>Created</th><th class="text-end">Action</th></tr></thead>
+                  <tbody id="deliveryRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="commissary-panel d-none" id="tab-procurement">
+          <div class="card border-0 shadow-sm mb-4 manager-only">
+            <div class="card-body">
+              <h2 class="h5">Draft purchase order</h2>
+              <form id="purchaseOrderForm" class="row g-2 align-items-end">
+                <div class="col-12 col-md-4"><label class="form-label" for="supplierName">Supplier</label><input class="form-control" id="supplierName" maxlength="150" required></div>
+                <div class="col-7 col-md-3"><label class="form-label" for="purchaseItem">Raw material</label><select class="form-select" id="purchaseItem" required></select></div>
+                <div class="col-5 col-md-2"><label class="form-label" for="purchaseQuantity">Quantity</label><input class="form-control" id="purchaseQuantity" type="number" min="0.01" step="any" required></div>
+                <div class="col-7 col-md-2"><label class="form-label" for="purchaseUnitCost">Unit cost (PHP)</label><input class="form-control" id="purchaseUnitCost" type="number" min="0" step="0.01" required></div>
+                <div class="col-5 col-md-1"><button class="btn btn-success w-100" type="submit" aria-label="Create purchase order"><i class="bi bi-plus-lg" aria-hidden="true"></i></button></div>
+              </form>
+              <button class="btn btn-sm btn-outline-warning mt-3" type="button" id="generateLowStockPO">Generate draft for low-stock materials</button>
+              <div class="form-text">The supplier above is used; quantities are calculated to reach each item’s low-stock threshold.</div>
+            </div>
+          </div>
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h2 class="h5">Purchase orders</h2>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light"><tr><th>PO</th><th>Supplier</th><th>Items</th><th>Total</th><th>Status</th><th>Created</th><th class="text-end">Action</th></tr></thead>
+                  <tbody id="purchaseOrderRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="commissary-panel d-none" id="tab-wastage">
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <h2 class="h5">Record wastage</h2>
+              <form id="wastageForm" class="row g-2 align-items-end">
+                <div class="col-12 col-md-4"><label class="form-label" for="wastageItem">Stock item</label><select class="form-select" id="wastageItem" required></select></div>
+                <div class="col-5 col-md-2"><label class="form-label" for="wastageQuantity">Quantity</label><input class="form-control" id="wastageQuantity" type="number" min="0.01" step="any" required></div>
+                <div class="col-7 col-md-4"><label class="form-label" for="wastageReason">Reason</label><input class="form-control" id="wastageReason" maxlength="250" required></div>
+                <div class="col-12 col-md-2"><button class="btn btn-danger w-100" type="submit">Record wastage</button></div>
+              </form>
+            </div>
+          </div>
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <h2 class="h5">Wastage records</h2>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light"><tr><th>Date</th><th>Item</th><th>Quantity</th><th>Reason</th><th>Recorded by</th></tr></thead>
+                  <tbody id="wastageRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h2 class="h5">Recent stock movements</h2>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light"><tr><th>Date</th><th>Item</th><th>Change</th><th>Reason</th><th>Updated by</th></tr></thead>
+                  <tbody id="movementRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal fade" id="stockItemModal" tabindex="-1" aria-labelledby="stockItemTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="stockItemForm">
+          <div class="modal-header"><h2 class="modal-title fs-5" id="stockItemTitle">Add commissary stock item</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+          <div class="modal-body">
+            <div class="mb-3"><label class="form-label" for="stockItemName">Item name</label><input class="form-control" id="stockItemName" maxlength="150" required></div>
+            <div class="row g-2 mb-3">
+              <div class="col-6"><label class="form-label" for="stockItemKind">Type</label><select class="form-select" id="stockItemKind"><option value="raw_material">Raw material</option><option value="finished_good">Finished good</option></select></div>
+              <div class="col-6"><label class="form-label" for="stockItemUnit">Unit</label><input class="form-control" id="stockItemUnit" maxlength="40" placeholder="kg, tub, pack" required></div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6"><label class="form-label" for="stockItemCategory">Category</label><input class="form-control" id="stockItemCategory" maxlength="80"></div>
+              <div class="col-6"><label class="form-label" for="stockItemBarcode">Barcode / QR value</label><input class="form-control" id="stockItemBarcode" maxlength="120"></div>
+            </div>
+            <div class="row g-2">
+              <div class="col-4"><label class="form-label" for="stockItemQuantity">Opening stock</label><input class="form-control" id="stockItemQuantity" type="number" min="0" step="any" value="0" required></div>
+              <div class="col-4"><label class="form-label" for="stockItemThreshold">Low threshold</label><input class="form-control" id="stockItemThreshold" type="number" min="0" step="any" value="0" required></div>
+              <div class="col-4"><label class="form-label" for="stockItemCost">Unit cost</label><input class="form-control" id="stockItemCost" type="number" min="0" step="0.01" value="0" required></div>
+            </div>
+            <div class="small text-danger mt-3" data-modal-error role="alert"></div>
+          </div>
+          <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="submit">Save item</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="adjustmentModal" tabindex="-1" aria-labelledby="adjustmentTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="adjustmentForm">
+          <div class="modal-header"><div><h2 class="modal-title fs-5" id="adjustmentTitle">Adjust stock</h2><p class="small text-secondary mb-0" id="adjustmentItemLabel"></p></div><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+          <div class="modal-body">
+            <input id="adjustmentItemId" type="hidden">
+            <div class="mb-3"><label class="form-label" for="adjustmentQuantity">Quantity change</label><input class="form-control" id="adjustmentQuantity" type="number" step="any" required><div class="form-text">Use a positive value to add stock or a negative value to remove it.</div></div>
+            <div class="mb-3"><label class="form-label" for="adjustmentReason">Reason</label><input class="form-control" id="adjustmentReason" maxlength="250" required></div>
+            <div class="small text-danger" data-modal-error role="alert"></div>
+          </div>
+          <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" type="submit">Save adjustment</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../js/shared/bars.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8" type="text/javascript"></script>
+  <script src="../../js/commissary/index.js"></script>
+</body>
+</html>
