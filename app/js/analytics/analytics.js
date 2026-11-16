@@ -421,4 +421,7 @@ document
         loadFinancialOverview
     );
 
-loadFinancialOverview();
+(async () => {
+    await loadBranchFilter();
+    loadFinancialOverview();
+})();
