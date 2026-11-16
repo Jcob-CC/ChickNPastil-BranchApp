@@ -208,7 +208,7 @@ function createCharts(data) {
     }
 
     const paymentCanvas =
-    document.getElementById('financialPaymentChart');
+        document.getElementById('financialPaymentChart');
     if (paymentCanvas) {
 
         if (paymentChart) {
@@ -277,6 +277,111 @@ function createCharts(data) {
 
 }
 
+function loadFinancialSummary(period) {
+
+    const date =
+        document.getElementById('dateFilter')?.value || '';
+
+    const branch =
+        document.getElementById('branchFilter')?.value || 'all';
+
+    const query =
+        new URLSearchParams({
+            date,
+            branch,
+            period
+        });
+
+    fetch(`/api/analytics/financial-summary?${query}`)
+        .then(response => response.json())
+        .then(rows => {
+
+            console.log(rows);
+
+            const tbody =
+                document.getElementById(
+                    'financialSummaryBody'
+                );
+
+            if (!tbody) return;
+
+            if (!rows.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            No financial records found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = rows.map(row => {
+
+                let displayDate;
+
+                if (period === 'weekly') {
+
+                    displayDate = `Week of ${new Date(row.date)
+                        .toLocaleDateString('en-PH', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        })}`;
+
+                } else if (period === 'monthly') {
+
+                    displayDate = new Date(row.date + '-01')
+                        .toLocaleDateString('en-PH', {
+                            month: 'short',
+                            year: 'numeric'
+                        });
+
+                } else {
+
+                    displayDate = new Date(row.date)
+                        .toLocaleDateString('en-PH', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: '2-digit'
+                        });
+
+                }
+                return `
+        <tr>
+            <td>${displayDate}</td>
+
+            <td>
+                ₱${Number(row.revenue).toLocaleString()}
+            </td>
+
+            <td>
+                ₱${Number(row.expenses).toLocaleString()}
+            </td>
+
+            <td>
+                ₱${Number(row.profit).toLocaleString()}
+            </td>
+
+            <td>
+                ${row.margin}%
+            </td>
+
+        </tr>
+    `;
+
+            }).join('');
+
+        })
+        .catch(error => {
+            console.error(
+                'Financial summary error:',
+                error
+            );
+        });
+
+}
+
 document.querySelectorAll('.summary-tab')
     .forEach(button => {
 
@@ -295,10 +400,7 @@ document.querySelectorAll('.summary-tab')
                 const period =
                     button.dataset.period;
 
-                console.log(
-                    'Selected:',
-                    period
-                );
+                loadFinancialSummary(period);
 
             }
         );
