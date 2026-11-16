@@ -96,41 +96,77 @@ router.get('/api/analytics/financial-overview', (req, res) => {
 
 router.get('/api/analytics/financial-summary', (req, res) => {
 
-    const { date, branch } = req.query;
+    const { branch, period = 'daily' } = req.query;
 
-    let query = `
+    let query = '';
+    const params = [];
+
+    if (period === 'daily') {
+
+        query = `
+            SELECT
+                DATE(order_datetime) AS date,
+                SUM(order_total) AS revenue
+            FROM orders
+            WHERE order_status = 'Completed'
+        `;
+
+        if (branch && branch !== 'all') {
+            query += ` AND branch_name = ?`;
+            params.push(branch);
+        }
+
+        query += `
+            GROUP BY DATE(order_datetime)
+            ORDER BY DATE(order_datetime) DESC
+            LIMIT 31
+        `;
+
+    } else if (period === 'weekly') {
+
+        query = `
         SELECT
-            DATE(order_datetime) AS date,
-            COUNT(*) AS transactions,
+            DATE(order_datetime, 'weekday 0', '-6 days') AS date,
             SUM(order_total) AS revenue
         FROM orders
         WHERE order_status = 'Completed'
     `;
 
-    const params = [];
+        if (branch && branch !== 'all') {
+            query += ` AND branch_name = ?`;
+            params.push(branch);
+        }
 
-    if (date) {
         query += `
-            AND DATE(order_datetime) = ?
-        `;
-        params.push(date);
-    }
-
-    if (branch && branch !== 'all') {
-        query += `
-            AND branch_name = ?
-        `;
-        params.push(branch);
-    }
-
-    query += `
-        GROUP BY DATE(order_datetime)
-        ORDER BY DATE(order_datetime) DESC
-        LIMIT 7
+        GROUP BY DATE(order_datetime, 'weekday 0', '-6 days')
+        ORDER BY date DESC
+        LIMIT 12
     `;
 
-    const rows =
-        db.prepare(query).all(...params);
+    } else {
+
+
+        query = `
+            SELECT
+                strftime('%Y-%m', order_datetime) AS date,
+                SUM(order_total) AS revenue
+            FROM orders
+            WHERE order_status = 'Completed'
+        `;
+
+        if (branch && branch !== 'all') {
+            query += ` AND branch_name = ?`;
+            params.push(branch);
+        }
+
+        query += `
+            GROUP BY strftime('%Y-%m', order_datetime)
+            ORDER BY date DESC
+            LIMIT 12
+        `;
+    }
+
+    const rows = db.prepare(query).all(...params);
 
     const result = rows.map(row => ({
         date: row.date,
@@ -146,21 +182,49 @@ router.get('/api/analytics/financial-summary', (req, res) => {
 
 router.get('/api/analytics/branch-profitability', (req, res) => {
 
-    const branches = db.prepare(`
+    const { date, branch } = req.query;
+
+    let query = `
         SELECT
             branch_name,
             SUM(order_total) AS revenue
         FROM orders
-        WHERE order_status='Completed'
+        WHERE order_status = 'Completed'
+    `;
+
+    const params = [];
+
+    if (date) {
+        query += `
+            AND DATE(order_datetime) = ?
+        `;
+        params.push(date);
+    }
+
+    if (
+        branch &&
+        branch !== 'all' &&
+        branch !== 'All Branches'
+    ) {
+        query += `
+            AND branch_name = ?
+        `;
+        params.push(branch);
+    }
+
+    query += `
         GROUP BY branch_name
         ORDER BY revenue DESC
-    `).all();
+    `;
+
+    const branches =
+        db.prepare(query).all(...params);
 
     if (branches.length === 0) {
         return res.json({
             highest: 'N/A',
             lowest: 'N/A',
-            averageMargin: 100,
+            averageMargin: 0,
             activeBranches: 0,
             branches: []
         });
@@ -169,12 +233,21 @@ router.get('/api/analytics/branch-profitability', (req, res) => {
     const highest = branches[0];
     const lowest = branches[branches.length - 1];
 
+    const averageRevenue =
+        branches.reduce(
+            (sum, branch) =>
+                sum + Number(branch.revenue || 0),
+            0
+        ) / branches.length;
+
     res.json({
         highest: highest.branch_name,
         highestMargin: highest.revenue,
         lowest: lowest.branch_name,
         lowestMargin: lowest.revenue,
-        averageMargin: 'N/A',
+        averageMargin: Number(
+            averageRevenue.toFixed(0)
+        ),
         activeBranches: branches.length,
         branches
     });
@@ -387,37 +460,97 @@ router.get('/api/analytics/wastage-insights', (req, res) => {
 
 });
 
-
 router.get('/api/analytics/branch-performance', (req, res) => {
 
-    const branches = db.prepare(`
+    const { date, branch } = req.query;
+
+    let revenueQuery = `
         SELECT
             branch_name,
-            IFNULL(SUM(order_total),0) AS revenue
+            SUM(order_total) AS revenue
         FROM orders
-        WHERE order_status='Completed'
+        WHERE order_status = 'Completed'
+    `;
+
+    const revenueParams = [];
+
+    if (date) {
+        revenueQuery += `
+            AND DATE(order_datetime) = ?
+        `;
+        revenueParams.push(date);
+    }
+
+    if (
+        branch &&
+        branch !== 'all' &&
+        branch !== 'All Branches'
+    ) {
+        revenueQuery += `
+            AND branch_name = ?
+        `;
+        revenueParams.push(branch);
+    }
+
+    revenueQuery += `
         GROUP BY branch_name
-        ORDER BY revenue DESC
+    `;
+
+    const revenueData =
+        db.prepare(revenueQuery)
+            .all(...revenueParams);
+
+    const expenseData = db.prepare(`
+        SELECT
+            bl.location_name AS branch_name,
+            SUM(ber.total_price) AS expenses
+        FROM branch_expense_request ber
+        JOIN branch_location bl
+            ON bl.id = ber.branch_location_id
+        WHERE ber.status = 'approved'
+        GROUP BY bl.location_name
     `).all();
 
-    const result = branches.map((branch, index) => {
+    const expenseMap = {};
 
-        const expenses = null;
-
-        const profit = null;
-
-        const margin = null;
-
-        return {
-            rank: index + 1,
-            branch: branch.branch_name,
-            revenue: branch.revenue,
-            expenses: expenses.total,
-            profit,
-            margin: margin.toFixed(1)
-        };
-
+    expenseData.forEach(row => {
+        expenseMap[row.branch_name] =
+            Number(row.expenses || 0);
     });
+
+    const result = revenueData
+        .map(branch => {
+
+            const revenue =
+                Number(branch.revenue || 0);
+
+            const expenses =
+                expenseMap[branch.branch_name] || 0;
+
+            const profit =
+                revenue - expenses;
+
+            const margin =
+                revenue > 0
+                    ? (profit / revenue) * 100
+                    : 0;
+
+            return {
+                branch: branch.branch_name,
+                revenue,
+                expenses,
+                profit,
+                margin: Number(
+                    margin.toFixed(1)
+                )
+            };
+
+        })
+        .sort((a, b) => b.profit - a.profit)
+        .map((branch, index) => ({
+            ...branch,
+            rank: index + 1
+        }));
 
     res.json(result);
 
@@ -425,69 +558,91 @@ router.get('/api/analytics/branch-performance', (req, res) => {
 
 router.get('/api/analytics/sales-insights', (req, res) => {
 
+    const { date, branch } = req.query;
+
+    let whereClause = `
+    WHERE order_status = 'Completed'
+`;
+
+    const params = [];
+
+    if (date) {
+        whereClause += `
+        AND DATE(order_datetime) = ?
+    `;
+        params.push(date);
+    }
+
+    if (branch && branch !== 'all') {
+        whereClause += `
+        AND branch_name = ?
+    `;
+        params.push(branch);
+    }
+
     const peakHour = db.prepare(`
-        SELECT
-            strftime('%H', order_datetime) AS hour,
-            COUNT(*) AS total_orders
-        FROM orders
-        WHERE order_status = 'Completed'
-        GROUP BY hour
-        ORDER BY total_orders DESC
-        LIMIT 1
-    `).get();
+    SELECT
+        strftime('%H', order_datetime) AS hour,
+        COUNT(*) AS total_orders
+    FROM orders
+    ${whereClause}
+    GROUP BY hour
+    ORDER BY total_orders DESC
+    LIMIT 1
+`).get(...params);
 
     const peakDay = db.prepare(`
-        SELECT
-            DATE(order_datetime) AS sales_day,
-            SUM(order_total) AS revenue
-        FROM orders
-        WHERE order_status = 'Completed'
-        GROUP BY DATE(order_datetime)
-        ORDER BY revenue DESC
-        LIMIT 1
-    `).get();
+    SELECT
+        DATE(order_datetime) AS sales_day,
+        SUM(order_total) AS revenue
+    FROM orders
+    ${whereClause}
+    GROUP BY DATE(order_datetime)
+    ORDER BY revenue DESC
+    LIMIT 1
+`).get(...params);
 
     const highestBranch = db.prepare(`
-        SELECT
-            branch_name,
-            SUM(order_total) AS revenue
-        FROM orders
-        WHERE order_status = 'Completed'
-        GROUP BY branch_name
-        ORDER BY revenue DESC
-        LIMIT 1
-    `).get();
+    SELECT
+        branch_name,
+        SUM(order_total) AS revenue
+    FROM orders
+    ${whereClause}
+    GROUP BY branch_name
+    ORDER BY revenue DESC
+    LIMIT 1
+`).get(...params);
 
     const bestPeriod = db.prepare(`
-        SELECT
-            CASE
-                WHEN CAST(
-                    strftime('%H', order_datetime)
-                    AS INTEGER
-                ) < 12
-                THEN 'Morning'
+    SELECT
+        CASE
+            WHEN CAST(
+                strftime('%H', order_datetime)
+                AS INTEGER
+            ) < 12
+            THEN 'Morning'
 
-                WHEN CAST(
-                    strftime('%H', order_datetime)
-                    AS INTEGER
-                ) < 18
-                THEN 'Afternoon'
+            WHEN CAST(
+                strftime('%H', order_datetime)
+                AS INTEGER
+            ) < 18
+            THEN 'Afternoon'
 
-                ELSE 'Evening'
-            END AS period,
+            ELSE 'Evening'
+        END AS period,
 
-            SUM(order_total) AS revenue
+        SUM(order_total) AS revenue
 
-        FROM orders
+    FROM orders
 
-        WHERE order_status='Completed'
+    ${whereClause}
 
-        GROUP BY period
+    GROUP BY period
 
-        ORDER BY revenue DESC
+    ORDER BY revenue DESC
 
-        LIMIT 1
-    `).get();
+    LIMIT 1
+`).get(...params);
 
     res.json({
 
@@ -530,11 +685,25 @@ router.get('/api/analytics/branch-sales-summary', (req, res) => {
 
 router.get('/api/analytics/branch-peak-summary', (req, res) => {
 
-    const branches = db.prepare(`
+    const { date, branch } = req.query;
+
+    let branchQuery = `
         SELECT DISTINCT branch_name
         FROM orders
         WHERE order_status = 'Completed'
-    `).all();
+    `;
+
+    const params = [];
+
+    if (branch && branch !== 'all') {
+        branchQuery += `
+            AND branch_name = ?
+        `;
+        params.push(branch);
+    }
+
+    const branches =
+        db.prepare(branchQuery).all(...params);
 
     const result = branches.map(branch => {
 
@@ -545,10 +714,15 @@ router.get('/api/analytics/branch-peak-summary', (req, res) => {
             FROM orders
             WHERE order_status = 'Completed'
             AND branch_name = ?
+            ${date ? 'AND DATE(order_datetime) = ?' : ''}
             GROUP BY hour
             ORDER BY total_orders DESC
             LIMIT 1
-        `).get(branch.branch_name);
+        `).get(
+            ...(date
+                ? [branch.branch_name, date]
+                : [branch.branch_name])
+        );
 
         const peakDay = db.prepare(`
             SELECT
@@ -557,10 +731,15 @@ router.get('/api/analytics/branch-peak-summary', (req, res) => {
             FROM orders
             WHERE order_status = 'Completed'
             AND branch_name = ?
+            ${date ? 'AND DATE(order_datetime) = ?' : ''}
             GROUP BY DATE(order_datetime)
             ORDER BY sales DESC
             LIMIT 1
-        `).get(branch.branch_name);
+        `).get(
+            ...(date
+                ? [branch.branch_name, date]
+                : [branch.branch_name])
+        );
 
         return {
             branch_name: branch.branch_name,
@@ -577,80 +756,54 @@ router.get('/api/analytics/branch-peak-summary', (req, res) => {
                 ? new Date(peakDay.sales_day)
                     .toLocaleDateString('en-US', {
                         month: 'short',
-                        day: '2-digit',
+                        day: 'numeric',
                         year: 'numeric'
                     })
                 : 'N/A',
             sales: peakDay?.sales || 0
         };
-    });
-
-    res.json(result);
-
-});
-
-
-router.get('/api/analytics/branch-peak-summary', (req, res) => {
-
-    const branches = db.prepare(`
-        SELECT DISTINCT branch_name
-        FROM orders
-        WHERE order_status = 'Completed'
-    `).all();
-
-    const result = branches.map(branch => {
-
-        const peakHour = db.prepare(`
-            SELECT
-                strftime('%H', order_datetime) AS hour,
-                COUNT(*) AS total_orders
-            FROM orders
-            WHERE order_status = 'Completed'
-            AND branch_name = ?
-            GROUP BY hour
-            ORDER BY total_orders DESC
-            LIMIT 1
-        `).get(branch.branch_name);
-
-        const peakDay = db.prepare(`
-            SELECT
-                DATE(order_datetime) AS sales_day,
-                SUM(order_total) AS sales
-            FROM orders
-            WHERE order_status = 'Completed'
-            AND branch_name = ?
-            GROUP BY DATE(order_datetime)
-            ORDER BY sales DESC
-            LIMIT 1
-        `).get(branch.branch_name);
-
-        return {
-            branch_name: branch.branch_name,
-            peakHour: peakHour?.hour
-                ? `${peakHour.hour}:00`
-                : 'N/A',
-            peakDay: peakDay?.sales_day || 'N/A',
-            sales: peakDay?.sales || 0
-        };
 
     });
 
     res.json(result);
 
 });
-
 
 router.get('/api/analytics/hourly-sales', (req, res) => {
 
-    const rows = db.prepare(`
+    const { date, branch } = req.query;
+
+    let query = `
         SELECT
             strftime('%H', order_datetime) AS hour,
             SUM(order_total) AS sales
         FROM orders
         WHERE order_status = 'Completed'
+    `;
+
+    const params = [];
+
+    if (date) {
+        query += `
+            AND DATE(order_datetime) = ?
+        `;
+        params.push(date);
+    }
+
+    if (branch && branch !== 'all') {
+        query += `
+            AND branch_name = ?
+        `;
+        params.push(branch);
+    }
+
+    query += `
         GROUP BY hour
         ORDER BY hour
-    `).all();
+    `;
+
+    const rows =
+        db.prepare(query).all(...params);
 
     res.json({
         labels: rows.map(row => `${row.hour}:00`),
@@ -661,15 +814,39 @@ router.get('/api/analytics/hourly-sales', (req, res) => {
 
 router.get('/api/analytics/daily-sales', (req, res) => {
 
-    const rows = db.prepare(`
+    const { date, branch } = req.query;
+
+    let query = `
         SELECT
             strftime('%w', order_datetime) AS day_num,
             SUM(order_total) AS sales
         FROM orders
         WHERE order_status = 'Completed'
+    `;
+
+    const params = [];
+
+    if (date) {
+        query += `
+            AND DATE(order_datetime) = ?
+        `;
+        params.push(date);
+    }
+
+    if (branch && branch !== 'all') {
+        query += `
+            AND branch_name = ?
+        `;
+        params.push(branch);
+    }
+
+    query += `
         GROUP BY day_num
         ORDER BY day_num
-    `).all();
+    `;
+
+    const rows =
+        db.prepare(query).all(...params);
 
     const dayNames = [
         'Sun',
@@ -682,7 +859,9 @@ router.get('/api/analytics/daily-sales', (req, res) => {
     ];
 
     res.json({
-        labels: rows.map(row => dayNames[Number(row.day_num)]),
+        labels: rows.map(
+            row => dayNames[Number(row.day_num)]
+        ),
         sales: rows.map(row => row.sales)
     });
 
@@ -794,23 +973,23 @@ router.get('/api/analytics/strategic-insights', (req, res) => {
 
     });
 
-const insights = [];
+    const insights = [];
 
-Object.entries(branchSummary)
-    .sort(
-        (a, b) =>
-            b[1].totalCost -
-            a[1].totalCost
-    )
-    .forEach(([branch, stats]) => {
+    Object.entries(branchSummary)
+        .sort(
+            (a, b) =>
+                b[1].totalCost -
+                a[1].totalCost
+        )
+        .forEach(([branch, stats]) => {
 
-        insights.push({
-            branch,
-            recommendation:
-    `${branch} recorded ₱${stats.totalCost.toLocaleString()} in operational losses across ${stats.incidents} approved incident(s). Priority should be given to identifying recurring expense causes and reducing preventable losses.`
+            insights.push({
+                branch,
+                recommendation:
+                    `${branch} recorded ₱${stats.totalCost.toLocaleString()} in operational losses across ${stats.incidents} approved incident(s). Priority should be given to identifying recurring expense causes and reducing preventable losses.`
+            });
+
         });
-
-    });
     res.json(insights);
 
 });
