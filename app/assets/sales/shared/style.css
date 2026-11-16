@@ -205,6 +205,18 @@ body.sidebar-collapsed .main-content {
     transform: translateX(0);
     box-shadow: 4px 0 16px rgba(0, 0, 0, 0.25);
   }
+  /* Larger, fully visible tap target when the sidebar is hidden */
+  .sidebar-toggle-btn {
+    top: 50%;
+    width: 36px;
+    height: 36px;
+    margin-top: -18px;
+    right: -36px;
+    touch-action: manipulation;
+  }
+  body.mobile-sidebar-open .sidebar-toggle-btn {
+    right: -18px;
+  }
   .main-content {
     margin-left: 0 !important;
     padding: 16px;

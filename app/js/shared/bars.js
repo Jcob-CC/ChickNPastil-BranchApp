@@ -146,6 +146,8 @@ document.addEventListener("DOMContentLoaded", function () {
         sidebarToggleBtn.addEventListener("click", function () {
           const isCollapsed = sidebar.classList.toggle("collapsed");
           sidebarToggleBtn.setAttribute("aria-expanded", String(!isCollapsed));
+          // Sales pages' stylesheet opens the mobile sidebar via this body class
+          document.body.classList.toggle("mobile-sidebar-open", !isCollapsed);
         });
       }
     })
