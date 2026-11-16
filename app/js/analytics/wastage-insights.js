@@ -297,11 +297,13 @@ function loadWastageInsights() {
             if (trendChart) {
 
                 const trendData =
-                    [...data.wastages].sort(
-                        (a, b) =>
-                            new Date(b.date_recorded) -
-                            new Date(a.date_recorded)
-                    );
+                    [...data.wastages]
+                        .sort(
+                            (a, b) =>
+                                new Date(b.date_recorded) -
+                                new Date(a.date_recorded)
+                        )
+                        .slice(0, 4);
 
                 new Chart(trendChart, {
 
