@@ -230,25 +230,78 @@ router.get('/api/analytics/branch-profitability', (req, res) => {
         });
     }
 
-    const highest = branches[0];
-    const lowest = branches[branches.length - 1];
+    const expenseData = db.prepare(`
+    SELECT
+        bl.location_name AS branch_name,
+        SUM(ber.total_price) AS expenses
+    FROM branch_expense_request ber
+    JOIN branch_location bl
+        ON bl.id = ber.branch_location_id
+    WHERE ber.status = 'approved'
+    GROUP BY bl.location_name
+`).all();
 
-    const averageRevenue =
-        branches.reduce(
+    const expenseMap = {};
+
+    expenseData.forEach(row => {
+        expenseMap[row.branch_name] =
+            Number(row.expenses || 0);
+    });
+
+    const profitability = branches.map(branch => {
+
+        const revenue =
+            Number(branch.revenue || 0);
+
+        const expenses =
+            expenseMap[branch.branch_name] || 0;
+
+        const profit =
+            revenue - expenses;
+
+        const margin =
+            revenue > 0
+                ? (profit / revenue) * 100
+                : 0;
+
+        return {
+            ...branch,
+            profit,
+            margin
+        };
+
+    });
+
+    const highest =
+        profitability.reduce((a, b) =>
+            a.profit > b.profit ? a : b
+        );
+
+    const lowest =
+        profitability.reduce((a, b) =>
+            a.profit < b.profit ? a : b
+        );
+
+    const averageMargin =
+        profitability.reduce(
             (sum, branch) =>
-                sum + Number(branch.revenue || 0),
+                sum + Number(branch.margin || 0),
             0
-        ) / branches.length;
+        ) / profitability.length;
 
     res.json({
         highest: highest.branch_name,
-        highestMargin: highest.revenue,
-        lowest: lowest.branch_name,
-        lowestMargin: lowest.revenue,
-        averageMargin: Number(
-            averageRevenue.toFixed(0)
+        highestMargin: Number(
+            highest.margin.toFixed(1)
         ),
-        activeBranches: branches.length,
+        lowest: lowest.branch_name,
+        lowestMargin: Number(
+            lowest.margin.toFixed(1)
+        ),
+        averageMargin: Number(
+            averageMargin.toFixed(1)
+        ),
+        activeBranches: profitability.length,
         branches
     });
 
@@ -418,20 +471,50 @@ router.get('/api/analytics/payment-audit', (req, res) => {
 
 router.get('/api/analytics/wastage-insights', (req, res) => {
 
-    const wastages = db.prepare(`
-        SELECT
-            ber.id,
-            bl.location_name AS branch_name,
-            ber.total_price AS estimated_cost,
-            ber.request_note AS reason,
-            ber.date_and_time AS date_recorded,
-            ber.status
-        FROM branch_expense_request ber
-        LEFT JOIN branch_location bl
-            ON bl.id = ber.branch_location_id
-        WHERE ber.status = 'approved'
-        ORDER BY ber.date_and_time DESC
-    `).all();
+    const { date, branch } = req.query;
+
+    let query = `
+    SELECT
+        bl.id,
+        bl.location_name AS branch_name,
+        COALESCE(
+            SUM(
+                CASE
+                    WHEN ber.status = 'approved'
+                    THEN ber.total_price
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS estimated_cost
+    FROM branch_location bl
+    LEFT JOIN branch_expense_request ber
+        ON ber.branch_location_id = bl.id
+    WHERE bl.status = 'active'
+`;
+    const params = [];
+
+    if (date) {
+        query += `
+            AND DATE(ber.date_and_time) = ?
+        `;
+        params.push(date);
+    }
+
+    if (branch && branch !== 'all') {
+        query += `
+            AND bl.location_name = ?
+        `;
+        params.push(branch);
+    }
+
+    query += `
+    GROUP BY bl.id, bl.location_name
+    ORDER BY bl.id
+`;
+
+    const wastages =
+        db.prepare(query).all(...params);
 
     const totalCost =
         wastages.reduce(
@@ -465,12 +548,15 @@ router.get('/api/analytics/branch-performance', (req, res) => {
     const { date, branch } = req.query;
 
     let revenueQuery = `
-        SELECT
-            branch_name,
-            SUM(order_total) AS revenue
-        FROM orders
-        WHERE order_status = 'Completed'
-    `;
+    SELECT
+        o.branch_name,
+        SUM(o.order_total) AS revenue,
+        bl.id AS branch_order
+    FROM orders o
+    LEFT JOIN branch_location bl
+        ON bl.location_name = o.branch_name
+    WHERE o.order_status = 'Completed'
+`;
 
     const revenueParams = [];
 
@@ -493,8 +579,9 @@ router.get('/api/analytics/branch-performance', (req, res) => {
     }
 
     revenueQuery += `
-        GROUP BY branch_name
-    `;
+    GROUP BY o.branch_name
+    ORDER BY branch_order
+`;
 
     const revenueData =
         db.prepare(revenueQuery)
@@ -546,7 +633,6 @@ router.get('/api/analytics/branch-performance', (req, res) => {
             };
 
         })
-        .sort((a, b) => b.profit - a.profit)
         .map((branch, index) => ({
             ...branch,
             rank: index + 1
@@ -992,6 +1078,17 @@ router.get('/api/analytics/strategic-insights', (req, res) => {
         });
     res.json(insights);
 
+});
+
+router.get('/api/analytics/branches', (req, res) => {
+    const branches = db.prepare(`
+        SELECT location_name
+        FROM branch_location
+        WHERE status = 'active'
+        ORDER BY id
+    `).all();
+
+    res.json(branches);
 });
 
 module.exports = router;

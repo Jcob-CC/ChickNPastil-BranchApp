@@ -314,4 +314,7 @@ document
     .getElementById('branchFilter')
     ?.addEventListener('change', loadSalesTrends);
 
-loadSalesTrends();
+(async () => {
+    await loadBranchFilter();
+    loadSalesTrends();
+})();

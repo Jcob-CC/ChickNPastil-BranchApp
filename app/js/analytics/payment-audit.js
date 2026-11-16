@@ -127,7 +127,7 @@ function createCharts(data) {
     }
 
     const paymentCanvas =
-    document.getElementById('paymentAuditChart')
+        document.getElementById('paymentAuditChart')
     if (paymentCanvas) {
 
         if (paymentChart) {
@@ -287,4 +287,7 @@ document
         loadPaymentAudit
     );
 
-loadPaymentAudit();
+(async () => {
+    await loadBranchFilter();
+    loadPaymentAudit();
+})();
