@@ -22,7 +22,7 @@
 
    `SESSION_SECRET` is optional but recommended. Set it to a long, random value so sessions remain valid across server restarts. If it is omitted, the server generates a temporary value each time it starts.
 
-   No external account is needed to run the app locally. Email and PayMongo accounts are needed only for their respective integrations. The app's sign-in uses user records in its database; the project does not define a default username or password, so obtain an existing account from an administrator.
+   No external account is needed to run the app locally. Email and PayMongo accounts are needed only for their respective integrations. Sign-in uses user records in `database.sqlite`; the repository database includes local demo accounts listed in [Local database test accounts](#local-database-test-accounts). Other database copies may contain different users.
 
    The login page's **Forgot password?** flow sends an email verification code to active accounts. Configure the `EMAIL_*` settings above to enable email delivery. Codes expire after 10 minutes, allow at most five incorrect attempts, and can be used once; a verified code lets the user choose a new password of 8–256 characters.
 
@@ -48,7 +48,20 @@ For trusted development environments, add this setting to `.env` to skip the sig
 DISABLE_SIGN_IN_EMAIL_VERIFICATION=true
 ```
 
-Restart the server after changing the setting. Verification is enabled by default, and password-reset verification is unaffected. Disabling sign-in verification removes an extra layer of account protection; do not use this setting in production.
+Restart the server after changing the setting. Verification is enabled by default. When sign-in verification is disabled, test accounts can use fake email addresses because sign-in does not send or check an email code. Password-reset verification is unaffected, so use a real email address if you need to test password resets. Disabling sign-in verification removes an extra layer of account protection; do not use this setting in production.
+
+### Local database test accounts
+
+With the repository's `database.sqlite` and sign-in email verification disabled, these local demo accounts can be used to test each role:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@mail.com` | `12345678` |
+| Cook | `cook@mail.com` | `12345678` |
+| Manager | `manager@mail.com` | `12345678` |
+| Vendor | `vendor@mail.com` | `12345678` |
+
+These are development-only credentials. Do not use them in production or on a deployed instance; change or remove them before deployment. Their fake email addresses cannot receive password-reset codes.
 
 ## Request flow and code structure
 
