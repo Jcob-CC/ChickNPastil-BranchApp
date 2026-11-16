@@ -78,7 +78,9 @@ function loadWastageInsights() {
                         item.branch_name || 'Unknown';
 
                     const reason =
-                        item.reason || 'Unspecified expense';
+                        Number(item.estimated_cost || 0) > 0
+                            ? (item.reason || 'Unspecified expense')
+                            : 'No recorded wastage';
 
                     if (!branchSummary[branch]) {
 
@@ -109,7 +111,9 @@ function loadWastageInsights() {
                                 .join(', ');
 
                         let recommendation =
-                            'Review recurring operational expenses and strengthen loss prevention controls';
+                            stats.totalCost > 0
+                                ? 'Review recurring operational expenses and strengthen loss prevention controls'
+                                : 'Continue monitoring operational efficiency';
 
                         if (
                             issues

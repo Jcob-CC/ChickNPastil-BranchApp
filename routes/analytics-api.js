@@ -474,19 +474,24 @@ router.get('/api/analytics/wastage-insights', (req, res) => {
     const { date, branch } = req.query;
 
     let query = `
-        SELECT
-            ber.id,
-            bl.location_name AS branch_name,
-            ber.total_price AS estimated_cost,
-            ber.request_note AS reason,
-            ber.date_and_time AS date_recorded,
-            ber.status
-        FROM branch_expense_request ber
-        LEFT JOIN branch_location bl
-            ON bl.id = ber.branch_location_id
-        WHERE ber.status = 'approved'
-    `;
-
+    SELECT
+        bl.id,
+        bl.location_name AS branch_name,
+        COALESCE(
+            SUM(
+                CASE
+                    WHEN ber.status = 'approved'
+                    THEN ber.total_price
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS estimated_cost
+    FROM branch_location bl
+    LEFT JOIN branch_expense_request ber
+        ON ber.branch_location_id = bl.id
+    WHERE bl.status = 'active'
+`;
     const params = [];
 
     if (date) {
@@ -504,8 +509,9 @@ router.get('/api/analytics/wastage-insights', (req, res) => {
     }
 
     query += `
-        ORDER BY ber.date_and_time DESC
-    `;
+    GROUP BY bl.id, bl.location_name
+    ORDER BY bl.id
+`;
 
     const wastages =
         db.prepare(query).all(...params);
