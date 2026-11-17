@@ -194,13 +194,6 @@
                 <label class="form-label small fw-semibold text-muted">Price (Php)</label>
                 <input type="number" step="0.5" id="edit-product-price" class="form-control fw-bold" placeholder="0.00" required>
               </div>
-              <div class="col-6">
-                <label class="form-label small fw-semibold text-muted">Allow Quantity</label>
-                <select id="edit-product-allow-qty" class="form-select">
-                  <option value="true">Enabled</option>
-                  <option value="false">Disabled</option>
-                </select>
-              </div>
             </div>
           </div>
           <div class="modal-footer border-0 pt-1">
@@ -265,11 +258,6 @@
               </td>
               <td class="fw-semibold text-success">Php ${Number(p.price).toFixed(2)}</td>
               <td>
-                <span class="badge ${p.allow_quantity ? 'bg-light text-dark border' : 'bg-secondary'}">
-                  ${p.allow_quantity ? 'Enabled' : 'Disabled'}
-                </span>
-              </td>
-              <td>
                 <button type="button" class="status-pill-toggle ${p.is_available ? 'status-available' : 'status-unavailable'}" onclick="toggleProductAvailability(${p.product_id})" title="Click to toggle availability">
                   <i class="bi ${p.is_available ? 'bi-check-circle-fill' : 'bi-x-circle-fill'} me-1"></i>
                   ${p.is_available ? 'Available' : 'Unavailable'}
@@ -317,14 +305,13 @@
                   <tr>
                     <th>Item Name</th>
                     <th>Value</th>
-                    <th>Qty Selector</th>
                     <th>Availability</th>
                     <th>Status</th>
                     <th style="width: 180px;">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${productsHtml.length > 0 ? productsHtml : '<tr><td colspan="6" class="text-center text-muted py-3">No products added in this section.</td></tr>'}
+                  ${productsHtml.length > 0 ? productsHtml : '<tr><td colspan="5" class="text-center text-muted py-3">No products added in this section.</td></tr>'}
                 </tbody>
               </table>
             </div>
@@ -370,8 +357,7 @@
           body: JSON.stringify({
             section_id: sectionId,
             product_name: name,
-            price: price,
-            allow_quantity: true
+            price: price
           })
         });
         const data = await res.json();
@@ -450,7 +436,6 @@
       document.getElementById('edit-product-name').value = '';
       document.getElementById('edit-product-desc').value = '';
       document.getElementById('edit-product-price').value = '';
-      document.getElementById('edit-product-allow-qty').value = 'true';
       new bootstrap.Modal(document.getElementById('productModal')).show();
     }
 
@@ -468,8 +453,6 @@
       document.getElementById('edit-product-name').value = found.product_name;
       document.getElementById('edit-product-desc').value = found.description || '';
       document.getElementById('edit-product-price').value = found.price;
-      document.getElementById('edit-product-allow-qty').value = found.allow_quantity ? 'true' : 'false';
-
       new bootstrap.Modal(document.getElementById('productModal')).show();
     }
 
@@ -480,8 +463,6 @@
       const name = document.getElementById('edit-product-name').value.trim();
       const desc = document.getElementById('edit-product-desc').value.trim();
       const price = document.getElementById('edit-product-price').value;
-      const allowQty = document.getElementById('edit-product-allow-qty').value === 'true';
-
       const url = id ? `/api/menu/product/${id}` : '/api/menu/product';
       const method = id ? 'PUT' : 'POST';
 
@@ -493,8 +474,7 @@
             section_id: sectionId,
             product_name: name,
             description: desc,
-            price: price,
-            allow_quantity: allowQty
+            price: price
           })
         });
         const data = await res.json();

@@ -235,16 +235,6 @@
             </div>
           </div>
 
-          <!-- Quantity Stepper -->
-          <div class="d-flex align-items-center justify-content-between pt-2 border-top" id="quantity-stepper-wrapper">
-            <span class="fw-bold text-dark small">Quantity</span>
-            <div class="d-flex align-items-center gap-2">
-              <button type="button" class="qty-btn" onclick="adjustModalQty(-1)"><i class="bi bi-dash"></i></button>
-              <span class="fw-bold px-2 fs-5" id="modal-item-qty">1</span>
-              <button type="button" class="qty-btn" onclick="adjustModalQty(1)"><i class="bi bi-plus"></i></button>
-            </div>
-          </div>
-
           <!-- Item Subtotal Preview -->
           <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
             <span class="text-muted fw-semibold">Item Total:</span>
@@ -486,7 +476,6 @@
     let modalFlavor = 'Original';
     let modalRice = 'Plain';
     let modalRicePrice = 0;
-    let modalQty = 1;
 
     let currentOrderId = null;
     let currentPaymentMethod = 'Cash';
@@ -580,23 +569,6 @@
       renderCart();
     }
 
-    function quickAdjustDirectItem(productId, change) {
-      const idx = findCartItemIndex(productId, []);
-      if (idx === -1) {
-        if (change > 0) quickAddDirectItem(productId);
-        return;
-      }
-
-      const newQty = cart[idx].quantity + change;
-      if (newQty <= 0) {
-        cart.splice(idx, 1);
-      } else {
-        cart[idx].quantity = newQty;
-        cart[idx].subtotal = cart[idx].unit_price * newQty;
-      }
-      renderCart();
-    }
-
     function renderProducts() {
       const container = document.getElementById('products-grid-container');
       let productsToDisplay = [];
@@ -629,18 +601,6 @@
               <i class="bi bi-plus"></i>
             </div>
           `;
-        } else if (inCartQty > 0) {
-          actionHtml = `
-            <div class="card-qty-stepper" onclick="event.stopPropagation()">
-              <button type="button" class="card-qty-btn" onclick="quickAdjustDirectItem(${p.product_id}, -1)" title="Decrease">
-                <i class="bi bi-dash"></i>
-              </button>
-              <span class="card-qty-count">${inCartQty}</span>
-              <button type="button" class="card-qty-btn" onclick="quickAdjustDirectItem(${p.product_id}, 1)" title="Increase">
-                <i class="bi bi-plus"></i>
-              </button>
-            </div>
-          `;
         } else {
           actionHtml = `
             <div class="product-add-circle" onclick="event.stopPropagation(); quickAddDirectItem(${p.product_id})" title="Add item">
@@ -653,7 +613,7 @@
           ? ''
           : (isCustomizable
             ? `openCustomizeModal(${p.product_id})`
-            : (inCartQty === 0 ? `quickAddDirectItem(${p.product_id})` : ''));
+            : `quickAddDirectItem(${p.product_id})`);
 
         return `
           <div class="product-card ${isUnavailable ? 'is-unavailable' : ''} ${hasItemsClass}" ${clickHandler ? `onclick="${clickHandler}"` : ''}>
@@ -679,11 +639,9 @@
       modalFlavor = 'Original';
       modalRice = 'Plain';
       modalRicePrice = 0;
-      modalQty = 1;
 
       document.getElementById('modal-product-name').textContent = activeProduct.product_name;
       document.getElementById('modal-product-base-price').textContent = `Php ${Number(activeProduct.price).toFixed(2)}`;
-      document.getElementById('modal-item-qty').textContent = '1';
 
       // Reset flavor and rice option pills UI to default first option
       const flavorWrapper = document.getElementById('flavor-group-wrapper');
@@ -728,12 +686,6 @@
       updateModalTotal();
     }
 
-    function adjustModalQty(change) {
-      modalQty = Math.max(1, modalQty + change);
-      document.getElementById('modal-item-qty').textContent = modalQty;
-      updateModalTotal();
-    }
-
     function updateModalTotal() {
       if (!activeProduct) return;
       const isPastil = isCustomizableProduct(activeProduct);
@@ -741,7 +693,7 @@
       if (isPastil) {
         base += modalRicePrice;
       }
-      const total = base * modalQty;
+      const total = base;
       document.getElementById('modal-item-total-preview').textContent = `Php ${total.toFixed(2)}`;
     }
 
@@ -766,16 +718,16 @@
       // Check if EXACT SAME product + addons already exists in cart
       const existingIdx = findCartItemIndex(activeProduct.product_id, configuredAddons);
       if (existingIdx !== -1) {
-        cart[existingIdx].quantity += modalQty;
+        cart[existingIdx].quantity += 1;
         cart[existingIdx].subtotal = singleItemCost * cart[existingIdx].quantity;
       } else {
         cart.push({
           product_id: activeProduct.product_id,
           item_name: activeProduct.product_name,
           unit_price: unitPrice,
-          quantity: modalQty,
+          quantity: 1,
           addons: configuredAddons,
-          subtotal: singleItemCost * modalQty
+          subtotal: singleItemCost
         });
       }
 
@@ -820,9 +772,6 @@
               <div class="text-success small fw-semibold">Php ${item.subtotal.toFixed(2)}</div>
             </div>
             <div class="d-flex align-items-center gap-2">
-              <button class="qty-btn" onclick="adjustCartItemQty(${idx}, -1)"><i class="bi bi-dash"></i></button>
-              <span class="small fw-bold px-1">${item.quantity}</span>
-              <button class="qty-btn" onclick="adjustCartItemQty(${idx}, 1)"><i class="bi bi-plus"></i></button>
               <button class="btn btn-sm text-danger p-0 ms-1" onclick="removeCartItem(${idx})"><i class="bi bi-x-circle"></i></button>
             </div>
           </div>
@@ -834,19 +783,6 @@
       btnCharge.disabled = false;
       btnSave.disabled = false;
       renderProducts();
-    }
-
-    function adjustCartItemQty(index, change) {
-      const item = cart[index];
-      const newQty = item.quantity + change;
-      if (newQty <= 0) {
-        cart.splice(index, 1);
-      } else {
-        const singleItemTotal = item.subtotal / item.quantity;
-        item.quantity = newQty;
-        item.subtotal = singleItemTotal * newQty;
-      }
-      renderCart();
     }
 
     function removeCartItem(index) {

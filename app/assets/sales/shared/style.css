@@ -341,49 +341,6 @@ body.sidebar-collapsed .main-content {
   background-color: var(--primary-green-hover);
 }
 
-.card-qty-stepper {
-  background: var(--primary-green-light);
-  border: 1px solid #c8decb;
-  border-radius: 20px;
-  padding: 3px 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(30, 86, 49, 0.08);
-}
-
-.card-qty-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1.5px solid var(--primary-green);
-  background: #ffffff;
-  color: var(--primary-green);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.95rem;
-  font-weight: bold;
-  padding: 0;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.card-qty-btn:hover {
-  background: var(--primary-green);
-  color: #ffffff;
-}
-
-.card-qty-count {
-  min-width: 20px;
-  text-align: center;
-  font-size: 0.95rem;
-  color: var(--primary-green);
-  font-weight: 700;
-  user-select: none;
-}
-
 .product-card.has-items {
   border-color: var(--primary-green);
   background-color: #fbfdfb;
