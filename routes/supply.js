@@ -29,7 +29,7 @@ router.get('/request_expenses', (req, res) => {
 router.get('/receive_stock', (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/supply/receive_stock.html'));
 });
-router.get('/manage_request', requireFulfillmentManager, (req, res) => {
+router.get('/manage_request', (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/supply/manage_request.html'));
 });
 router.get('/manage_expenses', requireFulfillmentManager, (req, res) => {
@@ -59,8 +59,8 @@ router.get('/receive_stock/data', receiveStock.getRequests);
 router.put('/receive_stock/:id/cancel', receiveStock.cancelRequest);
 router.post('/receive_stock/:id/receive', receiveStock.receiveDelivery);
 
-router.get('/manage_request/data', requireFulfillmentManager, manageRequest.getRequests);
-router.put('/manage_request/:id/status', requireFulfillmentManager, manageRequest.updateStatus);
+router.get('/manage_request/data', manageRequest.getRequests);
+router.put('/manage_request/:id/status', manageRequest.updateStatus);
 
 router.get('/manage_expenses/data', requireFulfillmentManager, manageExpenses.getAllRequests);
 router.get('/manage_expenses/auto-approval', requireFulfillmentManager, manageExpenses.getAutoApprovalSetting);
