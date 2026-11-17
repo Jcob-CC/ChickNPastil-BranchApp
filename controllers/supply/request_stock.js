@@ -116,15 +116,17 @@ const confirmInventory = (req, res) => {
     const updates = items.map((item) => ({
         generalStockItemId: Number(item && item.generalStockItemId),
         quantity: getNonNegativeNumber(item && item.quantity),
+        lowQuantityThreshold: getNonNegativeNumber(item && item.lowQuantityThreshold),
         target: getNonNegativeNumber(item && item.restockTargetQuantity),
     }));
     if (updates.some((item) =>
         !Number.isSafeInteger(item.generalStockItemId) ||
         item.generalStockItemId < 1 ||
         item.quantity === null ||
+        item.lowQuantityThreshold === null ||
         item.target === null
     )) {
-        return res.status(400).json({ message: 'Enter valid on-hand and target quantities.' });
+        return res.status(400).json({ message: 'Enter valid on-hand, low-stock threshold, and target quantities.' });
     }
     if (new Set(updates.map((item) => item.generalStockItemId)).size !== updates.length) {
         return res.status(400).json({ message: 'Each stock item can only be updated once.' });
@@ -135,6 +137,7 @@ const confirmInventory = (req, res) => {
             SELECT gsi.id, bii.id AS branch_inventory_item_id,
                    COALESCE(bii.quantity, 0) AS quantity,
                    COALESCE(bii.low_quantity_threshold, 0) AS low_quantity_threshold,
+                   COALESCE(bii.restock_target_quantity, 0) AS restock_target_quantity,
                    COALESCE(bii.auto_restock_target, 0) AS auto_restock_target
             FROM general_stock_item gsi
             LEFT JOIN branch_inventory_item bii
@@ -143,18 +146,14 @@ const confirmInventory = (req, res) => {
         `);
         const updateItem = db.prepare(`
             UPDATE branch_inventory_item
-            SET quantity = ?,
-                restock_target_quantity = CASE
-                    WHEN auto_restock_target = 1 THEN restock_target_quantity
-                    ELSE ?
-                END
+            SET quantity = ?, low_quantity_threshold = ?, restock_target_quantity = ?
             WHERE id = ? AND branch_location_id = ?
         `);
         const addItem = db.prepare(`
             INSERT INTO branch_inventory_item
                 (branch_location_id, general_stock_item_id, quantity,
                  low_quantity_threshold, restock_target_quantity)
-            VALUES (?, ?, ?, 0, ?)
+            VALUES (?, ?, ?, ?, ?)
         `);
         const addLog = db.prepare(`
             INSERT INTO branch_inventory_manager_log
@@ -165,21 +164,40 @@ const confirmInventory = (req, res) => {
         const currentItems = updates.map((item) =>
             selectItem.get(req.session.user.branchLocationId, item.generalStockItemId)
         );
-        if (currentItems.some((current, index) =>
-            !current || updates[index].target < current.low_quantity_threshold
+        const averageDailyReductions = getAverageDailyReductions(db, req.session.user.branchLocationId);
+        const updatesWithTargets = updates.map((item, index) => {
+            const current = currentItems[index];
+            if (!current) return null;
+            const average = averageDailyReductions.get(current.branch_inventory_item_id);
+            const target = current.auto_restock_target
+                ? average !== undefined && average >= item.lowQuantityThreshold
+                    ? Math.ceil(average)
+                    : current.restock_target_quantity
+                : item.target;
+            return { ...item, targetToSave: target };
+        });
+        if (updatesWithTargets.some((item, index) =>
+            !item || item.targetToSave < updates[index].lowQuantityThreshold
         )) return false;
 
-        for (const [index, item] of updates.entries()) {
+        for (const [index, item] of updatesWithTargets.entries()) {
             const current = currentItems[index];
             let inventoryItemId = current.branch_inventory_item_id;
             if (inventoryItemId) {
-                updateItem.run(item.quantity, item.target, inventoryItemId, req.session.user.branchLocationId);
+                updateItem.run(
+                    item.quantity,
+                    item.lowQuantityThreshold,
+                    item.targetToSave,
+                    inventoryItemId,
+                    req.session.user.branchLocationId,
+                );
             } else {
                 inventoryItemId = addItem.run(
                     req.session.user.branchLocationId,
                     item.generalStockItemId,
                     item.quantity,
-                    item.target,
+                    item.lowQuantityThreshold,
+                    item.targetToSave,
                 ).lastInsertRowid;
             }
             if (item.quantity !== current.quantity) {

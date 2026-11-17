@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 unit.className = 'd-block text-secondary';
                 unit.textContent = item.unit_type;
                 nameCell.appendChild(unit);
-                appendCell(row, item.is_other ? 'Other item — will not add' : 'Add to inventory');
+                appendCell(row, item.is_other ? 'Create stock item & add to inventory' : 'Add to inventory');
                 appendCell(row, item.quantity);
                 appendCell(row, formatMoney(item.total_price), 'text-end');
                 completionItems.appendChild(row);

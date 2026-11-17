@@ -12,7 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const receiptModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('requestReceiptModal'));
 
     const formatQuantity = (value) => Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
-    const isLowStock = (item) => Number(item.quantity) <= Number(item.low_quantity_threshold);
+    const isLowStock = (item) =>
+        Number(item.low_quantity_threshold) > 0 &&
+        Number(item.quantity) <= Number(item.low_quantity_threshold);
     const getRestockQuantity = (item) =>
         Math.max(Number(item.restock_target_quantity) - Number(item.quantity), 0);
 
@@ -156,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inventoryRows.replaceChildren();
         inventoryButton.disabled = state.items.length === 0;
         if (state.items.length === 0) {
-            showEmptyRow(inventoryRows, 3, 'No active stock items are available.');
+            showEmptyRow(inventoryRows, 4, 'No active stock items are available.');
             return;
         }
 
@@ -176,6 +178,18 @@ document.addEventListener('DOMContentLoaded', () => {
             quantityInput.setAttribute('aria-label', `${item.name} current quantity`);
             quantityCell.appendChild(quantityInput);
 
+            const thresholdCell = appendCell(row, '');
+            const thresholdInput = document.createElement('input');
+            thresholdInput.className = 'form-control';
+            thresholdInput.type = 'number';
+            thresholdInput.min = '0';
+            thresholdInput.step = '0.01';
+            thresholdInput.value = item.low_quantity_threshold;
+            thresholdInput.dataset.stockItemId = item.id;
+            thresholdInput.dataset.stockItemField = 'threshold';
+            thresholdInput.setAttribute('aria-label', `${item.name} low-stock threshold`);
+            thresholdCell.appendChild(thresholdInput);
+
             const targetCell = appendCell(row, '', 'pe-3');
             const targetInput = document.createElement('input');
             targetInput.className = 'form-control';
@@ -188,6 +202,9 @@ document.addEventListener('DOMContentLoaded', () => {
             targetInput.setAttribute('aria-label', `${item.name} target quantity`);
             targetInput.disabled = Boolean(Number(item.auto_restock_target));
             targetCell.appendChild(targetInput);
+            thresholdInput.addEventListener('input', () => {
+                targetInput.min = thresholdInput.value;
+            });
             if (item.auto_restock_target) {
                 const note = document.createElement('small');
                 note.className = 'd-block text-secondary mt-1';
@@ -274,6 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const items = state.items.map((item) => ({
             generalStockItemId: item.id,
             quantity: Number(inventoryRows.querySelector(`[data-stock-item-id="${item.id}"][data-stock-item-field="quantity"]`).value),
+            lowQuantityThreshold: Number(inventoryRows.querySelector(`[data-stock-item-id="${item.id}"][data-stock-item-field="threshold"]`).value),
             restockTargetQuantity: Number(inventoryRows.querySelector(`[data-stock-item-id="${item.id}"][data-stock-item-field="target"]`).value),
         }));
 

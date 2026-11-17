@@ -106,7 +106,7 @@
 
   <div class="modal fade" id="expenseRequestModal" tabindex="-1" aria-labelledby="expenseRequestModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content">
+      <form class="modal-content" id="expenseForm">
         <div class="modal-header">
           <div>
             <h2 class="modal-title fs-5" id="expenseRequestModalTitle">New expense request</h2>
@@ -114,8 +114,7 @@
           </div>
           <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <form id="expenseForm">
-          <div class="modal-body">
+        <div class="modal-body">
             <div class="row g-4">
               <div class="col-xl-8">
                 <section class="card border-0 shadow-sm" aria-labelledby="expenseItemsHeading">
@@ -239,15 +238,14 @@
                 </div>
               </div>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-success" id="submitExpense" type="submit">
-              <i class="bi bi-send me-2" aria-hidden="true"></i>Submit expense request
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-success" id="submitExpense" type="submit">
+            <i class="bi bi-send me-2" aria-hidden="true"></i>Submit expense request
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -308,7 +306,7 @@
             <h3 class="h6 mb-0">Requested items</h3>
             <span class="fw-semibold" id="completionTotal"></span>
           </div>
-          <p class="small text-secondary mb-2">Stock catalog items will be added to inventory. Other items will not be added.</p>
+          <p class="small text-secondary mb-2">Stock catalog items will be added to inventory. Other items will be created as new stock items and added to inventory.</p>
           <div id="completionLoading" class="small text-secondary mb-2" role="status">Loading request details…</div>
           <div class="table-responsive">
             <table class="table table-sm table-striped align-middle mb-0">

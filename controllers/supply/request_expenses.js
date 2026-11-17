@@ -48,6 +48,15 @@ const completeRequest = (req, res) => {
             WHERE branch_expense_request_id = ?
             GROUP BY general_stock_item_id
         `).all(requestId);
+        const otherItems = db.prepare(`
+            SELECT item, unit_type, quantity, total_price
+            FROM branch_expense_other_item
+            WHERE branch_expense_request_id = ?
+        `).all(requestId);
+        const addGeneralStockItem = db.prepare(`
+            INSERT INTO general_stock_item (name, unit_type, unit_cost, status)
+            VALUES (?, ?, ?, 'active')
+        `);
         const findInventoryItem = db.prepare(`
             SELECT id, quantity
             FROM branch_inventory_item
@@ -97,6 +106,27 @@ const completeRequest = (req, res) => {
             );
         }
 
+        for (const item of otherItems) {
+            const stockItemResult = addGeneralStockItem.run(
+                item.item,
+                item.unit_type,
+                item.total_price / item.quantity,
+            );
+            const inventoryItemResult = addInventoryItem.run(
+                branchLocationId,
+                stockItemResult.lastInsertRowid,
+                item.quantity,
+            );
+            addInventoryLog.run(
+                branchLocationId,
+                inventoryItemResult.lastInsertRowid,
+                req.session.user.id,
+                0,
+                item.quantity,
+                `Expense request #${requestId} completed`,
+            );
+        }
+
         return { outcome: 'completed' };
     });
 
@@ -110,7 +140,7 @@ const completeRequest = (req, res) => {
                 message: `Only approved expense requests can be completed. This request is ${result.status}.`,
             });
         }
-        res.json({ message: 'Expense request completed and stock items added to inventory.' });
+        res.json({ message: 'Expense request completed and all items added to inventory.' });
     } catch (error) {
         console.error('Unable to complete expense request:', error);
         res.status(500).json({ message: 'Unable to complete this expense request.' });
