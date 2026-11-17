@@ -189,6 +189,12 @@ body.sidebar-collapsed .sidebar-toggle-btn i {
   padding: 24px 28px;
   min-height: calc(100vh - var(--topbar-height));
   transition: margin-left 0.25s ease;
+  margin-top: 0;
+  padding-top: 1rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 body.sidebar-collapsed .main-content {
@@ -201,10 +207,12 @@ body.sidebar-collapsed .main-content {
     transform: translateX(-100%);
     width: 260px;
   }
+
   body.mobile-sidebar-open .sidebar {
     transform: translateX(0);
     box-shadow: 4px 0 16px rgba(0, 0, 0, 0.25);
   }
+
   /* Larger, fully visible tap target when the sidebar is hidden */
   .sidebar-toggle-btn {
     top: 50%;
@@ -214,12 +222,20 @@ body.sidebar-collapsed .main-content {
     right: -36px;
     touch-action: manipulation;
   }
+
   body.mobile-sidebar-open .sidebar-toggle-btn {
     right: -18px;
   }
+
   .main-content {
     margin-left: 0 !important;
     padding: 16px;
+    margin-top: 0;
+    padding-top: 1rem;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 }
 
@@ -412,9 +428,11 @@ body.sidebar-collapsed .main-content {
     transform: translateY(100%);
     transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
   .responsive-order-modal.show .modal-dialog {
     transform: translateY(0);
   }
+
   .responsive-order-modal .modal-content {
     border-radius: 24px 24px 0 0;
     border-bottom: none;
@@ -428,6 +446,7 @@ body.sidebar-collapsed .main-content {
   .responsive-order-modal .modal-dialog {
     max-width: 480px;
   }
+
   .responsive-order-modal .modal-content {
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
@@ -552,9 +571,12 @@ body.sidebar-collapsed .main-content {
   body * {
     visibility: hidden;
   }
-  #printableReceipt, #printableReceipt * {
+
+  #printableReceipt,
+  #printableReceipt * {
     visibility: visible;
   }
+
   #printableReceipt {
     position: absolute;
     left: 0;
@@ -564,6 +586,7 @@ body.sidebar-collapsed .main-content {
     box-shadow: none;
     padding: 0;
   }
+
   .no-print {
     display: none !important;
   }
