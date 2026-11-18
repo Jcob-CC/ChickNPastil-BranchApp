@@ -40,6 +40,9 @@ pages.get('/staff/transactions', (req, res, next) => {
 pages.get('/pos/ordering', sendPage('pos/ordering.html'));
 api.get('/menu', menu.list);
 api.get('/menu/addons', menu.listAddons);
+api.get('/menu/inventory-items', requireManager, menu.listInventoryItems);
+api.get('/menu/product/:id/inventory-mappings', requireManager, menu.getProductInventoryMappings);
+api.put('/menu/product/:id/inventory-mappings', requireManager, menu.replaceProductInventoryMappings);
 api.post('/menu/section', requireManager, menu.createSection);
 api.put('/menu/section/:id', requireManager, menu.updateSection);
 api.put('/menu/section/:id/archive', requireManager, menu.toggleSectionArchive);

@@ -163,6 +163,24 @@ CREATE TABLE IF NOT EXISTS product_addons (
     addon_category TEXT DEFAULT 'extra'
 );
 
+CREATE TABLE IF NOT EXISTS menu_product_inventory_mapping (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL REFERENCES menu_products(product_id) ON DELETE CASCADE,
+    addon_id INTEGER REFERENCES product_addons(addon_id) ON DELETE CASCADE,
+    general_stock_item_id INTEGER NOT NULL REFERENCES general_stock_item(id) ON DELETE CASCADE,
+    quantity REAL NOT NULL CHECK (quantity > 0),
+    CONSTRAINT unique_product_addon_stock_mapping
+        UNIQUE (product_id, addon_id, general_stock_item_id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS unique_product_base_stock_mapping
+    ON menu_product_inventory_mapping (product_id, general_stock_item_id)
+    WHERE addon_id IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_product_addon_stock_mapping
+    ON menu_product_inventory_mapping (product_id, addon_id, general_stock_item_id)
+    WHERE addon_id IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS orders (
     order_id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

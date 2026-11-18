@@ -1,11 +1,6 @@
 const { timingSafeEqual } = require('crypto');
 const db = require('../../lib/database');
-
-const pastilRecipes = {
-    small: { chicken: 0.05, rice: 0.30 },
-    medium: { chicken: 0.075, rice: 0.40 },
-    large: { chicken: 0.10, rice: 0.60 },
-};
+const { getMappedInventoryUsage } = require('../../lib/menu_inventory_mappings');
 
 const getPositiveNumber = (value) => {
     const number = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
@@ -20,32 +15,6 @@ const isAuthorized = (authorization, secret) => {
     return providedSecret.length === expectedSecret.length &&
         timingSafeEqual(providedSecret, expectedSecret);
 };
-
-function findStockItem(names) {
-    for (const name of names) {
-        const exact = db.prepare(`
-            SELECT id, name, unit_type
-            FROM general_stock_item
-            WHERE status = 'active'
-              AND lower(trim(name)) = lower(trim(?))
-            LIMIT 1
-        `).get(name);
-        if (exact) return exact;
-    }
-
-    for (const name of names) {
-        const partial = db.prepare(`
-            SELECT id, name, unit_type
-            FROM general_stock_item
-            WHERE status = 'active'
-              AND lower(name) LIKE lower(?)
-            ORDER BY id
-            LIMIT 1
-        `).get(`%${name}%`);
-        if (partial) return partial;
-    }
-    return null;
-}
 
 function resolveMenuProduct(rawItem) {
     const productId = Number(rawItem?.menuItemId ?? rawItem?.productId ?? rawItem?.product_id);
@@ -80,59 +49,35 @@ function normalizeAddonNames(rawItem) {
         if (typeof addon === 'string') return { name: addon.trim(), quantity: 1 };
         if (addon && typeof addon.addon_name === 'string') {
             return {
+                addon_id: addon.addon_id ?? addon.addonId ?? null,
                 name: addon.addon_name.trim(),
-                quantity: getPositiveNumber(addon.quantity) || 1,
+                quantity: getPositiveNumber(addon.quantity ?? 1),
             };
         }
         if (addon && typeof addon.name === 'string') {
             return {
+                addon_id: addon.addon_id ?? addon.addonId ?? null,
                 name: addon.name.trim(),
-                quantity: getPositiveNumber(addon.quantity) || 1,
+                quantity: getPositiveNumber(addon.quantity ?? 1),
             };
         }
         return null;
     }).filter((addon) => addon && addon.name);
 }
 
-function getMenuItemUsage(rawItem) {
-    const product = resolveMenuProduct(rawItem);
-    if (!product) return { status: 'invalid-menu-item' };
-
-    const quantitySold = getPositiveNumber(rawItem.quantity ?? 1);
-    if (quantitySold === null) return { status: 'invalid-quantity' };
-
-    const itemName = product.product_name;
-    const lowerName = itemName.toLowerCase();
-    const size = lowerName.includes('small') ? 'small'
-        : lowerName.includes('medium') ? 'medium'
-            : lowerName.includes('large') ? 'large'
-                : null;
-
-    if (!size) {
-        return {
-            status: 'usage',
-            quantitySold,
-            usage: [{ names: [itemName], quantity: quantitySold }],
-        };
-    }
-
-    const recipe = pastilRecipes[size];
-    const usage = [
-        { names: ['chicken', 'chck', 'pastil'], quantity: recipe.chicken * quantitySold },
-        { names: ['rice', 'kanin'], quantity: recipe.rice * quantitySold },
-    ];
-
-    for (const addon of normalizeAddonNames(rawItem)) {
-        const addonName = addon.name;
-        const lowerAddon = addonName.toLowerCase();
-        if (lowerAddon.includes('garlic')) {
-            usage.push({ names: ['garlic', 'bawang'], quantity: 0.02 * addon.quantity * quantitySold });
-        } else if (!lowerAddon.includes('plain') && !lowerAddon.includes('rice')) {
-            usage.push({ names: [addonName], quantity: addon.quantity * quantitySold });
-        }
-    }
-
-    return { status: 'usage', quantitySold, usage };
+function resolveAddonId(addon) {
+    const addonId = Number(addon.addon_id);
+    if (Number.isSafeInteger(addonId) && addonId > 0) return addonId;
+    const addonName = addon.name.replace(/^Flavor:\s*/i, '').trim();
+    if (!addonName) return null;
+    const found = db.prepare(`
+        SELECT addon_id FROM product_addons
+        WHERE lower(trim(addon_name)) = lower(trim(?))
+          AND is_available = 1
+          AND COALESCE(is_archived, 0) = 0
+        LIMIT 1
+    `).get(addonName);
+    return found ? found.addon_id : null;
 }
 
 const updateInventory = (req, res) => {
@@ -204,26 +149,34 @@ const updateInventory = (req, res) => {
                     continue;
                 }
 
-                const menuUsage = getMenuItemUsage(soldItem);
-                if (menuUsage.status !== 'usage') return menuUsage;
+                const product = resolveMenuProduct(soldItem);
+                if (!product) return { status: 'invalid-menu-item' };
+                const quantitySold = getPositiveNumber(soldItem.quantity ?? 1);
+                if (quantitySold === null) return { status: 'invalid-quantity' };
+                const addons = normalizeAddonNames(soldItem);
+                if (addons.some((addon) => addon.quantity === null)) {
+                    return { status: 'invalid-payload' };
+                }
+                for (const addon of addons) {
+                    addon.addon_id = resolveAddonId(addon);
+                }
 
                 menuItems.push({
-                    name: resolveMenuProduct(soldItem)?.product_name || 'Menu item',
-                    quantity: menuUsage.quantitySold,
+                    name: product.product_name,
+                    quantity: quantitySold,
                 });
 
-                for (const ingredient of menuUsage.usage) {
-                    const stockItem = findStockItem(ingredient.names);
-                    if (!stockItem) {
-                        return { status: 'no-inventory', stockItem: ingredient.names[0] };
-                    }
-                    const usage = usageByStockItem.get(stockItem.id) || { stockItem, quantity: 0 };
-                    usage.quantity += ingredient.quantity;
-                    usageByStockItem.set(stockItem.id, usage);
+                for (const mapped of getMappedInventoryUsage(db, product.product_id, quantitySold, addons)) {
+                    const usage = usageByStockItem.get(mapped.stockItem.id) || {
+                        stockItem: mapped.stockItem,
+                        quantity: 0,
+                    };
+                    usage.quantity += mapped.quantity;
+                    usageByStockItem.set(mapped.stockItem.id, usage);
                 }
             }
 
-            if (usageByStockItem.size === 0) {
+            if (usageByStockItem.size === 0 && menuItems.length === 0) {
                 return { status: 'invalid-payload' };
             }
 
@@ -301,7 +254,9 @@ const updateInventory = (req, res) => {
         }
 
         return res.json({
-            message: 'POS sale recorded and branch inventory updated.',
+            message: result.reductions.length > 0
+                ? 'POS sale recorded and branch inventory updated.'
+                : 'POS sale recorded with no inventory deductions.',
             branchLocationId,
             menuItems: result.menuItems,
             reductions: result.reductions.map((reduction) => ({
@@ -313,6 +268,9 @@ const updateInventory = (req, res) => {
             })),
         });
     } catch (error) {
+        if (error.code === 'INVENTORY_NOT_AVAILABLE') {
+            return res.status(409).json({ message: error.message });
+        }
         console.error('POS inventory webhook failed:', error);
         return res.status(500).json({ message: 'The inventory update could not be completed.' });
     }

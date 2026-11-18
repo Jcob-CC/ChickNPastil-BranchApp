@@ -1,6 +1,7 @@
 const { randomInt } = require('crypto');
 const db = require('../../lib/database');
 const paymongo = require('./paymongo');
+const { getMappedInventoryUsage } = require('../../lib/menu_inventory_mappings');
 
 const orderStatuses = ['Pending', 'Preparing', 'Completed', 'Cancelled'];
 const paymentStatuses = ['Pending', 'Verified', 'Failed', 'Refunded'];
@@ -40,88 +41,10 @@ function failure(res, error, label) {
     res.status(500).json({ success: false, error: 'Unable to complete order operation.' });
 }
 
-// Recipe equivalents: Small = 0.05 kg chicken + 0.30 kg rice; Medium = 0.075 kg chicken + 0.40 kg rice; Large = 0.10 kg chicken + 0.60 kg rice.
-const pastilRecipeEstimates = {
-    small: { chicken: 0.05, rice: 0.30 },
-    medium: { chicken: 0.075, rice: 0.40 },
-    large: { chicken: 0.10, rice: 0.60 },
-};
-
-// Stock name equivalents: Chicken = Chck; Rice = Kanin; Garlic = Bawang.
-function findStockItem(names) {
-    for (const name of names) {
-        const exact = db.prepare(`
-            SELECT id, name, unit_type
-            FROM general_stock_item
-            WHERE status = 'active'
-              AND lower(trim(name)) = lower(trim(?))
-            LIMIT 1
-        `).get(name);
-        if (exact) return exact;
-    }
-
-    for (const name of names) {
-        const partial = db.prepare(`
-            SELECT id, name, unit_type
-            FROM general_stock_item
-            WHERE status = 'active'
-              AND lower(name) LIKE lower(?)
-            ORDER BY id
-            LIMIT 1
-        `).get(`%${name}%`);
-        if (partial) return partial;
-    }
-    return null;
-}
-
-// Per-sale recipe: size determines chicken/rice; Garlic Rice = +0.02 kg garlic; unit-based addons deduct pieces.
-function getSoldItemRecipe(item) {
-    const itemName = item.item_name.toLowerCase();
-    const quantitySold = Number(item.quantity);
-    let size = null;
-    if (itemName.includes('small')) size = 'small';
-    else if (itemName.includes('medium')) size = 'medium';
-    else if (itemName.includes('large')) size = 'large';
-    if (!size) {
-        // Unit-based (unit = piece) item: 1 Coke or 1 Royal = 1 piece deducted.
-        return [{ names: [item.item_name], quantity: quantitySold }];
-    }
-
-    // Pastil recipes use size-based kilogram estimates for chicken and rice.
-    const recipe = pastilRecipeEstimates[size];
-    const usage = [
-        { names: ['chicken', 'chck', 'pastil'], quantity: recipe.chicken * quantitySold },
-        { names: ['rice', 'kanin'], quantity: recipe.rice * quantitySold },
-    ];
-    const addons = db.prepare(`
-        SELECT addon_name, quantity
-        FROM order_item_addons
-        WHERE order_item_id = ?
-    `).all(item.order_item_id);
-
-    for (const addon of addons) {
-        const addonName = addon.addon_name.toLowerCase();
-        if (addonName.includes('garlic')) {
-            // Garlic Rice = 0.02 kg garlic.
-            usage.push({
-                names: ['garlic', 'bawang'],
-                quantity: 0.02 * Number(addon.quantity || 1) * quantitySold,
-            });
-        } else if (!addonName.includes('plain') && !addonName.includes('rice')) {
-            // Unit-based addon: Extra Egg quantity = pieces deducted.
-            usage.push({
-                names: [addon.addon_name],
-                quantity: Number(addon.quantity || 1) * quantitySold,
-            });
-        }
-    }
-    return usage;
-}
-
 // Deducts the order's ingredients from branch stock and records each change in the inventory log.
 function deductSoldMenuInventory(orderId, branchLocationId, userId) {
     const soldItems = db.prepare(`
-        SELECT order_item_id, item_name, quantity
+        SELECT order_item_id, product_id, item_name, quantity
         FROM order_items
         WHERE order_id = ?
     `).all(orderId);
@@ -135,12 +58,18 @@ function deductSoldMenuInventory(orderId, branchLocationId, userId) {
             throw error;
         }
 
-        for (const ingredient of getSoldItemRecipe(item)) {
-            const stockItem = findStockItem(ingredient.names);
-            if (!stockItem) continue;
-            const usage = usageByStockItem.get(stockItem.id) || { stockItem, quantity: 0 };
-            usage.quantity += ingredient.quantity;
-            usageByStockItem.set(stockItem.id, usage);
+        const addons = db.prepare(`
+            SELECT addon_id, quantity
+            FROM order_item_addons
+            WHERE order_item_id = ?
+        `).all(item.order_item_id);
+        for (const mapped of getMappedInventoryUsage(db, item.product_id, quantitySold, addons)) {
+            const usage = usageByStockItem.get(mapped.stockItem.id) || {
+                stockItem: mapped.stockItem,
+                quantity: 0,
+            };
+            usage.quantity += mapped.quantity;
+            usageByStockItem.set(mapped.stockItem.id, usage);
         }
     }
 

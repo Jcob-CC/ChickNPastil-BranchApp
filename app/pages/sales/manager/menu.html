@@ -301,14 +301,13 @@
 
   <!-- EDIT PRODUCT MODAL -->
   <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
-      <div class="modal-content border-0 p-3 shadow">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 720px;">
+      <form class="modal-content border-0 p-3 shadow" onsubmit="saveProduct(event)">
         <div class="modal-header border-0 pb-1">
           <h5 class="modal-title fw-bold text-dark" id="productModalTitle">Modify Product</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <form onsubmit="saveProduct(event)">
-          <div class="modal-body py-2">
+        <div class="modal-body py-2">
             <input type="hidden" id="edit-product-id">
             <div class="mb-3">
               <label class="form-label small fw-semibold text-muted">Section</label>
@@ -333,15 +332,23 @@
               <div class="small text-muted mb-2">Select the choices customers can use in this modal.</div>
               <div id="edit-product-customization-choices" class="d-grid gap-1"></div>
             </div>
-          </div>
-          <div class="modal-footer border-0 pt-1">
-            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold" style="background-color: var(--primary-green);">
-              Save Product
-            </button>
-          </div>
-        </form>
-      </div>
+            <div class="border-top pt-3 mt-3">
+              <div class="fw-bold small text-dark mb-1">Inventory deductions</div>
+              <div class="small text-muted mb-2">
+                Choose which general stock items this product and its selected addons consume, and the quantity used per selection.
+              </div>
+              <div id="product-inventory-mappings" class="d-grid gap-3">
+                <div class="small text-muted">Loading inventory items...</div>
+              </div>
+            </div>
+        </div>
+        <div class="modal-footer border-0 pt-1">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold" style="background-color: var(--primary-green);">
+            Save Product
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -353,6 +360,9 @@
   <script>
     let fullMenu = [];
     let menuAddons = [];
+    let inventoryStockItems = [];
+    let productInventoryMappings = [];
+    let inventoryMappingsLoaded = false;
 
     async function loadMenuDisplay() {
       try {
@@ -391,6 +401,7 @@
           <div class="form-check small">
             <input type="checkbox" class="form-check-input customization-choice-input"
               id="${containerId}-choice-${addon.addon_id}" value="${addon.addon_id}"
+              ${containerId === 'edit-product-customization-choices' ? 'onchange="renderProductInventoryMappings()"' : ''}
               ${selectedIds.includes(addon.addon_id) ? 'checked' : ''}>
             <label class="form-check-label" for="${containerId}-choice-${addon.addon_id}">
               ${addon.addon_name} - Php ${Number(addon.addon_price).toFixed(2)}
@@ -405,6 +416,119 @@
       return [...container.querySelectorAll('.customization-choice-input:checked')]
         .map(input => Number(input.value))
         .filter(Number.isInteger);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[character]);
+    }
+
+    function readProductInventoryMappings() {
+      const container = document.getElementById('product-inventory-mappings');
+      if (!container) return [];
+      return [...container.querySelectorAll('.inventory-mapping-row')].map(row => ({
+        addon_id: row.dataset.addonId ? Number(row.dataset.addonId) : null,
+        general_stock_item_id: Number(row.querySelector('.inventory-stock-item').value),
+        quantity: Number(row.querySelector('.inventory-quantity').value)
+      })).filter(mapping => mapping.general_stock_item_id > 0);
+    }
+
+    function createInventoryMappingRow(addonId, mapping = {}) {
+      const stockItemOptions = inventoryStockItems.map(item => `
+        <option value="${item.id}" ${Number(mapping.general_stock_item_id) === item.id ? 'selected' : ''}>
+          ${escapeHtml(item.name)} (${escapeHtml(item.unit_type)})
+        </option>
+      `).join('');
+      return `
+        <div class="row g-2 align-items-center inventory-mapping-row" data-addon-id="${addonId || ''}">
+          <div class="col-md-7">
+            <select class="form-select form-select-sm inventory-stock-item">
+              <option value="">Select general stock item...</option>
+              ${stockItemOptions}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input type="number" class="form-control form-control-sm inventory-quantity"
+              min="0.000001" step="any" placeholder="Quantity"
+              value="${mapping.quantity != null ? escapeHtml(mapping.quantity) : ''}">
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-sm btn-outline-danger w-100"
+              onclick="removeInventoryMappingRow(this)" aria-label="Remove stock mapping">
+              Remove
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderProductInventoryMappings(mappingsToRender = null) {
+      const container = document.getElementById('product-inventory-mappings');
+      if (!container) return;
+      const displayedAddonIds = new Set(
+        [...container.querySelectorAll('section')].map(section => section.dataset.addonGroup)
+      );
+      const selectedAddonIds = new Set(getSelectedCustomizationChoiceIds('edit-product-customization-choices'));
+      const currentMappings = mappingsToRender === null
+        ? readProductInventoryMappings()
+        : mappingsToRender;
+      if (mappingsToRender === null) {
+        for (const addonId of selectedAddonIds) {
+          if (!displayedAddonIds.has(String(addonId))) {
+            currentMappings.push(...productInventoryMappings.filter(mapping => mapping.addon_id === addonId));
+          }
+        }
+      }
+      const groups = [{ id: null, name: 'Base menu item' }];
+      menuAddons
+        .filter(addon => selectedAddonIds.has(addon.addon_id))
+        .forEach(addon => groups.push({ id: addon.addon_id, name: addon.addon_name }));
+
+      container.innerHTML = groups.map(group => {
+        const groupMappings = currentMappings.filter(mapping => mapping.addon_id === group.id);
+        const rows = groupMappings.length
+          ? groupMappings.map(mapping => createInventoryMappingRow(group.id, mapping)).join('')
+          : '<div class="small text-muted inventory-mapping-empty">No stock items connected.</div>';
+        return `
+          <section class="border rounded-3 p-2" data-addon-group="${group.id === null ? '' : group.id}">
+            <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+              <div class="fw-semibold small">${escapeHtml(group.name)}</div>
+              <button type="button" class="btn btn-sm btn-outline-success"
+                onclick="addInventoryMappingRow(${group.id === null ? 'null' : group.id})">
+                Add stock item
+              </button>
+            </div>
+            <div class="inventory-mapping-rows d-grid gap-2">${rows}</div>
+          </section>
+        `;
+      }).join('');
+    }
+
+    function addInventoryMappingRow(addonId) {
+      const container = document.getElementById('product-inventory-mappings');
+      const groupId = addonId === null ? '' : String(addonId);
+      const group = [...container.querySelectorAll('section')]
+        .find(section => section.dataset.addonGroup === groupId);
+      if (!group) return;
+      const rows = group.querySelector('.inventory-mapping-rows');
+      const empty = rows.querySelector('.inventory-mapping-empty');
+      if (empty) empty.remove();
+      rows.insertAdjacentHTML('beforeend', createInventoryMappingRow(addonId));
+    }
+
+    function removeInventoryMappingRow(button) {
+      const row = button.closest('.inventory-mapping-row');
+      const group = row.closest('section');
+      row.remove();
+      if (!group.querySelector('.inventory-mapping-row')) {
+        group.querySelector('.inventory-mapping-rows').innerHTML =
+          '<div class="small text-muted inventory-mapping-empty">No stock items connected.</div>';
+      }
     }
 
     function renderCustomizationList() {
@@ -850,7 +974,7 @@
       }
     }
 
-    function openEditProductModal(sectionId, productId) {
+    async function openEditProductModal(sectionId, productId) {
       let found = null;
       for (const s of fullMenu) {
         found = s.products.find(p => p.product_id === productId);
@@ -865,7 +989,36 @@
       document.getElementById('edit-product-desc').value = found.description || '';
       document.getElementById('edit-product-price').value = found.price;
       getCustomizationChoiceControls('edit-product-customization-choices', found.customization_choice_ids || []);
+      inventoryStockItems = [];
+      productInventoryMappings = [];
+      inventoryMappingsLoaded = false;
       new bootstrap.Modal(document.getElementById('productModal')).show();
+      const mappingContainer = document.getElementById('product-inventory-mappings');
+      mappingContainer.innerHTML = '<div class="small text-muted">Loading inventory items...</div>';
+
+      try {
+        const [itemsResponse, mappingsResponse] = await Promise.all([
+          fetch('/api/menu/inventory-items'),
+          fetch(`/api/menu/product/${productId}/inventory-mappings`)
+        ]);
+        const [itemsData, mappingsData] = await Promise.all([
+          itemsResponse.json(),
+          mappingsResponse.json()
+        ]);
+        if (!itemsResponse.ok || !itemsData.success) {
+          throw new Error(itemsData.error || 'Unable to load general stock items.');
+        }
+        if (!mappingsResponse.ok || !mappingsData.success) {
+          throw new Error(mappingsData.error || 'Unable to load this product’s inventory mappings.');
+        }
+        inventoryStockItems = itemsData.items || [];
+        productInventoryMappings = mappingsData.mappings || [];
+        inventoryMappingsLoaded = true;
+        renderProductInventoryMappings(productInventoryMappings);
+      } catch (err) {
+        mappingContainer.innerHTML = '<div class="small text-danger">Unable to load inventory mappings.</div>';
+        alert(err.message);
+      }
     }
 
     async function saveProduct(e) {
@@ -878,6 +1031,11 @@
       const customizationChoiceIds = getSelectedCustomizationChoiceIds('edit-product-customization-choices');
       const url = id ? `/api/menu/product/${id}` : '/api/menu/product';
       const method = id ? 'PUT' : 'POST';
+
+      if (id && !inventoryMappingsLoaded) {
+        alert('Inventory mappings have not loaded. Close and reopen the product editor before saving.');
+        return;
+      }
 
       try {
         const res = await fetch(url, {
@@ -894,6 +1052,18 @@
         });
         const data = await res.json();
         if (data.success) {
+          const inventoryMappings = readProductInventoryMappings();
+          const mappingsResponse = await fetch(`/api/menu/product/${id}/inventory-mappings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mappings: inventoryMappings })
+          });
+          const mappingsData = await mappingsResponse.json();
+          if (!mappingsResponse.ok || !mappingsData.success) {
+            alert('Product details were saved, but inventory mappings were not: ' +
+              (mappingsData.error || 'Unable to save inventory mappings.'));
+            return;
+          }
           bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
           loadMenuDisplay();
         } else {

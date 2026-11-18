@@ -64,6 +64,147 @@ function listAddons(req, res) {
     }
 }
 
+function listInventoryItems(req, res) {
+    try {
+        const items = db.prepare(`
+            SELECT id, name, unit_type
+            FROM general_stock_item
+            WHERE status = 'active'
+            ORDER BY lower(name), id
+        `).all();
+        res.json({ success: true, items });
+    } catch (error) {
+        failure(res, error, 'Inventory item list error');
+    }
+}
+
+function getProductInventoryMappings(req, res) {
+    const productId = Number(req.params.id);
+    if (!Number.isSafeInteger(productId) || productId < 1) {
+        return res.status(400).json({ success: false, error: 'Invalid product ID.' });
+    }
+    try {
+        const product = db.prepare('SELECT product_id FROM menu_products WHERE product_id = ?').get(productId);
+        if (!product) return res.status(404).json({ success: false, error: 'Product not found.' });
+        const mappings = db.prepare(`
+            SELECT mapping.addon_id, mapping.general_stock_item_id,
+                   mapping.quantity, stock.name AS stock_item_name,
+                   stock.unit_type
+            FROM menu_product_inventory_mapping mapping
+            JOIN general_stock_item stock ON stock.id = mapping.general_stock_item_id
+            WHERE mapping.product_id = ?
+            ORDER BY mapping.addon_id, lower(stock.name), stock.id
+        `).all(productId);
+        res.json({ success: true, mappings });
+    } catch (error) {
+        failure(res, error, 'Product inventory mapping fetch error');
+    }
+}
+
+function replaceProductInventoryMappings(req, res) {
+    const productId = Number(req.params.id);
+    const mappings = req.body && req.body.mappings;
+    if (!Number.isSafeInteger(productId) || productId < 1) {
+        return res.status(400).json({ success: false, error: 'Invalid product ID.' });
+    }
+    if (!Array.isArray(mappings) || mappings.length > 200) {
+        return res.status(400).json({ success: false, error: 'Provide up to 200 inventory mappings.' });
+    }
+
+    const normalized = [];
+    const seen = new Set();
+    for (const mapping of mappings) {
+        const stockItemId = Number(mapping && mapping.general_stock_item_id);
+        const addonId = mapping && mapping.addon_id != null ? Number(mapping.addon_id) : null;
+        const quantity = Number(mapping && mapping.quantity);
+        if (!Number.isSafeInteger(stockItemId) || stockItemId < 1 ||
+            (addonId !== null && (!Number.isSafeInteger(addonId) || addonId < 1)) ||
+            !Number.isFinite(quantity) || quantity <= 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Each mapping requires a valid stock item and positive deduction quantity.',
+            });
+        }
+        const key = `${addonId === null ? 'base' : addonId}:${stockItemId}`;
+        if (seen.has(key)) {
+            return res.status(400).json({
+                success: false,
+                error: 'A stock item can only be mapped once per menu item or addon.',
+            });
+        }
+        seen.add(key);
+        normalized.push({ addonId, stockItemId, quantity });
+    }
+
+    try {
+        const save = db.transaction(() => {
+            const product = db.prepare(`
+                SELECT customization_choice_ids
+                FROM menu_products WHERE product_id = ?
+            `).get(productId);
+            if (!product) return { status: 'product-not-found' };
+
+            let selectedAddonIds = [];
+            try {
+                const parsed = JSON.parse(product.customization_choice_ids || '[]');
+                if (Array.isArray(parsed)) {
+                    selectedAddonIds = parsed.map(Number).filter(id => Number.isSafeInteger(id) && id > 0);
+                }
+            } catch {
+                selectedAddonIds = [];
+            }
+
+            const findStockItem = db.prepare(`
+                SELECT id FROM general_stock_item WHERE id = ? AND status = 'active'
+            `);
+            const findAddon = db.prepare(`
+                SELECT addon_id FROM product_addons
+                WHERE addon_id = ? AND is_available = 1 AND COALESCE(is_archived, 0) = 0
+            `);
+            for (const mapping of normalized) {
+                if (!findStockItem.get(mapping.stockItemId)) {
+                    return { status: 'stock-item-not-found', stockItemId: mapping.stockItemId };
+                }
+                if (mapping.addonId !== null &&
+                    (!selectedAddonIds.includes(mapping.addonId) || !findAddon.get(mapping.addonId))) {
+                    return { status: 'addon-not-selected', addonId: mapping.addonId };
+                }
+            }
+
+            db.prepare('DELETE FROM menu_product_inventory_mapping WHERE product_id = ?').run(productId);
+            const insert = db.prepare(`
+                INSERT INTO menu_product_inventory_mapping
+                    (product_id, addon_id, general_stock_item_id, quantity)
+                VALUES (?, ?, ?, ?)
+            `);
+            for (const mapping of normalized) {
+                insert.run(productId, mapping.addonId, mapping.stockItemId, mapping.quantity);
+            }
+            return { status: 'saved' };
+        });
+
+        const result = save.immediate();
+        if (result.status === 'product-not-found') {
+            return res.status(404).json({ success: false, error: 'Product not found.' });
+        }
+        if (result.status === 'stock-item-not-found') {
+            return res.status(400).json({
+                success: false,
+                error: `Active inventory item ${result.stockItemId} was not found.`,
+            });
+        }
+        if (result.status === 'addon-not-selected') {
+            return res.status(400).json({
+                success: false,
+                error: `Addon ${result.addonId} must be active and selected for this menu item.`,
+            });
+        }
+        res.json({ success: true, message: 'Inventory mappings saved.' });
+    } catch (error) {
+        failure(res, error, 'Product inventory mapping save error');
+    }
+}
+
 function createSection(req, res) {
     const body = req.body || {};
     const name = typeof body.section_name === 'string' ? body.section_name.trim() : '';
@@ -296,6 +437,9 @@ function updateAddon(req, res) {
 module.exports = {
     list,
     listAddons,
+    listInventoryItems,
+    getProductInventoryMappings,
+    replaceProductInventoryMappings,
     createSection,
     updateSection,
     toggleSectionArchive,

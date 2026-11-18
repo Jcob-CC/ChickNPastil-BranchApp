@@ -124,7 +124,10 @@ To deduct menu ingredients instead of one stock item, send:
     {
       "menuItemId": 3,
       "quantity": 2,
-      "addons": ["Garlic Rice", "Extra Egg"]
+      "addons": [
+        { "addon_id": 4, "addon_name": "Garlic Rice", "quantity": 1 },
+        { "addon_id": 7, "addon_name": "Extra Egg", "quantity": 2 }
+      ]
     },
     {
       "menuItemName": "Royal",
@@ -136,7 +139,11 @@ To deduct menu ingredients instead of one stock item, send:
 - `items`: sold menu items in this sale.
 - `menuItemId`: menu product ID, or use `menuItemName`.
 - `quantity`: number of that menu item sold.
-- `addons`: optional addon names or `{ "addon_name": "Extra Egg", "quantity": 2 }` objects.
+- `addons`: optional selected menu addons. Send each addon ID (recommended) and name, plus its selected quantity. If the ID is omitted, the webhook resolves the exact addon name.
+
+Configure inventory connections in **Sales → Menu Display Management → Modify** for each product. Add one or more active general stock items to the base menu item and set the quantity consumed per one item sold. For each selected customization/addon, you can separately map stock items and quantities consumed per addon selection. The POS webhook and built-in POS payment flow both use these saved mappings; sold quantities and addon quantities multiply the configured deductions. Menu items without mappings do not deduct inventory. There is no longer any automatic recipe estimate or stock-item name matching.
+
+The direct `generalStockItemId`/`quantity` form remains available when the external POS needs to deduct a specific stock item directly.
 
 - `branchLocationId`, `generalStockItemId`, and `userId` are IDs from this app's database; the branch, stock item, and user must be active.
 - `quantity` is the positive amount sold and is subtracted from the branch's on-hand total. If the branch does not have enough stock, the endpoint responds with `409` and leaves inventory and the log unchanged.
