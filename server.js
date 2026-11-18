@@ -9,6 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('./lib/database');
 const auth = require('./middleware/auth');
+const SqliteSessionStore = require('./lib/session-store');
 const analyticsRoutes = require('./routes/analytics');
 const analyticsApi = require('./routes/analytics-api');
 const app = express();
@@ -27,6 +28,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use(session({
     secret: process.env.SESSION_SECRET || randomBytes(32).toString('hex'),
+    store: new SqliteSessionStore(),
     resave: false,
     saveUninitialized: false,
     cookie: {

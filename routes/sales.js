@@ -47,6 +47,10 @@ api.post('/menu/product', requireManager, menu.createProduct);
 api.put('/menu/product/:id', requireManager, menu.updateProduct);
 api.put('/menu/product/:id/availability', requireManager, menu.toggleProductAvailability);
 api.put('/menu/product/:id/archive', requireManager, menu.toggleProductArchive);
+api.post('/menu/addon', requireManager, menu.createAddon);
+api.put('/menu/addon/:id', requireManager, menu.updateAddon);
+api.put('/menu/addon/:id/visibility', requireManager, menu.toggleAddonVisibility);
+api.put('/menu/addon/:id/archive', requireManager, menu.toggleAddonArchive);
 
 api.post('/orders', orders.create);
 api.get('/orders', orders.list);

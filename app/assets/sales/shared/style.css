@@ -416,6 +416,43 @@ body.sidebar-collapsed .main-content {
   color: var(--primary-green);
 }
 
+.customization-choices-table th:nth-child(4),
+.customization-choices-table td:nth-child(4) {
+  width: 34%;
+  text-align: right;
+  padding-right: 8px;
+}
+
+.customization-choices-table th:nth-child(1),
+.customization-choices-table td:nth-child(1) {
+  width: 31%;
+}
+
+.customization-choices-table th:nth-child(2),
+.customization-choices-table td:nth-child(2) {
+  width: 20%;
+}
+
+.customization-choices-table th:nth-child(3),
+.customization-choices-table td:nth-child(3) {
+  width: 15%;
+}
+
+.customization-action-group {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: 100%;
+}
+
+.customization-action-group .btn {
+  padding-left: 8px;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
 /* MODAL: RESPONSIVE BOTTOM SHEET (MOBILE) vs CENTERED (DESKTOP) */
 @media (max-width: 767.98px) {
   .responsive-order-modal .modal-dialog {

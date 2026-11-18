@@ -13,7 +13,7 @@
     .custom-table {
       table-layout: fixed;
       width: 100%;
-      min-width: 800px;
+      min-width: 600px;
       border-radius: 0;
     }
     .main-content {
@@ -47,7 +47,7 @@
     }
     .menu-content-layout {
       display: grid;
-      grid-template-columns: 400px minmax(0, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 24px;
       align-items: start;
       min-width: 0;
@@ -56,6 +56,51 @@
       display: grid;
       gap: 16px;
       min-width: 0;
+    }
+    .customization-choices-table {
+      table-layout: fixed;
+      width: 100%;
+    }
+    .customization-choices-table th,
+    .customization-choices-table td {
+      vertical-align: middle;
+      padding-left: 6px;
+      padding-right: 6px;
+    }
+    .customization-choices-table th:nth-child(1),
+    .customization-choices-table td:nth-child(1) {
+      width: 25%;
+    }
+    .customization-choices-table th:nth-child(2),
+    .customization-choices-table td:nth-child(2) {
+      width: 25%;
+    }
+    .customization-choices-table th:nth-child(3),
+    .customization-choices-table td:nth-child(3) {
+      width: 20%;
+    }
+    .customization-choices-table th:nth-child(4),
+    .customization-choices-table td:nth-child(4) {
+      width: 180px;
+      min-width: 180px;
+      max-width: 180px;
+      text-align: right;
+      padding-right: 8px;
+    }
+    .customization-choices-table th:nth-child(4) {
+      padding-right: 8px;
+    }
+    .customization-action-group {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+    }
+    .customization-action-group .btn {
+      padding-left: 8px;
+      padding-right: 8px;
     }
     @media (max-width: 991.98px) {
       .menu-content-layout {
@@ -182,10 +227,35 @@
               <input type="text" id="quick-product-name" class="form-control form-control-sm" placeholder="Product name" required>
               <input type="text" id="quick-product-description" class="form-control form-control-sm" placeholder="Description (optional)">
               <input type="number" step="0.5" id="quick-product-price" class="form-control form-control-sm" placeholder="Price" required>
+              <div class="small fw-semibold text-muted mt-1">Customization choices</div>
+              <div class="small text-muted mb-1">Check the choices available for this product.</div>
+              <div id="quick-product-customization-choices" class="d-grid gap-1"></div>
               <button type="submit" class="btn btn-sm btn-success w-100 fw-semibold" style="background-color: var(--primary-green);">
                 Add
               </button>
             </form>
+          </div>
+          <div class="mgmt-box">
+            <h6 class="fw-bold text-dark small text-uppercase mb-2"><i class="bi bi-sliders text-success me-1"></i> Add New Customization</h6>
+            <form onsubmit="handleQuickCreateCustomization(event)" class="d-grid gap-2">
+              <input type="text" id="quick-customization-name" class="form-control form-control-sm" placeholder="Choice name (e.g. Extra Egg)" required>
+              <input type="text" id="quick-customization-category" class="form-control form-control-sm"
+                list="customization-category-options" placeholder="Type (e.g. Flavor)" required>
+              <datalist id="customization-category-options">
+                <option value="flavor">
+                <option value="rice">
+                <option value="extra">
+              </datalist>
+              <input type="number" step="0.5" min="0" id="quick-customization-price" class="form-control form-control-sm" placeholder="Extra price" required>
+              <button type="submit" class="btn btn-sm btn-success w-100 fw-semibold" style="background-color: var(--primary-green);">
+                Add Customization
+              </button>
+            </form>
+            <hr class="my-3">
+            <h6 class="fw-bold text-dark small text-uppercase mb-2">
+              <i class="bi bi-list-check text-success me-1"></i> Customization Choices
+            </h6>
+            <div id="customization-choices-container"></div>
           </div>
         </div>
 
@@ -258,6 +328,11 @@
                 <input type="number" step="0.5" id="edit-product-price" class="form-control fw-bold" placeholder="0.00" required>
               </div>
             </div>
+            <div class="border-top pt-3 mt-3">
+              <div class="fw-bold small text-dark mb-2">Order customization</div>
+              <div class="small text-muted mb-2">Select the choices customers can use in this modal.</div>
+              <div id="edit-product-customization-choices" class="d-grid gap-1"></div>
+            </div>
           </div>
           <div class="modal-footer border-0 pt-1">
             <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
@@ -277,6 +352,7 @@
 
   <script>
     let fullMenu = [];
+    let menuAddons = [];
 
     async function loadMenuDisplay() {
       try {
@@ -284,8 +360,11 @@
         const data = await res.json();
         if (data.success) {
           fullMenu = data.sections;
+          menuAddons = data.addons || [];
           renderSections();
+          renderCustomizationChoicesTable();
           populateSectionDropdowns();
+          getCustomizationChoiceControls('quick-product-customization-choices');
         }
       } catch (err) {
         console.error('Error loading menu:', err);
@@ -303,6 +382,217 @@
       if (editSelect) editSelect.innerHTML = optionsHtml;
     }
 
+    function getCustomizationChoiceControls(containerId, selectedIds = []) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = menuAddons
+        .filter(addon => addon.is_available && !addon.is_archived)
+        .map(addon => `
+          <div class="form-check small">
+            <input type="checkbox" class="form-check-input customization-choice-input"
+              id="${containerId}-choice-${addon.addon_id}" value="${addon.addon_id}"
+              ${selectedIds.includes(addon.addon_id) ? 'checked' : ''}>
+            <label class="form-check-label" for="${containerId}-choice-${addon.addon_id}">
+              ${addon.addon_name} - Php ${Number(addon.addon_price).toFixed(2)}
+            </label>
+          </div>
+        `).join('');
+    }
+
+    function getSelectedCustomizationChoiceIds(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return [];
+      return [...container.querySelectorAll('.customization-choice-input:checked')]
+        .map(input => Number(input.value))
+        .filter(Number.isInteger);
+    }
+
+    function renderCustomizationList() {
+      const container = document.getElementById('customization-list');
+      if (!container) return;
+
+      const products = fullMenu
+        .filter(section => !section.is_archived)
+        .flatMap(section => section.products
+          .filter(product => !product.is_archived)
+          .map(product => ({ ...product, section_name: section.section_name })));
+
+      if (products.length === 0) {
+        container.innerHTML = '<div class="text-muted small">No active products available.</div>';
+        return;
+      }
+
+      container.innerHTML = products.map(product => `
+        <div class="border rounded-3 p-2">
+          <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+            <div>
+              <div class="fw-bold small text-dark">${product.product_name}</div>
+              <div class="text-muted" style="font-size: 0.75rem;">${product.section_name}</div>
+            </div>
+          </div>
+          <select class="form-select form-select-sm" id="customization-${product.product_id}"
+            onchange="saveProductCustomization(${product.product_id}, this.value)">
+            <option value="none" ${!product.customization_type || product.customization_type === 'none' ? 'selected' : ''}>No modal - direct quantity</option>
+            <option value="pastil" ${product.customization_type === 'pastil' ? 'selected' : ''}>Pastil - Flavor and Rice</option>
+            <option value="addons" ${product.customization_type === 'addons' ? 'selected' : ''}>Add-ons quantity only</option>
+          </select>
+        </div>
+      `).join('');
+    }
+
+    async function saveProductCustomization(productId, customizationType) {
+      try {
+        const res = await fetch(`/api/menu/product/${productId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customization_type: customizationType })
+        });
+        const data = await res.json();
+        if (!data.success) alert('Error: ' + data.error);
+        else loadMenuDisplay();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function renderCustomizationChoices(addons) {
+      const container = document.getElementById('customization-choices-list');
+      if (!container) return;
+
+      const choices = addons.filter(addon =>
+        ['flavor', 'rice'].includes(addon.addon_category)
+      );
+      if (choices.length === 0) {
+        container.innerHTML = '<div class="text-muted small">No customization choices found.</div>';
+        return;
+      }
+
+      container.innerHTML = choices.map(addon => `
+        <div class="border rounded-3 p-2">
+          <div class="small fw-bold text-uppercase text-muted mb-2">${addon.addon_category}</div>
+          <label class="form-label small mb-1" for="choice-name-${addon.addon_id}">Choice name</label>
+          <input type="text" class="form-control form-control-sm mb-2" id="choice-name-${addon.addon_id}"
+            value="${addon.addon_name.replace(/"/g, '&quot;')}">
+          <label class="form-label small mb-1" for="choice-price-${addon.addon_id}">Extra price</label>
+          <input type="number" step="0.5" min="0" class="form-control form-control-sm"
+            id="choice-price-${addon.addon_id}" value="${Number(addon.addon_price).toFixed(2)}">
+          <button type="button" class="btn btn-sm btn-outline-success w-100 mt-2"
+            onclick="saveCustomizationChoice(${addon.addon_id})">
+            Save choice
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function toggleCustomizationVisibility(addonId) {
+      try {
+        const res = await fetch(`/api/menu/addon/${addonId}/visibility`, { method: 'PUT' });
+        const data = await res.json();
+        if (data.success) loadMenuDisplay();
+        else alert('Error: ' + data.error);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function toggleCustomizationArchive(addonId) {
+      try {
+        const res = await fetch(`/api/menu/addon/${addonId}/archive`, { method: 'PUT' });
+        const data = await res.json();
+        if (data.success) loadMenuDisplay();
+        else alert('Error: ' + data.error);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function saveCustomizationChoice(addonId) {
+      const name = document.getElementById(`choice-name-${addonId}`).value.trim();
+      const category = document.getElementById(`choice-category-${addonId}`).value.trim();
+      const price = document.getElementById(`choice-price-${addonId}`).value;
+      if (!name) {
+        alert('Choice name is required.');
+        return;
+      }
+      if (!category) {
+        alert('Customization type is required.');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/menu/addon/${addonId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ addon_name: name, addon_category: category, addon_price: price })
+        });
+        const data = await res.json();
+        if (data.success) loadMenuDisplay();
+        else alert('Error: ' + data.error);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function renderCustomizationChoicesTable() {
+      const container = document.getElementById('customization-choices-container');
+      if (!container) return;
+
+      if (menuAddons.length === 0) {
+        container.innerHTML = '<div class="text-muted small">No customization choices configured.</div>';
+        return;
+      }
+
+      const rows = menuAddons.map(addon => `
+        <tr>
+          <td>
+            <input type="text" class="form-control form-control-sm" id="choice-name-${addon.addon_id}"
+              value="${addon.addon_name.replace(/"/g, '&quot;')}">
+          </td>
+          <td>
+            <input type="text" class="form-control form-control-sm" id="choice-category-${addon.addon_id}"
+              list="customization-category-options" value="${addon.addon_category || 'extra'}">
+          </td>
+          <td>
+            <input type="number" step="0.5" min="0" class="form-control form-control-sm"
+              id="choice-price-${addon.addon_id}" value="${Number(addon.addon_price).toFixed(2)}">
+          </td>
+          <td>
+            <div class="customization-action-group">
+              <button type="button"
+                class="btn btn-sm ${addon.is_available ? 'btn-outline-success' : 'btn-outline-secondary'}"
+                onclick="toggleCustomizationVisibility(${addon.addon_id})">
+                ${addon.is_available ? 'Hide' : 'Show'}
+              </button>
+              <button type="button"
+                class="btn btn-sm ${addon.is_archived ? 'btn-outline-success' : 'btn-outline-danger'}"
+                onclick="toggleCustomizationArchive(${addon.addon_id}, ${addon.is_archived})">
+                ${addon.is_archived ? 'Restore' : 'Archive'}
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary"
+                onclick="saveCustomizationChoice(${addon.addon_id})">
+                Save
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      container.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-sm customization-choices-table mb-0">
+            <thead>
+              <tr>
+                <th>Choice</th>
+                <th>Type</th>
+                <th>Price</th>
+                <th style="width: 180px;">Action</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
     function renderSections() {
       const container = document.getElementById('sections-container');
       if (fullMenu.length === 0) {
@@ -310,7 +600,7 @@
         return;
       }
 
-      container.innerHTML = fullMenu.map(sec => {
+      const menuSectionsHtml = fullMenu.map(sec => {
         const isSecArchived = sec.is_archived;
         const productsHtml = sec.products.map(p => {
           return `
@@ -361,7 +651,6 @@
                 </button>
               </div>
             </div>
-
             <div class="table-responsive">
               <table class="table custom-table mb-0">
                 <thead>
@@ -374,13 +663,40 @@
                   </tr>
                 </thead>
                 <tbody>
-                  ${productsHtml.length > 0 ? productsHtml : '<tr><td colspan="5" class="text-center text-muted py-3">No products added in this section.</td></tr>'}
+                  ${productsHtml || '<tr><td colspan="5" class="text-center text-muted py-3">No products added in this section.</td></tr>'}
                 </tbody>
               </table>
             </div>
           </div>
         `;
       }).join('');
+
+      const choices = menuAddons;
+      const choicesRows = choices.map(addon => `
+        <tr>
+          <td>
+            <input type="text" class="form-control form-control-sm" id="choice-name-${addon.addon_id}"
+              value="${addon.addon_name.replace(/"/g, '&quot;')}">
+          </td>
+          <td>
+            <input type="text" class="form-control form-control-sm" id="choice-category-${addon.addon_id}"
+              list="customization-category-options" value="${addon.addon_category || 'extra'}">
+          </td>
+          <td>
+            <input type="number" step="0.5" min="0" class="form-control form-control-sm"
+              id="choice-price-${addon.addon_id}" value="${Number(addon.addon_price).toFixed(2)}">
+          </td>
+          <td>
+            <button type="button" class="btn btn-sm btn-outline-success px-3"
+              onclick="saveCustomizationChoice(${addon.addon_id})">
+              <i class="bi bi-check-lg me-1"></i>Save
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      container.innerHTML = menuSectionsHtml;
+
     }
 
     async function handleQuickCreateSection(e) {
@@ -413,6 +729,7 @@
       const name = document.getElementById('quick-product-name').value.trim();
       const description = document.getElementById('quick-product-description').value.trim();
       const price = document.getElementById('quick-product-price').value;
+      const customizationChoiceIds = getSelectedCustomizationChoiceIds('quick-product-customization-choices');
 
       try {
         const res = await fetch('/api/menu/product', {
@@ -422,7 +739,9 @@
             section_id: sectionId,
             product_name: name,
             description: description,
-            price: price
+            price: price,
+            customization_enabled: customizationChoiceIds.length > 0,
+            customization_choice_ids: customizationChoiceIds
           })
         });
         const data = await res.json();
@@ -430,6 +749,48 @@
           document.getElementById('quick-product-name').value = '';
           document.getElementById('quick-product-description').value = '';
           document.getElementById('quick-product-price').value = '';
+          loadMenuDisplay();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function handleQuickCreateCustomization(e) {
+      e.preventDefault();
+      const name = document.getElementById('quick-customization-name').value.trim();
+      const category = document.getElementById('quick-customization-category').value;
+      const price = document.getElementById('quick-customization-price').value;
+
+      try {
+        const res = await fetch('/api/menu/addon', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            addon_name: name,
+            addon_category: category,
+            addon_price: price
+          })
+        });
+        const contentType = res.headers.get('content-type') || '';
+        let data = null;
+        if (contentType.includes('application/json')) {
+          data = await res.json();
+        }
+        if (!res.ok) {
+          if (res.status === 401) throw new Error('Your session expired. Please sign in again.');
+          if (res.status === 403) throw new Error('Manager permission is required.');
+          if (data?.error) throw new Error(data.error);
+          if (!contentType.includes('application/json')) {
+          throw new Error('The server returned an unexpected response. Please restart and sign in again.');
+          }
+          throw new Error('Unable to add customization.');
+        }
+        if (data.success) {
+          document.getElementById('quick-customization-name').value = '';
+          document.getElementById('quick-customization-price').value = '';
           loadMenuDisplay();
         } else {
           alert('Error: ' + data.error);
@@ -503,6 +864,7 @@
       document.getElementById('edit-product-name').value = found.product_name;
       document.getElementById('edit-product-desc').value = found.description || '';
       document.getElementById('edit-product-price').value = found.price;
+      getCustomizationChoiceControls('edit-product-customization-choices', found.customization_choice_ids || []);
       new bootstrap.Modal(document.getElementById('productModal')).show();
     }
 
@@ -513,6 +875,7 @@
       const name = document.getElementById('edit-product-name').value.trim();
       const desc = document.getElementById('edit-product-desc').value.trim();
       const price = document.getElementById('edit-product-price').value;
+      const customizationChoiceIds = getSelectedCustomizationChoiceIds('edit-product-customization-choices');
       const url = id ? `/api/menu/product/${id}` : '/api/menu/product';
       const method = id ? 'PUT' : 'POST';
 
@@ -524,7 +887,9 @@
             section_id: sectionId,
             product_name: name,
             description: desc,
-            price: price
+            price: price,
+            customization_enabled: customizationChoiceIds.length > 0,
+            customization_choice_ids: customizationChoiceIds
           })
         });
         const data = await res.json();

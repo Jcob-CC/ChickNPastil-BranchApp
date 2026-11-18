@@ -41,6 +41,77 @@
       position: sticky;
       top: 80px;
     }
+
+    @media (max-width: 575.98px) {
+      .main-content {
+        padding: 12px !important;
+      }
+
+      .pos-layout {
+        gap: 16px;
+      }
+
+      .menu-products-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .product-card {
+        min-height: 132px;
+        padding: 12px;
+      }
+
+      .product-title {
+        font-size: 0.92rem;
+      }
+
+      .product-price {
+        font-size: 1rem;
+      }
+
+      .category-pills {
+        width: 100%;
+        margin-right: 0;
+        padding-bottom: 8px;
+      }
+
+      .cat-pill {
+        padding: 7px 12px;
+        font-size: 0.82rem;
+      }
+
+      .order-summary-box {
+        position: static;
+        width: 100%;
+      }
+
+      .cart-panel {
+        padding: 16px 12px;
+        border-radius: 14px;
+      }
+
+      .cart-panel > .d-flex.gap-2.mb-3 {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .order-type-btn {
+        width: 100%;
+      }
+
+      .cart-panel .row.g-2 > [class*="col-"] {
+        width: 100%;
+      }
+
+      .cart-item {
+        gap: 8px;
+      }
+
+      .cart-item > div:last-child {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+    }
   </style>
 </head>
 
@@ -233,6 +304,11 @@
               <button type="button" class="option-pill" onclick="selectOptionPill(this, 'rice', 'Garlic', 5)">Garlic
                 +Php 5.00</button>
             </div>
+          </div>
+
+          <div class="mb-3" id="addons-group-wrapper">
+            <label class="form-label small fw-bold text-dark text-uppercase mb-2">Add-ons</label>
+            <div id="modal-addons-list" class="d-grid gap-2"></div>
           </div>
 
           <!-- Item Subtotal Preview -->
@@ -476,6 +552,7 @@
     let modalFlavor = 'Original';
     let modalRice = 'Plain';
     let modalRicePrice = 0;
+    let modalAddonQuantities = {};
 
     let currentOrderId = null;
     let currentPaymentMethod = 'Cash';
@@ -522,10 +599,9 @@
       return null;
     }
 
-    // No popup for item order except frm pastil size
+    // A menu product opens the customization modal only when configured per product.
     function isCustomizableProduct(p) {
-      const secName = (p.section_name || '').toLowerCase();
-      return secName.includes('pastil');
+      return Boolean(p.customization_enabled);
     }
 
 
@@ -569,6 +645,23 @@
       renderCart();
     }
 
+    function changeDirectItemQuantity(productId, change) {
+      const idx = findCartItemIndex(productId, []);
+      if (idx === -1) {
+        if (change > 0) quickAddDirectItem(productId);
+        return;
+      }
+
+      const nextQuantity = cart[idx].quantity + change;
+      if (nextQuantity < 1) {
+        cart.splice(idx, 1);
+      } else if (nextQuantity <= 100) {
+        cart[idx].quantity = nextQuantity;
+        cart[idx].subtotal = cart[idx].unit_price * nextQuantity;
+      }
+      renderCart();
+    }
+
     function renderProducts() {
       const container = document.getElementById('products-grid-container');
       let productsToDisplay = [];
@@ -602,11 +695,27 @@
             </div>
           `;
         } else {
-          actionHtml = `
-            <div class="product-add-circle" onclick="event.stopPropagation(); quickAddDirectItem(${p.product_id})" title="Add item">
-              <i class="bi bi-plus"></i>
-            </div>
-          `;
+          if (inCartQty > 0) {
+            actionHtml = `
+              <div class="d-flex align-items-center gap-1" onclick="event.stopPropagation()">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0"
+                  onclick="changeDirectItemQuantity(${p.product_id}, -1)" aria-label="Decrease quantity">
+                  <i class="bi bi-dash"></i>
+                </button>
+                <span class="fw-bold small text-dark text-center" style="min-width: 22px">${inCartQty}</span>
+                <button type="button" class="btn btn-sm btn-success px-2 py-0"
+                  onclick="changeDirectItemQuantity(${p.product_id}, 1)" aria-label="Increase quantity">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+            `;
+          } else {
+            actionHtml = `
+              <div class="product-add-circle" onclick="event.stopPropagation(); quickAddDirectItem(${p.product_id})" title="Add item">
+                <i class="bi bi-plus"></i>
+              </div>
+            `;
+          }
         }
 
         const clickHandler = isUnavailable
@@ -639,33 +748,158 @@
       modalFlavor = 'Original';
       modalRice = 'Plain';
       modalRicePrice = 0;
+      modalAddonQuantities = {};
 
       document.getElementById('modal-product-name').textContent = activeProduct.product_name;
       document.getElementById('modal-product-base-price').textContent = `Php ${Number(activeProduct.price).toFixed(2)}`;
-
-      // Reset flavor and rice option pills UI to default first option
-      const flavorWrapper = document.getElementById('flavor-group-wrapper');
-      const riceWrapper = document.getElementById('rice-group-wrapper');
-      if (flavorWrapper) {
-        flavorWrapper.querySelectorAll('.option-pill').forEach((btn, i) => {
-          btn.classList.toggle('active', i === 0);
-        });
-      }
-      if (riceWrapper) {
-        riceWrapper.querySelectorAll('.option-pill').forEach((btn, i) => {
-          btn.classList.toggle('active', i === 0);
-        });
-      }
-
-      const isPastil = isCustomizableProduct(activeProduct);
-      if (flavorWrapper) flavorWrapper.style.display = isPastil ? 'block' : 'none';
-      if (riceWrapper) riceWrapper.style.display = isPastil ? 'block' : 'none';
+      renderProductCustomizationChoices();
 
       updateModalTotal();
 
       const modalEl = document.getElementById('customizeProductModal');
       const modal = new bootstrap.Modal(modalEl);
       modal.show();
+    }
+
+    function getProductCustomizationChoices() {
+      const selectedIds = activeProduct?.customization_choice_ids || [];
+      if (selectedIds.length > 0) {
+        return menuData.addons.filter(addon =>
+          selectedIds.includes(addon.addon_id) && addon.is_available && !addon.is_archived
+        );
+      }
+      return menuData.addons.filter(addon =>
+        addon.is_available && !addon.is_archived && ['flavor', 'rice'].includes(addon.addon_category)
+      );
+    }
+
+    function renderProductCustomizationChoices() {
+      const choices = getProductCustomizationChoices();
+      const flavorChoices = choices.filter(choice => choice.addon_category === 'flavor');
+      const riceChoices = choices.filter(choice => choice.addon_category === 'rice');
+      const extraChoices = choices.filter(choice =>
+        !['flavor', 'rice'].includes(choice.addon_category)
+      );
+
+      const flavorWrapper = document.getElementById('flavor-group-wrapper');
+      if (flavorWrapper) {
+        flavorWrapper.style.display = flavorChoices.length ? 'block' : 'none';
+        if (flavorChoices.length) {
+          modalFlavor = flavorChoices[0].addon_name;
+          flavorWrapper.innerHTML = `
+            <label class="form-label small fw-bold text-dark text-uppercase mb-2">Flavor</label>
+            <div class="option-pill-group">
+              ${flavorChoices.map((choice, index) => `
+                <button type="button" class="option-pill ${index === 0 ? 'active' : ''}"
+                  onclick="selectOptionPill(this, 'flavor', '${choice.addon_name.replace(/'/g, "\\'")}', ${Number(choice.addon_price)})">
+                  ${choice.addon_name}${choice.addon_price > 0 ? ` +Php ${Number(choice.addon_price).toFixed(2)}` : ''}
+                </button>
+              `).join('')}
+            </div>
+          `;
+        }
+      }
+
+      const riceWrapper = document.getElementById('rice-group-wrapper');
+      if (riceWrapper) {
+        riceWrapper.style.display = riceChoices.length ? 'block' : 'none';
+        if (riceChoices.length) {
+          modalRice = riceChoices[0].addon_name.replace(/ Rice$/i, '');
+          modalRicePrice = Number(riceChoices[0].addon_price);
+          riceWrapper.innerHTML = `
+            <label class="form-label small fw-bold text-dark text-uppercase mb-2">Rice Choice</label>
+            <div class="option-pill-group">
+              ${riceChoices.map((choice, index) => `
+                <button type="button" class="option-pill ${index === 0 ? 'active' : ''}"
+                  onclick="selectOptionPill(this, 'rice', '${choice.addon_name.replace(/ Rice$/i, '').replace(/'/g, "\\'")}', ${Number(choice.addon_price)})">
+                  ${choice.addon_name}${choice.addon_price > 0 ? ` +Php ${Number(choice.addon_price).toFixed(2)}` : ''}
+                </button>
+              `).join('')}
+            </div>
+          `;
+        } else {
+          modalRicePrice = 0;
+        }
+      }
+
+      const addonsWrapper = document.getElementById('addons-group-wrapper');
+      if (addonsWrapper) {
+        addonsWrapper.style.display = extraChoices.length ? 'block' : 'none';
+        if (extraChoices.length) {
+          addonsWrapper.innerHTML = `
+            <label class="form-label small fw-bold text-dark text-uppercase mb-2">Add-ons</label>
+            <div id="modal-addons-list" class="d-grid gap-2">
+              ${extraChoices.map(choice => `
+                <div class="d-flex align-items-center justify-content-between border rounded-3 px-3 py-2">
+                  <div>
+                    <div class="fw-semibold small">${choice.addon_name}</div>
+                    <div class="text-success small">Php ${Number(choice.addon_price).toFixed(2)} each</div>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0"
+                      onclick="changeModalAddonQuantity(${choice.addon_id}, -1)" disabled>
+                      <i class="bi bi-dash"></i>
+                    </button>
+                    <span class="fw-bold small text-center" id="modal-addon-qty-${choice.addon_id}" style="min-width:20px">0</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0"
+                      onclick="changeModalAddonQuantity(${choice.addon_id}, 1)">
+                      <i class="bi bi-plus"></i>
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+      }
+      updateModalTotal();
+    }
+
+    function renderModalAddons() {
+      const container = document.getElementById('modal-addons-list');
+      const addonSection = menuData.sections.find(section =>
+        section.section_name.toLowerCase().includes('add-on')
+      );
+      if (!container) return;
+      const addons = addonSection?.products.filter(product =>
+        product.is_available && !product.is_archived
+      ) || [];
+      if (addons.length === 0) {
+        container.innerHTML = '<div class="text-muted small">No add-ons available.</div>';
+        return;
+      }
+      container.innerHTML = addons.map(product => {
+        const quantity = modalAddonQuantities[product.product_id] || 0;
+        return `
+          <div class="d-flex align-items-center justify-content-between border rounded-3 px-3 py-2">
+            <div>
+              <div class="fw-semibold small">${product.product_name}</div>
+              <div class="text-success small">Php ${Number(product.price).toFixed(2)} each</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0"
+                onclick="changeModalAddonQuantity(${product.product_id}, -1)" ${quantity === 0 ? 'disabled' : ''}>
+                <i class="bi bi-dash"></i>
+              </button>
+              <span class="fw-bold small text-center" style="min-width: 20px">${quantity}</span>
+              <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0"
+                onclick="changeModalAddonQuantity(${product.product_id}, 1)">
+                <i class="bi bi-plus"></i>
+              </button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function changeModalAddonQuantity(productId, change) {
+      const nextQuantity = Math.max(0, (modalAddonQuantities[productId] || 0) + change);
+      if (nextQuantity === 0) delete modalAddonQuantities[productId];
+      else modalAddonQuantities[productId] = nextQuantity;
+      const quantityLabel = document.getElementById(`modal-addon-qty-${productId}`);
+      if (quantityLabel) quantityLabel.textContent = nextQuantity;
+      const button = quantityLabel?.previousElementSibling;
+      if (button) button.disabled = nextQuantity === 0;
+      updateModalTotal();
     }
 
     function selectOptionPill(btn, group, value, extraPrice) {
@@ -676,11 +910,7 @@
       if (group === 'flavor') modalFlavor = value;
       if (group === 'rice') {
         modalRice = value;
-        const addonName = `${value} Rice`;
-        const addon = menuData.addons.find(item =>
-          item.addon_category === 'rice' && item.addon_name.toLowerCase() === addonName.toLowerCase()
-        );
-        modalRicePrice = addon ? Number(addon.addon_price) : extraPrice;
+        modalRicePrice = Number(extraPrice);
       }
 
       updateModalTotal();
@@ -688,10 +918,11 @@
 
     function updateModalTotal() {
       if (!activeProduct) return;
-      const isPastil = isCustomizableProduct(activeProduct);
       let base = Number(activeProduct.price);
-      if (isPastil) {
-        base += modalRicePrice;
+      base += modalRicePrice;
+      for (const [productId, quantity] of Object.entries(modalAddonQuantities)) {
+        const addon = menuData.addons.find(item => item.addon_id === Number(productId));
+        if (addon) base += Number(addon.addon_price) * quantity;
       }
       const total = base;
       document.getElementById('modal-item-total-preview').textContent = `Php ${total.toFixed(2)}`;
@@ -699,15 +930,41 @@
 
     function confirmAddToCart() {
       if (!activeProduct) return;
-      const isPastil = isCustomizableProduct(activeProduct);
-
       let configuredAddons = [];
-      if (isPastil) {
-        configuredAddons.push({ addon_id: null, addon_name: `Flavor: ${modalFlavor}`, addon_price: 0, quantity: 1 });
-        if (modalRicePrice > 0) {
-          configuredAddons.push({ addon_id: null, addon_name: `Garlic Rice`, addon_price: modalRicePrice, quantity: 1 });
-        } else {
-          configuredAddons.push({ addon_id: null, addon_name: `Plain Rice`, addon_price: 0, quantity: 1 });
+      const selectedChoices = getProductCustomizationChoices();
+      const flavorChoice = selectedChoices.find(choice =>
+        choice.addon_category === 'flavor' && choice.addon_name === modalFlavor
+      );
+      if (flavorChoice) {
+        configuredAddons.push({
+          addon_id: flavorChoice.addon_id,
+          addon_name: `Flavor: ${flavorChoice.addon_name}`,
+          addon_price: Number(flavorChoice.addon_price),
+          quantity: 1,
+        });
+      }
+      const riceChoice = selectedChoices.find(choice =>
+        choice.addon_category === 'rice' &&
+        choice.addon_name.replace(/ Rice$/i, '') === modalRice
+      );
+      if (riceChoice) {
+        configuredAddons.push({
+          addon_id: riceChoice.addon_id,
+          addon_name: riceChoice.addon_name,
+          addon_price: Number(riceChoice.addon_price),
+          quantity: 1,
+        });
+      }
+
+      for (const [productId, quantity] of Object.entries(modalAddonQuantities)) {
+        const addon = menuData.addons.find(item => item.addon_id === Number(productId));
+        if (addon) {
+          configuredAddons.push({
+            addon_id: addon.addon_id,
+            addon_name: addon.addon_name,
+            addon_price: Number(addon.addon_price),
+            quantity,
+          });
         }
       }
 
@@ -772,6 +1029,13 @@
               <div class="text-success small fw-semibold">Php ${item.subtotal.toFixed(2)}</div>
             </div>
             <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-sm btn-outline-secondary px-2 py-0" onclick="changeCartQuantity(${idx}, -1)" aria-label="Decrease quantity">
+                <i class="bi bi-dash"></i>
+              </button>
+              <span class="fw-bold small text-dark" style="min-width: 24px; text-align: center;">${item.quantity}</span>
+              <button class="btn btn-sm btn-outline-secondary px-2 py-0" onclick="changeCartQuantity(${idx}, 1)" aria-label="Increase quantity">
+                <i class="bi bi-plus"></i>
+              </button>
               <button class="btn btn-sm text-danger p-0 ms-1" onclick="removeCartItem(${idx})"><i class="bi bi-x-circle"></i></button>
             </div>
           </div>
@@ -783,6 +1047,26 @@
       btnCharge.disabled = false;
       btnSave.disabled = false;
       renderProducts();
+    }
+
+    function changeCartQuantity(index, change) {
+      const item = cart[index];
+      if (!item) return;
+
+      const nextQuantity = item.quantity + change;
+      if (nextQuantity < 1) {
+        removeCartItem(index);
+        return;
+      }
+      if (nextQuantity > 100) return;
+
+      const addonCost = (item.addons || []).reduce(
+        (sum, addon) => sum + Number(addon.addon_price || 0) * (addon.quantity || 1),
+        0
+      );
+      item.quantity = nextQuantity;
+      item.subtotal = (Number(item.unit_price) + addonCost) * item.quantity;
+      renderCart();
     }
 
     function removeCartItem(index) {

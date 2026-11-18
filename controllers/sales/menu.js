@@ -32,12 +32,22 @@ function list(req, res) {
                         is_available: Boolean(product.is_available),
                         allow_quantity: Boolean(product.allow_quantity),
                         is_archived: Boolean(product.is_archived),
+                        customization_enabled: Boolean(product.customization_enabled),
+                        customization_choice_ids: (() => {
+                            try {
+                                const ids = JSON.parse(product.customization_choice_ids || '[]');
+                                return Array.isArray(ids) ? ids.map(Number).filter(Number.isInteger) : [];
+                            } catch {
+                                return [];
+                            }
+                        })(),
                     })),
             })),
             addons: addons.map(addon => ({
                 ...addon,
                 addon_price: Number(addon.addon_price),
                 is_available: Boolean(addon.is_available),
+                is_archived: Boolean(addon.is_archived),
             })),
         });
     } catch (error) {
@@ -96,7 +106,7 @@ function toggleSectionArchive(req, res) {
 }
 
 function createProduct(req, res) {
-    const { section_id, product_name, description, price, allow_quantity, image_url } = req.body || {};
+    const { section_id, product_name, description, price, allow_quantity, image_url, customization_enabled, customization_choice_ids } = req.body || {};
     const name = typeof product_name === 'string' ? product_name.trim() : '';
     const sectionId = Number(section_id);
     const productPrice = Number(price);
@@ -106,11 +116,15 @@ function createProduct(req, res) {
     try {
         const section = db.prepare('SELECT section_id FROM menu_section WHERE section_id = ?').get(sectionId);
         if (!section) return res.status(400).json({ success: false, error: 'Section not found' });
+        const enabled = customization_enabled === true || customization_enabled === 1 || customization_enabled === 'true' ? 1 : 0;
+        const choiceIds = Array.isArray(customization_choice_ids)
+            ? customization_choice_ids.map(Number).filter(Number.isInteger)
+            : [];
         const result = db.prepare(`
             INSERT INTO menu_products
-                (section_id, product_name, description, price, is_available, image_url, allow_quantity, is_archived)
-            VALUES (?, ?, ?, ?, 1, ?, ?, 0)
-        `).run(sectionId, name, description || '', productPrice, image_url || 'assets/logo.png', allow_quantity === false ? 0 : 1);
+                (section_id, product_name, description, price, is_available, image_url, allow_quantity, is_archived, customization_type, customization_enabled, customization_choice_ids)
+            VALUES (?, ?, ?, ?, 1, ?, ?, 0, ?, ?, ?)
+        `).run(sectionId, name, description || '', productPrice, image_url || 'assets/logo.png', allow_quantity === false ? 0 : 1, enabled ? 'pastil' : 'none', enabled, JSON.stringify(choiceIds));
         res.json({ success: true, product_id: Number(result.lastInsertRowid) });
     } catch (error) {
         failure(res, error, 'Product creation error');
@@ -118,7 +132,7 @@ function createProduct(req, res) {
 }
 
 function updateProduct(req, res) {
-    const { product_name, description, price, allow_quantity, image_url, section_id } = req.body || {};
+    const { product_name, description, price, allow_quantity, image_url, section_id, customization_enabled, customization_choice_ids } = req.body || {};
     const updates = [];
     const values = [];
     if (product_name !== undefined) {
@@ -136,6 +150,20 @@ function updateProduct(req, res) {
         values.push(value);
     }
     if (allow_quantity !== undefined) { updates.push('allow_quantity = ?'); values.push(allow_quantity ? 1 : 0); }
+    if (customization_enabled !== undefined) {
+        const enabled = customization_enabled === true || customization_enabled === 1 || customization_enabled === 'true' ? 1 : 0;
+        updates.push('customization_enabled = ?');
+        values.push(enabled);
+        updates.push('customization_type = ?');
+        values.push(enabled ? 'pastil' : 'none');
+    }
+    if (customization_choice_ids !== undefined) {
+        const choiceIds = Array.isArray(customization_choice_ids)
+            ? customization_choice_ids.map(Number).filter(Number.isInteger)
+            : [];
+        updates.push('customization_choice_ids = ?');
+        values.push(JSON.stringify(choiceIds));
+    }
     if (image_url !== undefined) { updates.push('image_url = ?'); values.push(image_url); }
     if (section_id !== undefined) {
         const value = Number(section_id);
@@ -173,6 +201,98 @@ function toggleProductArchive(req, res) {
     toggleArchive('menu_products', 'product_id', req, res);
 }
 
+function createAddon(req, res) {
+    const { addon_name, addon_price, addon_category } = req.body || {};
+    const name = typeof addon_name === 'string' ? addon_name.trim() : '';
+    const price = Number(addon_price);
+    const category = typeof addon_category === 'string' ? addon_category.trim().toLowerCase() : 'extra';
+
+    if (!name) {
+        return res.status(400).json({ success: false, error: 'Customization name is required' });
+    }
+    if (!Number.isFinite(price) || price < 0) {
+        return res.status(400).json({ success: false, error: 'Invalid customization price' });
+    }
+    try {
+        const exists = db.prepare('SELECT 1 FROM product_addons WHERE lower(addon_name) = lower(?)').get(name);
+        if (exists) {
+            return res.status(400).json({ success: false, error: 'Customization choice already exists' });
+        }
+        const result = db.prepare(`
+            INSERT INTO product_addons (addon_name, addon_price, is_available, addon_category)
+            VALUES (?, ?, 1, ?)
+        `).run(name, price, category);
+        res.json({ success: true, addon_id: Number(result.lastInsertRowid) });
+    } catch (error) {
+        failure(res, error, 'Customization creation error');
+    }
+}
+
+function toggleAddonVisibility(req, res) {
+    try {
+        const row = db.prepare('SELECT is_available FROM product_addons WHERE addon_id = ?').get(req.params.id);
+        if (!row) return res.status(404).json({ success: false, error: 'Customization choice not found' });
+        const status = row.is_available ? 0 : 1;
+        db.prepare('UPDATE product_addons SET is_available = ? WHERE addon_id = ?').run(status, req.params.id);
+        res.json({ success: true, is_available: Boolean(status) });
+    } catch (error) {
+        failure(res, error, 'Customization visibility update error');
+    }
+}
+
+function toggleAddonArchive(req, res) {
+    try {
+        const row = db.prepare('SELECT is_archived FROM product_addons WHERE addon_id = ?').get(req.params.id);
+        if (!row) return res.status(404).json({ success: false, error: 'Customization choice not found' });
+        const status = row.is_archived ? 0 : 1;
+        db.prepare('UPDATE product_addons SET is_archived = ? WHERE addon_id = ?').run(status, req.params.id);
+        res.json({ success: true, is_archived: Boolean(status) });
+    } catch (error) {
+        failure(res, error, 'Customization archive update error');
+    }
+}
+
+function updateAddon(req, res) {
+    const { addon_name, addon_price, addon_category } = req.body || {};
+    const updates = [];
+    const values = [];
+
+    if (addon_name !== undefined) {
+        if (typeof addon_name !== 'string' || !addon_name.trim()) {
+            return res.status(400).json({ success: false, error: 'Choice name is required' });
+        }
+        updates.push('addon_name = ?');
+        values.push(addon_name.trim());
+    }
+    if (addon_price !== undefined) {
+        const value = Number(addon_price);
+        if (!Number.isFinite(value) || value < 0) {
+            return res.status(400).json({ success: false, error: 'Invalid choice price' });
+        }
+        updates.push('addon_price = ?');
+        values.push(value);
+    }
+    if (addon_category !== undefined) {
+        if (typeof addon_category !== 'string' || !addon_category.trim()) {
+            return res.status(400).json({ success: false, error: 'Customization type is required' });
+        }
+        updates.push('addon_category = ?');
+        values.push(addon_category.trim().toLowerCase());
+    }
+    if (!updates.length) {
+        return res.status(400).json({ success: false, error: 'No fields to update' });
+    }
+
+    try {
+        values.push(req.params.id);
+        const result = db.prepare(`UPDATE product_addons SET ${updates.join(', ')} WHERE addon_id = ?`).run(...values);
+        if (!result.changes) return res.status(404).json({ success: false, error: 'Choice not found' });
+        res.json({ success: true, message: 'Customization choice updated successfully' });
+    } catch (error) {
+        failure(res, error, 'Customization choice update error');
+    }
+}
+
 module.exports = {
     list,
     listAddons,
@@ -183,4 +303,8 @@ module.exports = {
     updateProduct,
     toggleProductAvailability: toggleAvailability,
     toggleProductArchive,
+    createAddon,
+    updateAddon,
+    toggleAddonVisibility,
+    toggleAddonArchive,
 };

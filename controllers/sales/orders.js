@@ -40,6 +40,147 @@ function failure(res, error, label) {
     res.status(500).json({ success: false, error: 'Unable to complete order operation.' });
 }
 
+// Recipe equivalents: Small = 0.05 kg chicken + 0.30 kg rice; Medium = 0.075 kg chicken + 0.40 kg rice; Large = 0.10 kg chicken + 0.60 kg rice.
+const pastilRecipeEstimates = {
+    small: { chicken: 0.05, rice: 0.30 },
+    medium: { chicken: 0.075, rice: 0.40 },
+    large: { chicken: 0.10, rice: 0.60 },
+};
+
+// Stock name equivalents: Chicken = Chck; Rice = Kanin; Garlic = Bawang.
+function findStockItem(names) {
+    for (const name of names) {
+        const exact = db.prepare(`
+            SELECT id, name, unit_type
+            FROM general_stock_item
+            WHERE status = 'active'
+              AND lower(trim(name)) = lower(trim(?))
+            LIMIT 1
+        `).get(name);
+        if (exact) return exact;
+    }
+
+    for (const name of names) {
+        const partial = db.prepare(`
+            SELECT id, name, unit_type
+            FROM general_stock_item
+            WHERE status = 'active'
+              AND lower(name) LIKE lower(?)
+            ORDER BY id
+            LIMIT 1
+        `).get(`%${name}%`);
+        if (partial) return partial;
+    }
+    return null;
+}
+
+// Per-sale recipe: size determines chicken/rice; Garlic Rice = +0.02 kg garlic; unit-based addons deduct pieces.
+function getSoldItemRecipe(item) {
+    const itemName = item.item_name.toLowerCase();
+    const quantitySold = Number(item.quantity);
+    let size = null;
+    if (itemName.includes('small')) size = 'small';
+    else if (itemName.includes('medium')) size = 'medium';
+    else if (itemName.includes('large')) size = 'large';
+    if (!size) {
+        // Unit-based (unit = piece) item: 1 Coke or 1 Royal = 1 piece deducted.
+        return [{ names: [item.item_name], quantity: quantitySold }];
+    }
+
+    // Pastil recipes use size-based kilogram estimates for chicken and rice.
+    const recipe = pastilRecipeEstimates[size];
+    const usage = [
+        { names: ['chicken', 'chck', 'pastil'], quantity: recipe.chicken * quantitySold },
+        { names: ['rice', 'kanin'], quantity: recipe.rice * quantitySold },
+    ];
+    const addons = db.prepare(`
+        SELECT addon_name, quantity
+        FROM order_item_addons
+        WHERE order_item_id = ?
+    `).all(item.order_item_id);
+
+    for (const addon of addons) {
+        const addonName = addon.addon_name.toLowerCase();
+        if (addonName.includes('garlic')) {
+            // Garlic Rice = 0.02 kg garlic.
+            usage.push({
+                names: ['garlic', 'bawang'],
+                quantity: 0.02 * Number(addon.quantity || 1) * quantitySold,
+            });
+        } else if (!addonName.includes('plain') && !addonName.includes('rice')) {
+            // Unit-based addon: Extra Egg quantity = pieces deducted.
+            usage.push({
+                names: [addon.addon_name],
+                quantity: Number(addon.quantity || 1) * quantitySold,
+            });
+        }
+    }
+    return usage;
+}
+
+// Deducts the order's ingredients from branch stock and records each change in the inventory log.
+function deductSoldMenuInventory(orderId, branchLocationId, userId) {
+    const soldItems = db.prepare(`
+        SELECT order_item_id, item_name, quantity
+        FROM order_items
+        WHERE order_id = ?
+    `).all(orderId);
+    const usageByStockItem = new Map();
+
+    for (const item of soldItems) {
+        const quantitySold = Number(item.quantity);
+        if (!Number.isFinite(quantitySold) || quantitySold < 1) {
+            const error = new Error(`Invalid sold quantity for ${item.item_name}.`);
+            error.code = 'INVENTORY_UPDATE_FAILED';
+            throw error;
+        }
+
+        for (const ingredient of getSoldItemRecipe(item)) {
+            const stockItem = findStockItem(ingredient.names);
+            if (!stockItem) continue;
+            const usage = usageByStockItem.get(stockItem.id) || { stockItem, quantity: 0 };
+            usage.quantity += ingredient.quantity;
+            usageByStockItem.set(stockItem.id, usage);
+        }
+    }
+
+    for (const { stockItem, quantity } of usageByStockItem.values()) {
+        const inventoryItem = db.prepare(`
+            SELECT id, quantity
+            FROM branch_inventory_item
+            WHERE branch_location_id = ? AND general_stock_item_id = ?
+        `).get(branchLocationId, stockItem.id);
+        if (!inventoryItem) {
+            const error = new Error(`No branch inventory record for ${stockItem.name}.`);
+            error.code = 'INVENTORY_NOT_AVAILABLE';
+            throw error;
+        }
+        if (inventoryItem.quantity < quantity) {
+            const error = new Error(`Insufficient branch inventory for ${stockItem.name}.`);
+            error.code = 'INSUFFICIENT_INVENTORY';
+            throw error;
+        }
+
+        const quantityAfter = inventoryItem.quantity - quantity;
+        db.prepare(`
+            UPDATE branch_inventory_item SET quantity = ? WHERE id = ?
+        `).run(quantityAfter, inventoryItem.id);
+        db.prepare(`
+            INSERT INTO branch_inventory_manager_log
+                (branch_location_id, branch_inventory_item_id, user_id,
+                 value_before, value_after, reason)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `).run(
+            branchLocationId,
+            inventoryItem.id,
+            userId,
+            inventoryItem.quantity,
+            quantityAfter,
+            'Sold menu item',
+        );
+    }
+}
+
 function create(req, res) {
     const body = req.body || {};
     const { items } = body;
@@ -91,6 +232,17 @@ function create(req, res) {
                         SELECT addon_id, addon_name, addon_price, is_available
                         FROM product_addons WHERE addon_id = ?
                     `).get(addon.addon_id);
+                    if (!found) {
+                        found = db.prepare(`
+                            SELECT p.product_id AS addon_id, p.product_name AS addon_name,
+                                   p.price AS addon_price, p.is_available
+                            FROM menu_products p
+                            JOIN menu_section s ON s.section_id = p.section_id
+                            WHERE p.product_id = ?
+                              AND lower(s.section_name) LIKE '%add-on%'
+                              AND COALESCE(p.is_archived, 0) = 0
+                        `).get(addon.addon_id);
+                    }
                 } else {
                     const lookup = name.replace(/^Flavor:\s*/i, '');
                     found = db.prepare(`
@@ -345,6 +497,11 @@ async function pay(req, res) {
                 `).run(req.params.id, paymentId, number, receipt_type === 'Digital' ? 'Digital' : 'Printed');
                 receiptId = Number(receipt.lastInsertRowid);
             }
+            deductSoldMenuInventory(
+                req.params.id,
+                req.session.user.branchLocationId,
+                req.session.user.id,
+            );
             db.prepare("UPDATE orders SET order_status = 'Completed' WHERE order_id = ?").run(req.params.id);
             return { paymentId, receiptId, number };
         });
@@ -359,6 +516,12 @@ async function pay(req, res) {
         });
     } catch (error) {
         if (error.code === 'PAYMENT_ALREADY_VERIFIED') {
+            return res.status(409).json({ success: false, error: error.message });
+        }
+        if (error.code === 'INSUFFICIENT_INVENTORY') {
+            return res.status(409).json({ success: false, error: error.message });
+        }
+        if (error.code === 'INVENTORY_NOT_AVAILABLE') {
             return res.status(409).json({ success: false, error: error.message });
         }
         failure(res, error, 'Payment processing error');
