@@ -56,10 +56,9 @@ With the repository's `database.sqlite` and sign-in email verification disabled,
 
 | Role | Email | Password |
 | --- | --- | --- |
-| Admin | `admin@mail.com` | `12345678` |
-| Retired Cook | `cook@mail.com` | `12345678` |
+| Service Crew | `servicecrew@mail.com` | `12345678` |
 | Manager | `manager@mail.com` | `12345678` |
-| Retired Vendor | `vendor@mail.com` | `12345678` |
+| Supervisor | `supervisor@mail.com` | `12345678` |
 
 These are development-only credentials. Do not use them in production or on a deployed instance; change or remove them before deployment. Their fake email addresses cannot receive password-reset codes.
 
