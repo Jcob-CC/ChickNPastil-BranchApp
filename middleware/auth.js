@@ -17,6 +17,12 @@ const auth = (req, res, next) => {
         return next();
     }   
     else if (!isAuthenticated && !isLoginPage) {
+        if (req.path.startsWith('/api/')) {
+            return res.status(401).json({
+                success: false,
+                error: 'Your session expired. Please sign in again.',
+            });
+        }
         return res.redirect('/user/login');
     }
     else if (isAuthenticated && isLoginPage) {

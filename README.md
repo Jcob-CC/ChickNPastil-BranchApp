@@ -109,6 +109,34 @@ Content-Type: application/json
   "quantity": 2
 }
 ```
+- `branchLocationId`: branch to update.
+- `generalStockItemId`: stock item to reduce.
+- `userId`: user recording the sale.
+- `quantity`: amount sold.
+
+To deduct menu ingredients instead of one stock item, send:
+
+```json
+{
+  "branchLocationId": 1,
+  "userId": 4,
+  "items": [
+    {
+      "menuItemId": 3,
+      "quantity": 2,
+      "addons": ["Garlic Rice", "Extra Egg"]
+    },
+    {
+      "menuItemName": "Royal",
+      "quantity": 1
+    }
+  ]
+}
+```
+- `items`: sold menu items in this sale.
+- `menuItemId`: menu product ID, or use `menuItemName`.
+- `quantity`: number of that menu item sold.
+- `addons`: optional addon names or `{ "addon_name": "Extra Egg", "quantity": 2 }` objects.
 
 - `branchLocationId`, `generalStockItemId`, and `userId` are IDs from this app's database; the branch, stock item, and user must be active.
 - `quantity` is the positive amount sold and is subtracted from the branch's on-hand total. If the branch does not have enough stock, the endpoint responds with `409` and leaves inventory and the log unchanged.

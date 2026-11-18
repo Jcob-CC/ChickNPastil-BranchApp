@@ -189,6 +189,12 @@ body.sidebar-collapsed .sidebar-toggle-btn i {
   padding: 24px 28px;
   min-height: calc(100vh - var(--topbar-height));
   transition: margin-left 0.25s ease;
+  margin-top: 0;
+  padding-top: 1rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 body.sidebar-collapsed .main-content {
@@ -201,13 +207,35 @@ body.sidebar-collapsed .main-content {
     transform: translateX(-100%);
     width: 260px;
   }
+
   body.mobile-sidebar-open .sidebar {
     transform: translateX(0);
     box-shadow: 4px 0 16px rgba(0, 0, 0, 0.25);
   }
+
+  /* Larger, fully visible tap target when the sidebar is hidden */
+  .sidebar-toggle-btn {
+    top: 50%;
+    width: 36px;
+    height: 36px;
+    margin-top: -18px;
+    right: -36px;
+    touch-action: manipulation;
+  }
+
+  body.mobile-sidebar-open .sidebar-toggle-btn {
+    right: -18px;
+  }
+
   .main-content {
     margin-left: 0 !important;
     padding: 16px;
+    margin-top: 0;
+    padding-top: 1rem;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 }
 
@@ -329,49 +357,6 @@ body.sidebar-collapsed .main-content {
   background-color: var(--primary-green-hover);
 }
 
-.card-qty-stepper {
-  background: var(--primary-green-light);
-  border: 1px solid #c8decb;
-  border-radius: 20px;
-  padding: 3px 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(30, 86, 49, 0.08);
-}
-
-.card-qty-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1.5px solid var(--primary-green);
-  background: #ffffff;
-  color: var(--primary-green);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.95rem;
-  font-weight: bold;
-  padding: 0;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.card-qty-btn:hover {
-  background: var(--primary-green);
-  color: #ffffff;
-}
-
-.card-qty-count {
-  min-width: 20px;
-  text-align: center;
-  font-size: 0.95rem;
-  color: var(--primary-green);
-  font-weight: 700;
-  user-select: none;
-}
-
 .product-card.has-items {
   border-color: var(--primary-green);
   background-color: #fbfdfb;
@@ -431,6 +416,43 @@ body.sidebar-collapsed .main-content {
   color: var(--primary-green);
 }
 
+.customization-choices-table th:nth-child(4),
+.customization-choices-table td:nth-child(4) {
+  width: 34%;
+  text-align: right;
+  padding-right: 8px;
+}
+
+.customization-choices-table th:nth-child(1),
+.customization-choices-table td:nth-child(1) {
+  width: 31%;
+}
+
+.customization-choices-table th:nth-child(2),
+.customization-choices-table td:nth-child(2) {
+  width: 20%;
+}
+
+.customization-choices-table th:nth-child(3),
+.customization-choices-table td:nth-child(3) {
+  width: 15%;
+}
+
+.customization-action-group {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: 100%;
+}
+
+.customization-action-group .btn {
+  padding-left: 8px;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
 /* MODAL: RESPONSIVE BOTTOM SHEET (MOBILE) vs CENTERED (DESKTOP) */
 @media (max-width: 767.98px) {
   .responsive-order-modal .modal-dialog {
@@ -443,9 +465,11 @@ body.sidebar-collapsed .main-content {
     transform: translateY(100%);
     transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
   .responsive-order-modal.show .modal-dialog {
     transform: translateY(0);
   }
+
   .responsive-order-modal .modal-content {
     border-radius: 24px 24px 0 0;
     border-bottom: none;
@@ -459,6 +483,7 @@ body.sidebar-collapsed .main-content {
   .responsive-order-modal .modal-dialog {
     max-width: 480px;
   }
+
   .responsive-order-modal .modal-content {
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
@@ -583,9 +608,12 @@ body.sidebar-collapsed .main-content {
   body * {
     visibility: hidden;
   }
-  #printableReceipt, #printableReceipt * {
+
+  #printableReceipt,
+  #printableReceipt * {
     visibility: visible;
   }
+
   #printableReceipt {
     position: absolute;
     left: 0;
@@ -595,6 +623,7 @@ body.sidebar-collapsed .main-content {
     box-shadow: none;
     padding: 0;
   }
+
   .no-print {
     display: none !important;
   }

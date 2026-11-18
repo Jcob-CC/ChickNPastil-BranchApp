@@ -43,6 +43,7 @@ body {
   left: 0;
   bottom: 0;
   height: calc(100vh - var(--topbar-height));
+  height: calc(100dvh - var(--topbar-height)); /* accounts for mobile browser bars */
   z-index: 1020; /* Below Topbar (1030), above Main Content (1) */
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2); /* Creates floating overlay effect */
   transition: transform 0.3s ease;
@@ -148,9 +149,11 @@ body {
 .sidebar-toggle-btn {
   position: absolute;
   right: -18px;
-  top: 400px;
+  top: 50%;
+  margin-top: -18px; /* vertically center regardless of screen height */
   width: 36px;
   height: 36px;
+  touch-action: manipulation;
   background-color: #ad2727;
   border-radius: 50%;
   display: flex;
@@ -167,6 +170,15 @@ body {
 .sidebar.collapsed .sidebar-toggle-btn {
   right: -24px;
   transform: rotate(180deg);
+}
+
+@media (max-width: 768px) {
+  .sidebar.collapsed .sidebar-toggle-btn {
+    right: -36px; /* fully visible, easier to tap */
+    width: 40px;
+    height: 40px;
+    margin-top: -20px;
+  }
 }
 
 /* MAIN CONTENT: Takes full screen width, sitting directly underneath topbar & floating sidebar */
