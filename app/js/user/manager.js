@@ -88,6 +88,13 @@ const updateCounts = () => {
 const getUserSearchText = (user) =>
     [user.first_name, user.last_name, user.email, user.role].filter(Boolean).join(' ').toLowerCase();
 
+const getUserRoleLabel = (role) => ({
+    admin: 'Admin',
+    manager: 'Manager',
+    supervisor: 'Supervisor',
+    'service-crew': 'Service Crew',
+})[String(role).trim().toLowerCase()] || role;
+
 const renderUsers = () => {
     const query = document.getElementById('userSearch').value.trim().toLowerCase();
     const filteredUsers = users.filter((user) => getUserSearchText(user).includes(query));
@@ -102,7 +109,7 @@ const renderUsers = () => {
             memberCell.scope = 'row';
             memberCell.append(element('span', '', `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Name not set'));
             memberCell.append(element('small', 'd-block text-secondary fw-normal', user.email));
-            const roleCell = element('td', 'text-capitalize', user.role);
+            const roleCell = element('td', '', getUserRoleLabel(user.role));
             const dateCell = element('td', 'text-nowrap text-secondary', formatDate(user.created_at));
             const statusCell = element('td');
             statusCell.append(statusBadge(user.status));
@@ -229,12 +236,15 @@ const openUserModal = (user) => {
         document.getElementById('firstName').value = user.first_name || '';
         document.getElementById('lastName').value = user.last_name || '';
         document.getElementById('userEmail').value = user.email;
-        document.getElementById('userRole').value = user.role;
-        if (document.getElementById('userRole').value !== user.role) {
-            const roleOption = element('option', '', user.role);
-            roleOption.value = user.role;
-            document.getElementById('userRole').append(roleOption);
-            document.getElementById('userRole').value = user.role;
+        const role = String(user.role).trim().toLowerCase();
+        const replacementRole = { cook: 'supervisor', vendor: 'service-crew' }[role] || user.role;
+        const userRole = document.getElementById('userRole');
+        userRole.value = replacementRole;
+        if (userRole.value !== replacementRole) {
+            const roleOption = element('option', '', replacementRole);
+            roleOption.value = replacementRole;
+            userRole.append(roleOption);
+            userRole.value = replacementRole;
         }
         document.getElementById('userStatus').value = user.status;
     }

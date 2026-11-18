@@ -1,12 +1,13 @@
 const readline = require('node:readline');
 const db = require('../lib/database');
 const { hashPassword } = require('../lib/password');
+const { isAssignableUserRole, normalizeUserRole } = require('../lib/user-roles');
 
 const roles = new Map([
     ['admin', 'admin'],
     ['manager', 'manager'],
-    ['cook', 'Cook'],
-    ['vendor', 'Vendor'],
+    ['supervisor', 'supervisor'],
+    ['service-crew', 'service-crew'],
 ]);
 
 const ask = (prompt) => new Promise((resolve) => {
@@ -92,10 +93,10 @@ const main = async () => {
         throw new Error('Names must be 100 characters or fewer.');
     }
 
-    const roleInput = (await ask('Role (admin, manager, Cook, Vendor): ')).trim().toLowerCase();
+    const roleInput = normalizeUserRole(await ask('Role (admin, manager, supervisor, service-crew): '));
     const role = roles.get(roleInput);
-    if (!role) {
-        throw new Error('Choose one of: admin, manager, Cook, Vendor.');
+    if (!role || !isAssignableUserRole(role)) {
+        throw new Error('Choose one of: admin, manager, supervisor, service-crew.');
     }
 
     const statusInput = (await ask('Status (active/inactive, default active): ')).trim().toLowerCase();

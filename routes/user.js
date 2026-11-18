@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const login = require('../controllers/user/login');
 const admin = require('../controllers/user/manager');
+const dashboard = require('../controllers/user/dashboard');
 const profile = require('../controllers/user/profile');
 
 const router = express.Router();
@@ -24,15 +25,19 @@ router.get('/dashboard', (req, res) => {
     const role = (req.session?.user?.role || '').toLowerCase();
     const dashboard = ['admin', 'manager'].includes(role)
         ? 'manager'
-        : role === 'cook'
-            ? 'cook'
-            : ['vendor', 'staff', 'cashier'].includes(role)
-                ? 'vendor'
-                : null;
+        : ({
+            cook: 'supervisor',
+            supervisor: 'supervisor',
+            vendor: 'service-crew',
+            'service-crew': 'service-crew',
+            staff: 'service-crew',
+            cashier: 'service-crew',
+        })[role] || null;
 
     if (!dashboard) return res.redirect('/user/profile');
     res.redirect(`/pages/dashboard/${dashboard}.html`);
 });
+router.get('/dashboard/notifications', dashboard.getNotifications);
 router.get('/manager', requireAdminORManager, (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/user/manager.html'));
 });

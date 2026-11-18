@@ -6,7 +6,7 @@ const router = express.Router();
 
 const requireCommissaryAccess = (req, res, next) => {
     const role = (req.session?.user?.role || '').toLowerCase();
-    if (!['admin', 'manager', 'cook'].includes(role)) return res.sendStatus(403);
+    if (!['admin', 'manager', 'cook', 'supervisor'].includes(role)) return res.sendStatus(403);
     next();
 };
 

@@ -106,6 +106,18 @@ document.addEventListener("DOMContentLoaded", function () {
         });
       };
 
+      const getRoleLabel = (role) => {
+        const normalizedRole = (role || "").trim().toLowerCase();
+        const labels = {
+          admin: "Admin",
+          manager: "Manager",
+          supervisor: "Supervisor",
+          "service-crew": "Service Crew",
+        };
+        return labels[normalizedRole] ||
+          `${normalizedRole.charAt(0).toUpperCase()}${normalizedRole.slice(1)}`;
+      };
+
       applyRoleVisibility(null);
 
       fetch("/user/session")
@@ -116,7 +128,7 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((session) => {
           currentSessionUser = {
             name: `${session.firstName || ""} ${session.lastName || ""}`.trim(),
-            role: session.role.charAt(0).toUpperCase() + session.role.slice(1),
+            role: getRoleLabel(session.role),
             branch: session.branchLocationName,
             email: session.email,
           };
@@ -128,8 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
             userName.textContent = `${session.firstName} ${session.lastName}`.trim();
           }
           if (userRole) {
-            userRole.textContent =
-              session.role.charAt(0).toUpperCase() + session.role.slice(1);
+            userRole.textContent = getRoleLabel(session.role);
           }
           if (branchLocation) {
             branchLocation.textContent = session.branchLocationName;

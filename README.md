@@ -26,7 +26,7 @@
 
    The login page's **Forgot password?** flow sends an email verification code to active accounts. Configure the `EMAIL_*` settings above to enable email delivery. Codes expire after 10 minutes, allow at most five incorrect attempts, and can be used once; a verified code lets the user choose a new password of 8–256 characters.
 
-   Users without an account can apply from the login page with their name, email, and password. Applications create inactive vendor accounts; a manager must activate the account before the user can sign in. Applicants should contact their manager for approval. Branch selection remains part of the sign-in flow.
+   Users without an account can apply from the login page with their name, email, and password. Applications create inactive Service Crew accounts; a manager must activate the account before the user can sign in. Applicants should contact their manager for approval. Branch selection remains part of the sign-in flow.
 
 4. Start the server:
 
@@ -38,7 +38,7 @@
 
 ## Create an account from the terminal
 
-Run `npm run create-user` from the project folder and follow the prompts. The script creates an account in the local `database.sqlite` database, hashes the password using the app's password helper, and does not display the password as you type. Available roles are `admin`, `manager`, `Cook`, and `Vendor`; status defaults to `active`.
+Run `npm run create-user` from the project folder and follow the prompts. The script creates an account in the local `database.sqlite` database, hashes the password using the app's password helper, and does not display the password as you type. Available roles are `admin`, `manager`, `supervisor`, and `service-crew`; status defaults to `active`. Existing `Cook` and `Vendor` accounts are redirected to the Supervisor and Service Crew dashboards, respectively, and should be updated to their replacement role. These retired roles cannot be assigned to new accounts or retained when editing an account. The database does not restrict role names; the application validates roles when creating or updating accounts.
 
 ## Disable email sign in verification
 
@@ -52,14 +52,14 @@ Restart the server after changing the setting. Verification is enabled by defaul
 
 ### Local database test accounts
 
-With the repository's `database.sqlite` and sign-in email verification disabled, these local demo accounts can be used to test each role:
+With the repository's `database.sqlite` and sign-in email verification disabled, these local demo accounts can be used to test the retired roles' replacement dashboards:
 
 | Role | Email | Password |
 | --- | --- | --- |
 | Admin | `admin@mail.com` | `12345678` |
-| Cook | `cook@mail.com` | `12345678` |
+| Retired Cook | `cook@mail.com` | `12345678` |
 | Manager | `manager@mail.com` | `12345678` |
-| Vendor | `vendor@mail.com` | `12345678` |
+| Retired Vendor | `vendor@mail.com` | `12345678` |
 
 These are development-only credentials. Do not use them in production or on a deployed instance; change or remove them before deployment. Their fake email addresses cannot receive password-reset codes.
 
@@ -165,7 +165,7 @@ Configure PayMongo to send `POST /api/paymongo/webhook` to the server. The curre
 
 ## AI Generated Commissary module
 
-The commissary is available at `/commissary` to signed-in `admin`, `manager`, and `cook` users. Its warehouse inventory is stored separately from branch supply inventory. Admins and managers maintain stock items and recipes, create purchase orders and deliveries, approve purchase orders, and dispatch deliveries. Cooks can adjust stock, record wastage, plan and run production batches, and receive approved purchase orders.
+The commissary is available at `/commissary` to signed-in `admin`, `manager`, `supervisor`, and legacy `cook` users. Its warehouse inventory is stored separately from branch supply inventory. Admins and managers maintain stock items and recipes, create purchase orders and deliveries, approve purchase orders, and dispatch deliveries. Supervisors and legacy Cooks can adjust stock, record wastage, plan and run production batches, and receive approved purchase orders.
 
 The module records stock changes and their associated production, wastage, receipt, and delivery status changes in SQLite transactions. Batch start deducts recipe ingredients; batch completion adds finished goods. Receiving an approved purchase order adds raw materials to the commissary warehouse. Dispatch deducts finished goods from commissary stock only; it does not change branch inventory.
 

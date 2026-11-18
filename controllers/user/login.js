@@ -44,7 +44,7 @@ const applyForAccount = (req, res) => {
 
         db.prepare(`
             INSERT INTO "user" (email, hashed_password, first_name, last_name, role, status)
-            VALUES (?, ?, ?, ?, 'Vendor', 'inactive')
+            VALUES (?, ?, ?, ?, 'service-crew', 'inactive')
         `).run(normalizedEmail, hashPassword(password), normalizedFirstName, normalizedLastName);
 
         return res.status(201).json({

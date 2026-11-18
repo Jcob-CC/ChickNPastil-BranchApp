@@ -1,5 +1,10 @@
 const db = require('../../lib/database');
 const { hashPassword } = require('../../lib/password');
+const {
+    normalizeUserRole,
+    isAssignableUserRole,
+    isLegacyUserRole,
+} = require('../../lib/user-roles');
 
 const allowedStatuses = new Set(['active', 'inactive']);
 
@@ -127,6 +132,7 @@ const createUser = (req, res) => {
     const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
     const normalizedFirstName = normalizeOptionalName(firstName);
     const normalizedLastName = normalizeOptionalName(lastName);
+    const normalizedRole = normalizeUserRole(role);
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) {
         return res.status(400).json({ message: 'Enter a valid email address.' });
@@ -134,7 +140,7 @@ const createUser = (req, res) => {
     if (normalizedFirstName === undefined || normalizedLastName === undefined) {
         return res.status(400).json({ message: 'Names must be 100 characters or fewer.' });
     }
-    if (!isNonEmptyString(role, 50) || !allowedStatuses.has(status)) {
+    if (!isNonEmptyString(role, 50) || !isAssignableUserRole(role) || !allowedStatuses.has(status)) {
         return res.status(400).json({ message: 'Choose a valid role and account status.' });
     }
     if (typeof password !== 'string' || password.length < 8 || password.length > 256) {
@@ -148,7 +154,7 @@ const createUser = (req, res) => {
         const result = db.prepare(`
             INSERT INTO "user" (email, hashed_password, first_name, last_name, role, status)
             VALUES (?, ?, ?, ?, ?, ?)
-        `).run(normalizedEmail, hashPassword(password), normalizedFirstName, normalizedLastName, role.trim(), status);
+        `).run(normalizedEmail, hashPassword(password), normalizedFirstName, normalizedLastName, normalizedRole, status);
 
         const user = db.prepare(`
             SELECT id, email, first_name, last_name, role, status, created_at
@@ -166,6 +172,7 @@ const updateUser = (req, res) => {
     const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
     const normalizedFirstName = normalizeOptionalName(firstName);
     const normalizedLastName = normalizeOptionalName(lastName);
+    const normalizedRole = normalizeUserRole(role);
 
     if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: 'Invalid account ID.' });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) {
@@ -180,7 +187,7 @@ const updateUser = (req, res) => {
     if (password !== '' && password !== undefined && (typeof password !== 'string' || password.length < 8 || password.length > 256)) {
         return res.status(400).json({ message: 'Password must be between 8 and 256 characters.' });
     }
-    if (id === req.session.user.id && (role.trim() !== 'admin' || status !== 'active')) {
+    if (id === req.session.user.id && (normalizedRole !== 'admin' || status !== 'active')) {
         return res.status(400).json({ message: 'You cannot remove your own active administrator access.' });
     }
 
@@ -188,6 +195,12 @@ const updateUser = (req, res) => {
         const update = db.transaction(() => {
             const currentUser = db.prepare('SELECT id, role, status FROM "user" WHERE id = ?').get(id);
             if (!currentUser) return null;
+            if (
+                !isAssignableUserRole(normalizedRole) &&
+                !(isLegacyUserRole(normalizedRole) && normalizeUserRole(currentUser.role) === normalizedRole)
+            ) {
+                return { validationError: 'Choose a valid role and account status.' };
+            }
 
             const duplicateEmail = db.prepare(`
                 SELECT id FROM "user" WHERE lower(email) = ? AND id != ?
@@ -196,7 +209,11 @@ const updateUser = (req, res) => {
                 return { error: 'An account with that email already exists.' };
             }
 
-            if (currentUser.role === 'admin' && currentUser.status === 'active' && (role.trim() !== 'admin' || status !== 'active')) {
+            if (
+                normalizeUserRole(currentUser.role) === 'admin' &&
+                currentUser.status === 'active' &&
+                (normalizedRole !== 'admin' || status !== 'active')
+            ) {
                 const otherActiveAdmin = db.prepare(`
                     SELECT id FROM "user" WHERE role = 'admin' AND status = 'active' AND id != ?
                 `).get(id);
@@ -211,7 +228,15 @@ const updateUser = (req, res) => {
                 SET email = ?, first_name = ?, last_name = ?, role = ?, status = ?,
                     hashed_password = COALESCE(?, hashed_password)
                 WHERE id = ?
-            `).run(normalizedEmail, normalizedFirstName, normalizedLastName, role.trim(), status, passwordHash, id);
+            `).run(
+                normalizedEmail,
+                normalizedFirstName,
+                normalizedLastName,
+                isAssignableUserRole(normalizedRole) ? normalizedRole : currentUser.role,
+                status,
+                passwordHash,
+                id,
+            );
 
             return db.prepare(`
                 SELECT id, email, first_name, last_name, role, status, created_at
@@ -221,6 +246,7 @@ const updateUser = (req, res) => {
 
         const user = update();
         if (!user) return res.status(404).json({ message: 'Account not found.' });
+        if (user.validationError) return res.status(400).json({ message: user.validationError });
         if (user.error) return res.status(409).json({ message: user.error });
         res.json({ user });
     } catch (error) {
