@@ -1,6 +1,4 @@
 const db = require('../../lib/database');
-const sendExpenseApprovalEmail = require('../../lib/expense_notifications');
-
 const getPositiveNumber = (value) => {
     const number = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
     return typeof number === 'number' && Number.isFinite(number) && number > 0 ? number : null;
@@ -333,17 +331,6 @@ const createRequest = (req, res) => {
         const result = saveRequest();
         if (!result) {
             return res.status(404).json({ message: 'One or more stock catalog items are no longer available.' });
-        }
-        if (result.status === 'approved') {
-            sendExpenseApprovalEmail({
-                to: req.session.user.email,
-                requestId: result.requestId,
-                branchName: req.session.user.branchLocationName,
-                totalPrice: result.totalPrice,
-                approvedNote: 'Automatically approved under the configured price limit.',
-            }).catch((error) => {
-                console.error('Unable to send expense approval email:', error);
-            });
         }
         res.status(201).json({
             ...result,

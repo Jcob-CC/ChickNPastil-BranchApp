@@ -1,6 +1,7 @@
 const { randomInt } = require('crypto');
 const db = require('../../lib/database');
 const sendEmail = require('../../lib/emailer');
+const { createVerificationEmail } = require('../../lib/email_templates');
 const { hashPassword, verifyPassword } = require('../../lib/password');
 
 const passwordRecoveryMessage = 'If an active account matches that email, a verification code will be sent.';
@@ -85,10 +86,16 @@ const checkPassword = async (req, res) => {
     };
 
     if (!signInEmailVerificationDisabled) {
+        const template = createVerificationEmail({
+            title: 'Sign in to your account',
+            message: 'Use the following verification code to complete your sign-in.',
+            code,
+        });
         await sendEmail({
             to: user.email,
             subject: 'Your sign-in verification code',
-            text: `Your Chick N Pastil sign-in verification code is ${code}. It expires in 10 minutes.`,
+            text: template.text,
+            html: template.html,
         });
     }
 
@@ -142,10 +149,16 @@ const requestPasswordReset = async (req, res) => {
     if (user) {
         const code = String(randomInt(0, 1000000)).padStart(6, '0');
         try {
+            const template = createVerificationEmail({
+                title: 'Reset your password',
+                message: 'Use the following verification code to continue resetting your Chick N Pastil password.',
+                code,
+            });
             await sendEmail({
                 to: user.email,
                 subject: 'Your password reset verification code',
-                text: `Your Chick N Pastil password reset verification code is ${code}. It expires in 10 minutes.`,
+                text: template.text,
+                html: template.html,
             });
         } catch (error) {
             console.error('Unable to send password reset verification code:', error);
