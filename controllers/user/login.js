@@ -257,7 +257,7 @@ const startSession = (req, res) => {
     delete req.session.emailVerified;
 
     res.json({
-        redirect: '/user/profile',
+        redirect: '/user/dashboard',
     });
 };
 

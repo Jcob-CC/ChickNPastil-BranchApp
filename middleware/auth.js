@@ -20,7 +20,7 @@ const auth = (req, res, next) => {
         return res.redirect('/user/login');
     }
     else if (isAuthenticated && isLoginPage) {
-        return res.redirect('/user/profile');
+        return res.redirect('/user/dashboard');
     }
 
     next();

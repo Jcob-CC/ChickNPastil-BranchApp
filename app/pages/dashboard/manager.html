@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chick N Pastil</title>
+  
+  <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+  
+  <!-- Custom Layout CSS -->
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+</head>
+<body data-page-header="Management Dashboard">
+
+  <!-- Topbar Placeholder -->
+  <div id="topbar-wrapper"></div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <!-- Sidebar Placeholder -->
+    <div id="sidebar-wrapper"></div>
+
+    <!-- Main Page Content -->
+    <main class="main-content">
+      <div class="container-fluid py-3">
+        <section class="rounded-4 p-4 p-lg-5 mb-4 text-white" style="background: linear-gradient(120deg, #1e5631, #42834c);">
+          <div class="row align-items-center g-3">
+            <div class="col-lg-8">
+              <span class="badge rounded-pill bg-white text-success mb-3">MANAGEMENT</span>
+              <h1 class="display-6 fw-bold mb-2">Operations at a glance</h1>
+              <p class="mb-0 opacity-75">Manage branch performance, inventory, people, and daily operations from one place.</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+              <a class="btn btn-light text-success fw-semibold rounded-pill px-4" href="/analytics/financial-overview">
+                <i class="bi bi-graph-up-arrow me-2" aria-hidden="true"></i>View business performance
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="manager-actions-heading">
+          <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+            <div>
+              <h2 class="h4 fw-bold mb-1" id="manager-actions-heading">Management workspace</h2>
+              <p class="text-secondary mb-0">Choose an area to review or take action.</p>
+            </div>
+            <a class="btn btn-success rounded-pill px-3" href="/sales/pos/ordering">
+              <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>New order
+            </a>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12 col-md-6 col-xl-4">
+              <article class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                  <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="rounded-3 bg-success-subtle text-success p-3 fs-5"><i class="bi bi-receipt" aria-hidden="true"></i></span>
+                    <h3 class="h5 fw-bold mb-0">Sales</h3>
+                  </div>
+                  <p class="text-secondary">Monitor live sales, manage the menu, and review transaction reports.</p>
+                  <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-success" href="/sales/manager/dashboard">Live sales</a>
+                    <a class="btn btn-sm btn-outline-success" href="/sales/pos/ordering">New order</a>
+                    <a class="btn btn-sm btn-outline-success" href="/sales/manager/menu">Menu manager</a>
+                    <a class="btn btn-sm btn-outline-success" href="/sales/manager/transactions">Transaction reports</a>
+                  </div>
+                </div>
+              </article>
+            </div>
+            <div class="col-12 col-md-6 col-xl-4 d-none">
+              <article class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                  <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="rounded-3 bg-primary-subtle text-primary p-3 fs-5"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                    <h3 class="h5 fw-bold mb-0">Commissary</h3>
+                  </div>
+                  <p class="text-secondary">Coordinate raw materials, production, branch deliveries, purchasing, and wastage.</p>
+                  <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-success" href="/commissary#inventory">Raw materials</a>
+                    <a class="btn btn-sm btn-outline-success" href="/commissary#production">Production</a>
+                    <a class="btn btn-sm btn-outline-success" href="/commissary#deliveries">Deliveries</a>
+                    <a class="btn btn-sm btn-outline-success" href="/commissary#procurement">Purchase orders</a>
+                    <a class="btn btn-sm btn-outline-success" href="/commissary#wastage">Wastage &amp; logs</a>
+                  </div>
+                </div>
+              </article>
+            </div>
+            <div class="col-12 col-md-6 col-xl-4">
+              <article class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                  <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="rounded-3 bg-warning-subtle text-warning-emphasis p-3 fs-5"><i class="bi bi-clipboard-check" aria-hidden="true"></i></span>
+                    <h3 class="h5 fw-bold mb-0">Supply &amp; expenses</h3>
+                  </div>
+                  <p class="text-secondary">Review restock requests, approve expenses, and keep branch inventory up to date.</p>
+                  <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-success" href="/supply/request_stock">Request stock</a>
+                    <a class="btn btn-sm btn-outline-success" href="/supply/receive_stock">Receive stock</a>
+                    <a class="btn btn-sm btn-outline-success" href="/supply/manage_request">Manage restock</a>
+                    <a class="btn btn-sm btn-outline-success" href="/supply/request_expenses">Request expenses</a>
+                    <a class="btn btn-sm btn-outline-success" href="/supply/manage_expenses">Approve expenses</a>
+                    <a class="btn btn-sm btn-outline-success" href="/supply/inventory">Branch inventory</a>
+                  </div>
+                </div>
+              </article>
+            </div>
+            <div class="col-12 col-md-6 col-xl-4">
+              <article class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                  <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="rounded-3 bg-info-subtle text-info p-3 fs-5"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></span>
+                    <h3 class="h5 fw-bold mb-0">Analytics</h3>
+                  </div>
+                  <p class="text-secondary">Explore financial results, branch profitability, trends, payments, and wastage.</p>
+                  <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-success" href="/analytics/financial-overview">Financial overview</a>
+                    <a class="btn btn-sm btn-outline-success" href="/analytics/branch-profitability">Branch profitability</a>
+                    <a class="btn btn-sm btn-outline-success" href="/analytics/sales-trends">Sales trends</a>
+                    <a class="btn btn-sm btn-outline-success" href="/analytics/payment-audit">Payment audit</a>
+                    <a class="btn btn-sm btn-outline-success" href="/analytics/wastage-insights">Wastage insights</a>
+                  </div>
+                </div>
+              </article>
+            </div>
+            <div class="col-12 col-md-6 col-xl-4">
+              <article class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                  <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="rounded-3 bg-secondary-subtle text-secondary p-3 fs-5"><i class="bi bi-people" aria-hidden="true"></i></span>
+                    <h3 class="h5 fw-bold mb-0">People &amp; branches</h3>
+                  </div>
+                  <p class="text-secondary">Maintain staff accounts and branch records.</p>
+                  <a class="btn btn-sm btn-outline-success" href="/user/manager">System manager</a>
+                </div>
+              </article>
+            </div>
+            <div class="col-12 col-md-6 col-xl-4">
+              <article class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                  <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="rounded-3 bg-danger-subtle text-danger p-3 fs-5"><i class="bi bi-person-circle" aria-hidden="true"></i></span>
+                    <h3 class="h5 fw-bold mb-0">Your account</h3>
+                  </div>
+                  <p class="text-secondary">Review your account details and update your profile.</p>
+                  <a class="btn btn-sm btn-outline-success" href="/user/profile">User profile</a>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Bars Loader Script -->
+  <script src="../../js/shared/bars.js"></script>
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

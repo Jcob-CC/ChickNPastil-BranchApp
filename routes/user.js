@@ -20,6 +20,19 @@ router.get('/login', (req, res) => {
 router.get('/profile', (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/user/profile.html'));
 });
+router.get('/dashboard', (req, res) => {
+    const role = (req.session?.user?.role || '').toLowerCase();
+    const dashboard = ['admin', 'manager'].includes(role)
+        ? 'manager'
+        : role === 'cook'
+            ? 'cook'
+            : ['vendor', 'staff', 'cashier'].includes(role)
+                ? 'vendor'
+                : null;
+
+    if (!dashboard) return res.redirect('/user/profile');
+    res.redirect(`/pages/dashboard/${dashboard}.html`);
+});
 router.get('/manager', requireAdminORManager, (req, res) => {
     res.sendFile(path.join(__dirname, '../app/pages/user/manager.html'));
 });
