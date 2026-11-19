@@ -441,6 +441,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Shared Components -->
   <script src="../../js/shared/bars.js"></script>
+  <script src="../../js/shared/sales-dialog.js"></script>
 
   <script>
     let staffOrders = [];
@@ -631,7 +632,7 @@
       const newStatus = dropdown.value;
 
       if (newStatus === 'Cancelled') {
-        if (!confirm('Are you sure you want to cancel Order #' + currentStaffDetailOrder.order_id + '? This action cannot be undone by staff.')) {
+        if (!await showSalesConfirm('Are you sure you want to cancel Order #' + currentStaffDetailOrder.order_id + '? This action cannot be undone by staff.', 'Cancel order')) {
           dropdown.value = currentStaffDetailOrder.order_status || 'Pending';
           return;
         }

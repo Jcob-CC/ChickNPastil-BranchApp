@@ -356,6 +356,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Shared Components -->
   <script src="../../js/shared/bars.js"></script>
+  <script src="../../js/shared/sales-dialog.js"></script>
 
   <script>
     let fullMenu = [];
@@ -959,7 +960,7 @@
 
     async function toggleArchiveSection(id, currentlyArchived) {
       const verb = currentlyArchived ? 'restore' : 'archive';
-      if (!confirm(`Are you sure you want to ${verb} this section? (Archived sections are hidden from staff ordering but retained in reports)`)) {
+      if (!await showSalesConfirm(`Are you sure you want to ${verb} this section? Archived sections are hidden from staff ordering but retained in reports.`, 'Confirm section action')) {
         return;
       }
 
@@ -1088,7 +1089,7 @@
 
     async function toggleArchiveProduct(id, currentlyArchived) {
       const verb = currentlyArchived ? 'restore' : 'archive';
-      if (!confirm(`Are you sure you want to ${verb} this product?`)) {
+      if (!await showSalesConfirm(`Are you sure you want to ${verb} this product?`, 'Confirm product action')) {
         return;
       }
 

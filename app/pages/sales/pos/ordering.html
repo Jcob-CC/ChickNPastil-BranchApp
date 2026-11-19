@@ -541,6 +541,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Shared Components -->
   <script src="../../js/shared/bars.js"></script>
+  <script src="../../js/shared/sales-dialog.js"></script>
 
   <script>
     let menuData = { sections: [], addons: [] };
@@ -550,6 +551,7 @@
 
     let activeProduct = null;
     let modalFlavor = 'Original';
+    let modalFlavorPrice = 0;
     let modalRice = 'Plain';
     let modalRicePrice = 0;
     let modalAddonQuantities = {};
@@ -746,6 +748,7 @@
 
       activeProduct = found;
       modalFlavor = 'Original';
+      modalFlavorPrice = 0;
       modalRice = 'Plain';
       modalRicePrice = 0;
       modalAddonQuantities = {};
@@ -786,6 +789,7 @@
         flavorWrapper.style.display = flavorChoices.length ? 'block' : 'none';
         if (flavorChoices.length) {
           modalFlavor = flavorChoices[0].addon_name;
+          modalFlavorPrice = Number(flavorChoices[0].addon_price);
           flavorWrapper.innerHTML = `
             <label class="form-label small fw-bold text-dark text-uppercase mb-2">Flavor</label>
             <div class="option-pill-group">
@@ -907,7 +911,10 @@
       parent.querySelectorAll('.option-pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
-      if (group === 'flavor') modalFlavor = value;
+      if (group === 'flavor') {
+        modalFlavor = value;
+        modalFlavorPrice = Number(extraPrice);
+      }
       if (group === 'rice') {
         modalRice = value;
         modalRicePrice = Number(extraPrice);
@@ -919,6 +926,7 @@
     function updateModalTotal() {
       if (!activeProduct) return;
       let base = Number(activeProduct.price);
+      base += modalFlavorPrice;
       base += modalRicePrice;
       for (const [productId, quantity] of Object.entries(modalAddonQuantities)) {
         const addon = menuData.addons.find(item => item.addon_id === Number(productId));
