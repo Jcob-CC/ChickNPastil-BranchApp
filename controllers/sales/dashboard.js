@@ -42,11 +42,14 @@ function stats(req, res) {
             surgeValues.push(branch);
         }
         const surge = db.prepare(`SELECT COUNT(*) AS count FROM orders ${surgeWhere}`).get(...surgeValues);
-        const alerts = [{
-            type: surge.count >= 5 ? 'warning' : 'info',
-            title: `${branchLabel}: ${surge.count >= 5 ? 'High Sales Velocity' : 'Standard Sales Rate'}`,
-            message: `${surge.count} order(s) placed in the past 60 minutes.`,
-        }];
+        const alerts = [];
+        if (surge.count >= 5) {
+            alerts.push({
+                type: 'warning',
+                title: `${branchLabel}: High Sales Velocity`,
+                message: `${surge.count} order(s) placed in the past 60 minutes.`,
+            });
+        }
 
         const demandValues = [];
         let demandWhere = "WHERE DATE(o.order_datetime, '+8 hours') = DATE('now', '+8 hours') AND o.order_status != 'Cancelled'";
