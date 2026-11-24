@@ -46,6 +46,7 @@ api.put('/menu/product/:id/inventory-mappings', requireManager, menu.replaceProd
 api.post('/menu/section', requireManager, menu.createSection);
 api.put('/menu/section/:id', requireManager, menu.updateSection);
 api.put('/menu/section/:id/archive', requireManager, menu.toggleSectionArchive);
+api.post('/menu/image', requireManager, express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '2mb' }), menu.uploadImage);
 api.post('/menu/product', requireManager, menu.createProduct);
 api.put('/menu/product/:id', requireManager, menu.updateProduct);
 api.put('/menu/product/:id/availability', requireManager, menu.toggleProductAvailability);

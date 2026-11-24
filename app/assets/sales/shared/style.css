@@ -200,7 +200,6 @@ body.sidebar-collapsed .sidebar-toggle-btn i {
 body.sidebar-collapsed .main-content {
   margin-left: var(--sidebar-collapsed-width);
 }
-
 /* MOBILE RESPONSIVE SIDEBAR */
 @media (max-width: 767.98px) {
   .sidebar {
@@ -323,6 +322,34 @@ body.sidebar-collapsed .main-content {
   cursor: not-allowed;
   background-color: #f8faf8;
   border-style: dashed;
+}
+
+.product-thumb {
+  display: block;
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.menu-thumb {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.section-card .menu-thumb {
+  cursor: zoom-in;
+}
+
+/* The logo is not a photo: show it whole instead of cropping it. */
+.product-thumb[src$="logo.png"],
+.menu-thumb[src$="logo.png"] {
+  object-fit: contain;
+  background: #f8faf8;
 }
 
 .product-title {

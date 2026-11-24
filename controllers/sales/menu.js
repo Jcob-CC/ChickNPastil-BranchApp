@@ -1,8 +1,44 @@
+const fs = require('fs');
+const path = require('path');
+const { randomBytes } = require('crypto');
 const db = require('../../lib/database');
+
+const defaultProductImage = 'assets/sales/img/logo.png';
+const uploadDir = path.join(__dirname, '../../app/assets/sales/img/menu/uploads');
 
 function failure(res, error, label) {
     console.error(`${label}:`, error);
     res.status(500).json({ success: false, error: 'Unable to complete menu operation.' });
+}
+
+// A product without its own photo shows the business logo.
+function normalizeImageUrl(value) {
+    const url = typeof value === 'string' ? value.trim() : '';
+    return url && url.length <= 300 ? url : defaultProductImage;
+}
+
+function detectImageExtension(buffer) {
+    if (buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpg';
+    if (buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+    if (buffer.length > 12 && buffer.subarray(0, 4).toString('latin1') === 'RIFF' && buffer.subarray(8, 12).toString('latin1') === 'WEBP') return 'webp';
+    return null;
+}
+
+function uploadImage(req, res) {
+    const image = req.body;
+    if (!Buffer.isBuffer(image) || image.length === 0) {
+        return res.status(400).json({ success: false, error: 'Choose a JPG, PNG or WebP image under 2 MB.' });
+    }
+    const extension = detectImageExtension(image);
+    if (!extension) return res.status(400).json({ success: false, error: 'Only JPG, PNG or WebP images are allowed.' });
+    try {
+        fs.mkdirSync(uploadDir, { recursive: true });
+        const filename = `${randomBytes(12).toString('hex')}.${extension}`;
+        fs.writeFileSync(path.join(uploadDir, filename), image);
+        res.json({ success: true, image_url: `assets/sales/img/menu/uploads/${filename}` });
+    } catch (error) {
+        failure(res, error, 'Product image upload error');
+    }
 }
 
 function list(req, res) {
@@ -265,7 +301,7 @@ function createProduct(req, res) {
             INSERT INTO menu_products
                 (section_id, product_name, description, price, is_available, image_url, allow_quantity, is_archived, customization_type, customization_enabled, customization_choice_ids)
             VALUES (?, ?, ?, ?, 1, ?, ?, 0, ?, ?, ?)
-        `).run(sectionId, name, description || '', productPrice, image_url || 'assets/logo.png', allow_quantity === false ? 0 : 1, enabled ? 'pastil' : 'none', enabled, JSON.stringify(choiceIds));
+        `).run(sectionId, name, description || '', productPrice, normalizeImageUrl(image_url),allow_quantity === false ? 0 : 1, enabled ? 'pastil' : 'none', enabled, JSON.stringify(choiceIds));
         res.json({ success: true, product_id: Number(result.lastInsertRowid) });
     } catch (error) {
         failure(res, error, 'Product creation error');
@@ -305,7 +341,7 @@ function updateProduct(req, res) {
         updates.push('customization_choice_ids = ?');
         values.push(JSON.stringify(choiceIds));
     }
-    if (image_url !== undefined) { updates.push('image_url = ?'); values.push(image_url); }
+    if (image_url !== undefined) { updates.push('image_url = ?'); values.push(normalizeImageUrl(image_url)); }
     if (section_id !== undefined) {
         const value = Number(section_id);
         if (!Number.isInteger(value) || !db.prepare('SELECT 1 FROM menu_section WHERE section_id = ?').get(value)) {
@@ -444,6 +480,7 @@ module.exports = {
     updateSection,
     toggleSectionArchive,
     createProduct,
+    uploadImage,
     updateProduct,
     toggleProductAvailability: toggleAvailability,
     toggleProductArchive,

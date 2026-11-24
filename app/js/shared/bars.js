@@ -8,7 +8,17 @@ window.parseDbDate = (value) => {
   const text = String(value).trim().replace(" ", "T");
   return new Date(/(Z|[+-]\d{2}:?\d{2})$/i.test(text) ? text : `${text}Z`);
 };
-window.formatDbDate = (value, options = {}, method = "toLocaleString") => {
+// Menu image paths are saved without a host (e.g. "assets/sales/img/menu/elite.jpg"); serve them from the site root.
+// A product with no photo, or whose photo file is missing, shows the business logo.
+window.PRODUCT_LOGO_URL = "/assets/sales/img/logo.png";
+window.productImageUrl = (path) => {
+  const value = String(path || "").trim();
+  if (!value) return window.PRODUCT_LOGO_URL;
+  return encodeURI(/^(https?:)?\/\//i.test(value) || value.startsWith("/") ? value : `/${value}`);
+};
+window.productImageTag = (path, className) =>
+  `<img class="${className}" src="${window.productImageUrl(path)}" alt="" loading="lazy" onerror="this.onerror=null;this.src=PRODUCT_LOGO_URL">`;
+window.formatDbDate =(value, options = {}, method = "toLocaleString") => {
   const date = value instanceof Date ? value : window.parseDbDate(value);
   if (Number.isNaN(date.getTime())) return value || "—";
   return date[method]("en-PH", { ...options, timeZone: window.APP_TIME_ZONE });

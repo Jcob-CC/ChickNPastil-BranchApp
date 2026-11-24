@@ -11,16 +11,21 @@
   <link rel="stylesheet" href="/assets/sales/shared/style.css">
   <link rel="stylesheet" href="../../assets/css/style.css">
   <style>
+    /* The layout follows the page width: the product column shrinks to fit (minmax(0, 1fr)) instead of growing to fit its cards or category pills. */
     .pos-layout {
       display: grid;
-      grid-template-columns: 1fr 380px;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
       gap: 24px;
       align-items: start;
     }
 
+    .menu-selection-section {
+      min-width: 0;
+    }
+
     @media (max-width: 991.98px) {
       .pos-layout {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
       }
     }
 
@@ -40,6 +45,14 @@
     .order-summary-box {
       position: sticky;
       top: 80px;
+    }
+
+    /* When zoomed in the order panel can be taller than the screen; let it scroll inside itself so Charge stays reachable. */
+    @media (min-width: 992px) {
+      .order-summary-box {
+        max-height: calc(100vh - 96px);
+        overflow-y: auto;
+      }
     }
 
     @media (max-width: 575.98px) {
@@ -311,8 +324,24 @@
             <div id="modal-addons-list" class="d-grid gap-2"></div>
           </div>
 
-          <!-- Item Subtotal Preview -->
+          <!-- Quantity -->
           <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <span class="text-dark fw-bold small text-uppercase">Quantity</span>
+            <div class="d-flex align-items-center gap-1">
+              <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0" id="modal-qty-minus"
+                onclick="changeModalQuantity(-1)" aria-label="Decrease quantity" disabled>
+                <i class="bi bi-dash"></i>
+              </button>
+              <span class="fw-bold text-dark text-center" id="modal-qty-value" style="min-width: 28px">1</span>
+              <button type="button" class="btn btn-sm btn-success px-2 py-0"
+                onclick="changeModalQuantity(1)" aria-label="Increase quantity">
+                <i class="bi bi-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Item Subtotal Preview -->
+          <div class="d-flex justify-content-between align-items-center mt-2">
             <span class="text-muted fw-semibold">Item Total:</span>
             <span class="fw-bold fs-5 text-dark" id="modal-item-total-preview">Php 30.00</span>
           </div>
@@ -555,6 +584,7 @@
     let modalRice = 'Plain';
     let modalRicePrice = 0;
     let modalAddonQuantities = {};
+    let modalQuantity = 1;
 
     let currentOrderId = null;
     let currentPaymentMethod = 'Cash';
@@ -729,6 +759,7 @@
         return `
           <div class="product-card ${isUnavailable ? 'is-unavailable' : ''} ${hasItemsClass}" ${clickHandler ? `onclick="${clickHandler}"` : ''}>
             <div>
+              ${productImageTag(p.image_url, 'product-thumb')}
               ${isUnavailable ? '<span class="badge bg-secondary mb-2">Unavailable</span>' : ''}
               <div class="product-title">${p.product_name}</div>
               <div class="text-muted small">${p.description || ''}</div>
@@ -752,6 +783,9 @@
       modalRice = 'Plain';
       modalRicePrice = 0;
       modalAddonQuantities = {};
+      modalQuantity = 1;
+      document.getElementById('modal-qty-value').textContent = modalQuantity;
+      document.getElementById('modal-qty-minus').disabled = true;
 
       document.getElementById('modal-product-name').textContent = activeProduct.product_name;
       document.getElementById('modal-product-base-price').textContent = `Php ${Number(activeProduct.price).toFixed(2)}`;
@@ -895,6 +929,14 @@
       }).join('');
     }
 
+    // Quantity of the item being customized (the stepper next to Item Total); the server accepts 1-100 per item.
+    function changeModalQuantity(change) {
+      modalQuantity = Math.min(99, Math.max(1, modalQuantity + change));
+      document.getElementById('modal-qty-value').textContent = modalQuantity;
+      document.getElementById('modal-qty-minus').disabled = modalQuantity <= 1;
+      updateModalTotal();
+    }
+
     function changeModalAddonQuantity(productId, change) {
       const nextQuantity = Math.max(0, (modalAddonQuantities[productId] || 0) + change);
       if (nextQuantity === 0) delete modalAddonQuantities[productId];
@@ -932,7 +974,7 @@
         const addon = menuData.addons.find(item => item.addon_id === Number(productId));
         if (addon) base += Number(addon.addon_price) * quantity;
       }
-      const total = base;
+      const total = base * modalQuantity;
       document.getElementById('modal-item-total-preview').textContent = `Php ${total.toFixed(2)}`;
     }
 
@@ -983,16 +1025,16 @@
       // Check if EXACT SAME product + addons already exists in cart
       const existingIdx = findCartItemIndex(activeProduct.product_id, configuredAddons);
       if (existingIdx !== -1) {
-        cart[existingIdx].quantity += 1;
+        cart[existingIdx].quantity += modalQuantity;
         cart[existingIdx].subtotal = singleItemCost * cart[existingIdx].quantity;
       } else {
         cart.push({
           product_id: activeProduct.product_id,
           item_name: activeProduct.product_name,
           unit_price: unitPrice,
-          quantity: 1,
+          quantity: modalQuantity,
           addons: configuredAddons,
-          subtotal: singleItemCost
+          subtotal: singleItemCost * modalQuantity
         });
       }
 

@@ -13,31 +13,33 @@
     .custom-table {
       table-layout: fixed;
       width: 100%;
-      min-width: 600px;
+      min-width: 640px;
       border-radius: 0;
     }
     .main-content {
 
     }
-    .custom-table th:nth-child(1),
-    .custom-table td:nth-child(1){
-      width: 15%;
+    /* Item Name has no width, so it takes all the space the other columns leave. */
+    .custom-table thead th,
+    .custom-table tbody td {
+      padding-left: 12px;
+      padding-right: 12px;
     }
     .custom-table th:nth-child(2),
     .custom-table td:nth-child(2) {
-      width: 15%;
+      width: 100px;
     }
     .custom-table th:nth-child(3),
     .custom-table td:nth-child(3) {
-      width: 20%;
+      width: 150px;
     }
     .custom-table th:nth-child(4),
     .custom-table td:nth-child(4) {
-      width: 15%;
+      width: 90px;
     }
     .custom-table th:nth-child(5),
     .custom-table td:nth-child(5) {
-      width: 180px;
+      width: 200px;
     }
 
     .menu-mgmt-container {
@@ -165,6 +167,7 @@
       white-space: nowrap;
     }
     .status-pill-toggle {
+      white-space: nowrap;
       border-radius: 20px;
       padding: 2px 12px;
       font-size: 0.82rem;
@@ -227,8 +230,13 @@
               <input type="text" id="quick-product-name" class="form-control form-control-sm" placeholder="Product name" required>
               <input type="text" id="quick-product-description" class="form-control form-control-sm" placeholder="Description (optional)">
               <input type="number" step="0.5" id="quick-product-price" class="form-control form-control-sm" placeholder="Price" required>
-              <div class="small fw-semibold text-muted mt-1">Customization choices</div>
-              <div class="small text-muted mb-1">Check the choices available for this product.</div>
+              <label class="small fw-semibold text-muted mb-0" for="quick-product-image">Photo (optional, uses the logo if empty)</label>
+              <div class="input-group input-group-sm">
+                <input type="file" id="quick-product-image" class="form-control" accept="image/jpeg,image/png,image/webp" onchange="updateImageClearButton(this)">
+                <button type="button" class="btn btn-outline-secondary d-none" id="quick-product-image-clear" onclick="clearProductImage('quick-product-image')" title="Remove the chosen photo" aria-label="Remove the chosen photo"><i class="bi bi-x-lg"></i></button>
+              </div>
+              <div class="small fw-semibold text-muted mt-1">Customization</div>
+              <div class="small text-muted mb-1">Check the types available for this product.</div>
               <div id="quick-product-customization-choices" class="d-grid gap-1"></div>
               <button type="submit" class="btn btn-sm btn-success w-100 fw-semibold" style="background-color: var(--primary-green);">
                 Add
@@ -300,6 +308,20 @@
   </div>
 
   <!-- EDIT PRODUCT MODAL -->
+  <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-0 pb-0">
+          <h6 class="modal-title fw-bold text-dark" id="imagePreviewTitle"></h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="imagePreviewImage" alt="" class="rounded-3" style="width: 100%; max-height: 70vh; object-fit: contain;" onerror="this.onerror=null;this.src=PRODUCT_LOGO_URL">
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 720px;">
       <form class="modal-content border-0 p-3 shadow" onsubmit="saveProduct(event)">
@@ -327,9 +349,21 @@
                 <input type="number" step="0.5" id="edit-product-price" class="form-control fw-bold" placeholder="0.00" required>
               </div>
             </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold text-muted">Photo</label>
+              <div class="d-flex align-items-center gap-3">
+                <img id="edit-product-image-preview" class="menu-thumb" style="width: 72px; height: 72px;" alt="" onerror="this.onerror=null;this.src=PRODUCT_LOGO_URL">
+                <div class="flex-grow-1">
+                  <div class="input-group input-group-sm">
+                    <input type="file" id="edit-product-image" class="form-control" accept="image/jpeg,image/png,image/webp" onchange="onEditImageChange(this)">
+                    <button type="button" class="btn btn-outline-secondary d-none" id="edit-product-image-clear" onclick="removeEditProductImage()" title="Remove photo" aria-label="Remove photo"><i class="bi bi-x-lg"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="border-top pt-3 mt-3">
               <div class="fw-bold small text-dark mb-2">Order customization</div>
-              <div class="small text-muted mb-2">Select the choices customers can use in this modal.</div>
+              <div class="small text-muted mb-2">Select the types customers can choose from when ordering this product.</div>
               <div id="edit-product-customization-choices" class="d-grid gap-1"></div>
             </div>
             <div class="border-top pt-3 mt-3">
@@ -393,30 +427,41 @@
       if (editSelect) editSelect.innerHTML = optionsHtml;
     }
 
+    // One checkbox per customization type (Flavor, Rice, ...); checking a type includes all of its choices.
+    // A product that has only some of a type's choices shows that type as partly checked and keeps those until changed.
     function getCustomizationChoiceControls(containerId, selectedIds = []) {
       const container = document.getElementById(containerId);
       if (!container) return;
-      container.innerHTML = menuAddons
-        .filter(addon => addon.is_available && !addon.is_archived)
-        .map(addon => `
+      const availableAddons = menuAddons.filter(addon => addon.is_available && !addon.is_archived);
+      const typeOf = addon => addon.addon_category || 'extra';
+      container.innerHTML = [...new Set(availableAddons.map(typeOf))].map((type, index) => {
+        const choices = availableAddons.filter(addon => typeOf(addon) === type);
+        const picked = choices.filter(addon => selectedIds.includes(addon.addon_id));
+        const partial = picked.length > 0 && picked.length < choices.length;
+        const names = choices.map(addon => addon.addon_name).join(', ');
+        const tooltip = partial ? `${names} (only ${picked.map(addon => addon.addon_name).join(', ')})` : names;
+        return `
           <div class="form-check small">
-            <input type="checkbox" class="form-check-input customization-choice-input"
-              id="${containerId}-choice-${addon.addon_id}" value="${addon.addon_id}"
-              ${containerId === 'edit-product-customization-choices' ? 'onchange="renderProductInventoryMappings()"' : ''}
-              ${selectedIds.includes(addon.addon_id) ? 'checked' : ''}>
-            <label class="form-check-label" for="${containerId}-choice-${addon.addon_id}">
-              ${addon.addon_name} - Php ${Number(addon.addon_price).toFixed(2)}
-            </label>
+            <input type="checkbox" class="form-check-input customization-type-input"
+              id="${containerId}-type-${index}" data-ids="${choices.map(addon => addon.addon_id).join(',')}"
+              ${partial ? `data-partial="${picked.map(addon => addon.addon_id).join(',')}"` : ''}
+              ${picked.length === choices.length ? 'checked' : ''}
+              ${containerId === 'edit-product-customization-choices' ? 'onchange="renderProductInventoryMappings()"' : ''}>
+            <label class="form-check-label text-capitalize" for="${containerId}-type-${index}"
+              title="${escapeHtml(tooltip)}">${escapeHtml(type)}</label>
           </div>
-        `).join('');
+        `;
+      }).join('');
+      container.querySelectorAll('[data-partial]').forEach(input => { input.indeterminate = true; });
     }
 
     function getSelectedCustomizationChoiceIds(containerId) {
       const container = document.getElementById(containerId);
       if (!container) return [];
-      return [...container.querySelectorAll('.customization-choice-input:checked')]
-        .map(input => Number(input.value))
-        .filter(Number.isInteger);
+      return [...container.querySelectorAll('.customization-type-input')].flatMap(input => {
+        const ids = input.checked ? input.dataset.ids : (input.indeterminate ? input.dataset.partial : '');
+        return ids ? ids.split(',').map(Number) : [];
+      }).filter(Number.isInteger);
     }
 
     function escapeHtml(value) {
@@ -731,8 +776,13 @@
           return `
             <tr>
               <td>
-                <div class="fw-bold text-dark">${p.product_name}</div>
-                <div class="text-muted small">${p.description || '-'}</div>
+                <div class="d-flex align-items-center gap-2">
+                  ${productImageTag(p.image_url, 'menu-thumb')}
+                  <div>
+                    <div class="fw-bold text-dark">${p.product_name}</div>
+                    <div class="text-muted small">${p.description || '-'}</div>
+                  </div>
+                </div>
               </td>
               <td class="fw-semibold text-success">Php ${Number(p.price).toFixed(2)}</td>
               <td>
@@ -745,7 +795,7 @@
                 ${p.is_archived ? '<span class="badge bg-secondary">Archived</span>' : '<span class="badge bg-success-subtle text-success">Active</span>'}
               </td>
               <td>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
                   <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2 small" onclick="openEditProductModal(${sec.section_id}, ${p.product_id})">
                     <i class="bi bi-pencil me-1"></i>Modify
                   </button>
@@ -784,7 +834,7 @@
                     <th>Value</th>
                     <th>Availability</th>
                     <th>Status</th>
-                    <th style="width: 180px;">Action</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -848,6 +898,88 @@
       }
     }
 
+    // Clicking a product thumbnail in the menu tables opens it larger.
+    document.addEventListener('click', (event) => {
+      const thumb = event.target.closest('.section-card img.menu-thumb');
+      if (!thumb) return;
+      const name = thumb.closest('tr')?.querySelector('.fw-bold')?.textContent.trim() || '';
+      document.getElementById('imagePreviewTitle').textContent = name;
+      document.getElementById('imagePreviewImage').src = thumb.getAttribute('src');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('imagePreviewModal')).show();
+    });
+
+    // Shrinks the chosen photo (max 800px, JPEG) before uploading so it stays small and fast to load.
+    async function uploadProductImage(file) {
+      let bitmap;
+      try {
+        bitmap = await createImageBitmap(file);
+      } catch {
+        throw new Error('Choose a valid JPG, PNG or WebP image.');
+      }
+      const scale = Math.min(1, 800 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+      if (!blob) throw new Error('Unable to read that image.');
+      const res = await fetch('/api/menu/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'image/jpeg' },
+        body: blob
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Unable to upload the image.');
+      return data.image_url;
+    }
+
+    function previewProductImage(input, previewId) {
+      const preview = document.getElementById(previewId);
+      const file = input.files[0];
+      if (!preview || !file) return;
+      preview.src = URL.createObjectURL(file);
+    }
+
+    // Shows the clear button only while a file is chosen.
+    function updateImageClearButton(input) {
+      const button = document.getElementById(`${input.id}-clear`);
+      if (button) button.classList.toggle('d-none', !input.files.length);
+    }
+
+    // Drops the file chosen in the Add New Product form.
+    function clearProductImage(inputId) {
+      const input = document.getElementById(inputId);
+      input.value = '';
+      updateImageClearButton(input);
+    }
+
+    // Edit window: the X shows while there is a photo to remove (a new file, or the product's own photo).
+    // Removing it shows the logo and is saved as an empty image, which the server turns into the logo.
+    let editImageRemoved = false;
+
+    function refreshEditImageClear() {
+      const preview = document.getElementById('edit-product-image-preview');
+      const hasFile = document.getElementById('edit-product-image').files.length > 0;
+      const hasOwnPhoto = preview.dataset.hasPhoto === 'true' && !editImageRemoved;
+      document.getElementById('edit-product-image-clear').classList.toggle('d-none', !(hasFile || hasOwnPhoto));
+    }
+
+    function onEditImageChange(input) {
+      previewProductImage(input, 'edit-product-image-preview');
+      editImageRemoved = false;
+      refreshEditImageClear();
+    }
+
+    function removeEditProductImage() {
+      document.getElementById('edit-product-image').value = '';
+      document.getElementById('edit-product-image-preview').src = PRODUCT_LOGO_URL;
+      editImageRemoved = true;
+      refreshEditImageClear();
+    }
+
     async function handleQuickCreateProduct(e) {
       e.preventDefault();
       const sectionId = document.getElementById('quick-product-section').value;
@@ -857,6 +989,8 @@
       const customizationChoiceIds = getSelectedCustomizationChoiceIds('quick-product-customization-choices');
 
       try {
+        const imageFile = document.getElementById('quick-product-image').files[0];
+        const imageUrl = imageFile ? await uploadProductImage(imageFile) : undefined;
         const res = await fetch('/api/menu/product', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -865,6 +999,7 @@
             product_name: name,
             description: description,
             price: price,
+            image_url: imageUrl,
             customization_enabled: customizationChoiceIds.length > 0,
             customization_choice_ids: customizationChoiceIds
           })
@@ -874,6 +1009,7 @@
           document.getElementById('quick-product-name').value = '';
           document.getElementById('quick-product-description').value = '';
           document.getElementById('quick-product-price').value = '';
+          clearProductImage('quick-product-image');
           loadMenuDisplay();
         } else {
           alert('Error: ' + data.error);
@@ -989,6 +1125,12 @@
       document.getElementById('edit-product-name').value = found.product_name;
       document.getElementById('edit-product-desc').value = found.description || '';
       document.getElementById('edit-product-price').value = found.price;
+      const imagePreview = document.getElementById('edit-product-image-preview');
+      imagePreview.src = productImageUrl(found.image_url);
+      imagePreview.dataset.hasPhoto = String(imagePreview.getAttribute('src') !== PRODUCT_LOGO_URL);
+      document.getElementById('edit-product-image').value = '';
+      editImageRemoved = false;
+      refreshEditImageClear();
       getCustomizationChoiceControls('edit-product-customization-choices', found.customization_choice_ids || []);
       inventoryStockItems = [];
       productInventoryMappings = [];
@@ -1039,6 +1181,8 @@
       }
 
       try {
+        const imageFile = document.getElementById('edit-product-image').files[0];
+        const imageUrl = imageFile ? await uploadProductImage(imageFile) : (editImageRemoved ? '' : undefined);
         const res = await fetch(url, {
           method,
           headers: { 'Content-Type': 'application/json' },
@@ -1047,6 +1191,7 @@
             product_name: name,
             description: desc,
             price: price,
+            image_url: imageUrl,
             customization_enabled: customizationChoiceIds.length > 0,
             customization_choice_ids: customizationChoiceIds
           })
