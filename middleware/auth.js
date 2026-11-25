@@ -9,11 +9,12 @@ const auth = (req, res, next) => {
         '/user/password-reset/complete',
     ].includes(req.path);
     const isPosSoldMenuItemWebhook = req.method === 'POST' && req.path === '/webhooks/pos/sold-menu-item';
+    const isGcashSmsWebhook = req.method === 'POST' && req.path === '/webhooks/gcash/sms';
     const isPublicAsset = req.path.startsWith('/assets/') || req.path.startsWith('/js/');
     const isAuthenticated = Boolean(req.session.user);
     const isLoginPage = req.path === '/user/login';
 
-    if (isAuthenticationEndpoint || isPosSoldMenuItemWebhook || isPublicAsset) {
+    if (isAuthenticationEndpoint || isPosSoldMenuItemWebhook || isGcashSmsWebhook || isPublicAsset) {
         return next();
     }   
     else if (!isAuthenticated && !isLoginPage) {

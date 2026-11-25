@@ -244,3 +244,15 @@ CREATE TABLE IF NOT EXISTS receipts (
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
     FOREIGN KEY (payment_id) REFERENCES payments(payment_id)
 );
+
+-- "You have received ..." messages forwarded from the shop's GCash phone; matched to orders by amount.
+CREATE TABLE IF NOT EXISTS gcash_notifications (
+    notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reference_number TEXT NOT NULL UNIQUE,
+    amount REAL NOT NULL,
+    sender_text TEXT,
+    raw_text TEXT NOT NULL,
+    received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    claimed_order_id INTEGER,
+    FOREIGN KEY (claimed_order_id) REFERENCES orders(order_id)
+);

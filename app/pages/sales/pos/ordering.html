@@ -196,7 +196,7 @@
         <div id="cart-items-container" class="mb-3" style="max-height: 280px; overflow-y: auto;">
           <div class="text-center py-4 text-muted small">
             <i class="bi bi-basket3 fs-2 d-block mb-1 text-secondary opacity-50"></i>
-            No items in order yet.<br>Click any menu item on the left to add.
+            No items in order yet.
           </div>
         </div>
 
@@ -234,7 +234,6 @@
         <div class="modal-header border-0 pb-1">
           <div>
             <h5 class="modal-title fw-bold text-dark">Save Order for Later</h5>
-            <small class="text-muted">Customer will pay at the counter when ready.</small>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -264,11 +263,6 @@
               <span class="text-muted">Order Type:</span>
               <span class="fw-semibold" id="save-modal-order-type">Dine-In</span>
             </div>
-          </div>
-
-          <div class="alert alert-warning py-2 small mb-0">
-            <i class="bi bi-clock-history me-1"></i>
-            Order will be saved as <strong>Pending</strong>. Staff can collect payment later via the transactions list.
           </div>
         </div>
         <div class="modal-footer border-0 pt-2">
@@ -362,7 +356,7 @@
 
   <!-- PAYMENT MODAL -->
   <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 480px;">
       <div class="modal-content border-0 p-3 shadow-lg">
         <div class="modal-header border-0 pb-1">
           <h5 class="modal-title fw-bold text-dark">Checkout & Payment</h5>
@@ -415,9 +409,16 @@
           <!-- GCash PayMongo Bridge Section -->
           <div id="gcash-payment-section" style="display: none;">
             <div class="p-3 rounded-3 bg-light border mb-3 text-center">
+              <div class="badge bg-success px-3 py-1 mb-2">Pay to the shop's GCash</div>
+              <div><img id="shop-gcash-qr" src="/assets/sales/img/gcash-qr.png" alt="Shop GCash QR" class="img-fluid rounded mb-2" style="width: 100%; max-width: 290px;" onerror="this.style.display='none'"></div>
+              <div id="gcash-auto-status" class="small fw-semibold text-warning">
+                <i class="bi bi-hourglass-split me-1"></i> Waiting for the GCash payment...
+              </div>
+              <div id="gcash-candidates" class="d-grid gap-2 mt-2 text-start"></div>
+            </div>
+
+            <div class="p-3 rounded-3 bg-light border mb-3 text-center">
               <div class="badge bg-primary px-3 py-1 mb-2">PayMongo GCash Gateway</div>
-              <p class="small text-muted mb-2">Generate a verified PayMongo payment link or scan the QR code to complete
-                payment via GCash.</p>
 
               <div id="paymongo-link-area" class="d-grid gap-2 mb-2">
                 <button type="button" class="btn btn-primary fw-semibold" id="btn-create-paymongo"
@@ -444,9 +445,9 @@
             </div>
 
             <div class="mb-3">
-              <label class="form-label small fw-semibold text-muted">GCash Reference / Approval Code</label>
+              <label class="form-label small fw-semibold text-muted">GCash Reference Number</label>
               <input type="text" id="gcash-ref-number" class="form-control"
-                placeholder="e.g. GCX-20261023-001 or PayMongo Ref">
+                placeholder="Reference number" autocomplete="off">
             </div>
           </div>
 
@@ -589,6 +590,7 @@
     let currentOrderId = null;
     let currentPaymentMethod = 'Cash';
     let activePayMongoLink = null;
+    let gcashPollTimer = null;
 
     async function fetchMenu() {
       try {
@@ -1054,7 +1056,7 @@
         container.innerHTML = `
           <div class="text-center py-4 text-muted small">
             <i class="bi bi-basket3 fs-2 d-block mb-1 text-secondary opacity-50"></i>
-            No items in order yet.<br>Click any menu item on the left to add.
+            No items in order yet.
           </div>
         `;
         document.getElementById('cart-total-val').textContent = 'Php 0.00';
@@ -1161,6 +1163,7 @@
     }
 
     async function confirmSaveOrder() {
+      await discardStaleOrder();
       const user = window.getCurrentUser ? window.getCurrentUser() : { branch: 'Balagtas' };
       const payload = {
         cust_name: document.getElementById('cust_name').value.trim() || 'Walk-in Customer',
@@ -1222,9 +1225,60 @@
       alert(msg);
     }
 
+    // The payment window works on an order saved on the server. If the cart or customer details change after that order
+    // was made, the old (unpaid) order is cancelled and a new one is made, so what is charged always matches what is on screen.
+    let currentOrderSignature = null;
+
+    function cartSignature() {
+      return JSON.stringify([
+        cart.map(item => [item.product_id, item.quantity, item.unit_price, (item.addons || []).map(a => [a.addon_id, a.addon_name, a.addon_price, a.quantity])]),
+        selectedOrderType,
+        document.getElementById('cust_name').value.trim(),
+        document.getElementById('contact_number').value.trim(),
+        document.getElementById('other_contact').value.trim()
+      ]);
+    }
+
+    // Clears everything in the payment window that belongs to one particular order.
+    function resetPaymentState() {
+      activePayMongoLink = null;
+      stopGcashAutoDetect();
+      gcashChosen = null;
+      gcashCandidates = [];
+      gcashDismissed = new Set();
+      const gcashRefInput = document.getElementById('gcash-ref-number');
+      gcashRefInput.value = '';
+      gcashRefInput.readOnly = false;
+      renderGcashCandidates();
+      document.getElementById('paymongo-active-details').style.display = 'none';
+      const linkBtn = document.getElementById('btn-create-paymongo');
+      linkBtn.disabled = false;
+      linkBtn.innerHTML = '<i class="bi bi-link-45deg me-1"></i> Generate PayMongo Payment Link';
+      const linkStatus = document.getElementById('paymongo-status-badge');
+      linkStatus.className = 'small fw-semibold text-warning';
+      linkStatus.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Waiting for customer payment...';
+    }
+
+    async function discardStaleOrder() {
+      if (!currentOrderId || currentOrderSignature === cartSignature()) return;
+      const staleOrderId = currentOrderId;
+      currentOrderId = null;
+      currentOrderSignature = null;
+      resetPaymentState();
+      try {
+        await fetch(`/api/orders/${staleOrderId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_status: 'Cancelled', payment_status: 'Failed' })
+        });
+      } catch (err) { /* the old order stays unpaid; the new one is what gets charged */ }
+    }
+
     async function openPaymentModal() {
       if (cart.length === 0) return;
 
+
+      await discardStaleOrder();
 
       if (currentOrderId) {
         const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
@@ -1254,6 +1308,7 @@
         const data = await res.json();
         if (data.success) {
           currentOrderId = data.order_id;
+          currentOrderSignature = cartSignature();
           const totalAmount = data.order_total;
 
           document.getElementById('pay-modal-amount-due').textContent = `Php ${Number(totalAmount).toFixed(2)}`;
@@ -1271,6 +1326,106 @@
       }
     }
 
+    // GCash "you have received" texts (forwarded from the shop phone) that match this order's amount are shown
+    // with their details so the cashier can compare them with the customer's own GCash receipt before using one.
+    let gcashCandidates = [];
+    let gcashDismissed = new Set();
+    let gcashChosen = null;
+
+    const gcashEsc = value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+
+    function renderGcashCandidates() {
+      const status = document.getElementById('gcash-auto-status');
+      const list = document.getElementById('gcash-candidates');
+      if (gcashChosen) {
+        status.className = 'small fw-semibold text-success';
+        status.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Using payment: Php ${gcashChosen.amount.toFixed(2)} · Ref ${gcashEsc(gcashChosen.reference)}
+          <a href="#" class="ms-2 fw-normal" onclick="resetGcashSelection(); return false;">Change</a>`;
+        list.innerHTML = '';
+        return;
+      }
+      const visible = gcashCandidates.filter(c => !gcashDismissed.has(c.notification_id));
+      if (!visible.length) {
+        status.className = 'small fw-semibold text-warning';
+        status.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Waiting for the GCash payment...';
+        list.innerHTML = '';
+        return;
+      }
+      status.className = 'small fw-semibold text-success';
+      status.innerHTML = '<i class="bi bi-bell-fill me-1"></i> Payment received. Match it with the customer\'s receipt:';
+      list.innerHTML = visible.map(c => `
+        <div class="border rounded-3 bg-white p-2">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div>
+              <div class="fw-bold">Php ${Number(c.amount).toFixed(2)}</div>
+              <div class="small text-muted">${c.payer ? 'From ' + gcashEsc(c.payer) + ' · ' : ''}${formatDbDate(c.received_at, { hour: '2-digit', minute: '2-digit', second: '2-digit' }, 'toLocaleTimeString')}</div>
+              <div class="small">Ref <span class="fw-semibold">${gcashEsc(c.reference)}</span></div>
+            </div>
+            <div class="d-flex flex-column gap-1">
+              <button type="button" class="btn btn-sm btn-success" onclick="useGcashPayment(${c.notification_id})">Use this payment</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="skipGcashPayment(${c.notification_id})">Not this one</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function useGcashPayment(notificationId) {
+      const found = gcashCandidates.find(c => c.notification_id === notificationId);
+      if (!found) return;
+      gcashChosen = found;
+      const refInput = document.getElementById('gcash-ref-number');
+      refInput.value = found.reference;
+      refInput.readOnly = true;
+      stopGcashAutoDetect();
+      renderGcashCandidates();
+    }
+
+    function skipGcashPayment(notificationId) {
+      gcashDismissed.add(notificationId);
+      renderGcashCandidates();
+    }
+
+    function resetGcashSelection() {
+      gcashChosen = null;
+      const refInput = document.getElementById('gcash-ref-number');
+      refInput.value = '';
+      refInput.readOnly = false;
+      renderGcashCandidates();
+      startGcashAutoDetect();
+    }
+
+    function startGcashAutoDetect() {
+      stopGcashAutoDetect();
+      if (!currentOrderId || activePayMongoLink) return;
+      if (gcashChosen) {
+        renderGcashCandidates();
+        return;
+      }
+      document.getElementById('gcash-ref-number').readOnly = false;
+      renderGcashCandidates();
+      const poll = async () => {
+        if (currentPaymentMethod !== 'GCash' || !currentOrderId || activePayMongoLink || gcashChosen) return;
+        try {
+          const res = await fetch(`/api/orders/${currentOrderId}/gcash-payment`);
+          const data = await res.json();
+          if (data.success) {
+            gcashCandidates = data.candidates || [];
+            renderGcashCandidates();
+          }
+        } catch (err) { /* keep waiting */ }
+      };
+      poll();
+      gcashPollTimer = setInterval(poll, 3000);
+    }
+
+    function stopGcashAutoDetect() {
+      if (gcashPollTimer) {
+        clearInterval(gcashPollTimer);
+        gcashPollTimer = null;
+      }
+    }
+
     function setPaymentMethod(method) {
       currentPaymentMethod = method;
       const btnCash = document.getElementById('btn-pay-cash');
@@ -1283,11 +1438,13 @@
         btnGCash.classList.remove('active');
         cashSec.style.display = 'block';
         gcashSec.style.display = 'none';
+        stopGcashAutoDetect();
       } else {
         btnGCash.classList.add('active');
         btnCash.classList.remove('active');
         cashSec.style.display = 'none';
         gcashSec.style.display = 'block';
+        startGcashAutoDetect();
       }
     }
 
@@ -1386,7 +1543,11 @@
         }
         change = paid - due;
       } else {
-        gcashRef = document.getElementById('gcash-ref-number').value.trim() || `GCX-${Date.now().toString().slice(-6)}`;
+        gcashRef = document.getElementById('gcash-ref-number').value.trim();
+        if (!activePayMongoLink && gcashRef.replace(/\s+/g, '').length < 6) {
+          alert("Enter the GCash reference number from the customer's receipt.");
+          return;
+        }
       }
 
       try {
@@ -1418,6 +1579,7 @@
           });
         } else {
           alert('Error completing payment: ' + data.error);
+          if (currentPaymentMethod === 'GCash' && /already used/i.test(data.error || '')) resetGcashSelection();
         }
       } catch (err) {
         alert('Server communication error: ' + err.message);
@@ -1473,10 +1635,16 @@
       document.getElementById('contact_number').value = '';
       document.getElementById('other_contact').value = '';
       currentOrderId = null;
-      activePayMongoLink = null;
+      currentOrderSignature = null;
+      resetPaymentState();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      const paymentModalEl = document.getElementById('paymentModal');
+      paymentModalEl.addEventListener('hidden.bs.modal', stopGcashAutoDetect);
+      paymentModalEl.addEventListener('shown.bs.modal', () => {
+        if (currentPaymentMethod === 'GCash') startGcashAutoDetect();
+      });
       fetchMenu();
       const urlParams = new URLSearchParams(window.location.search);
       const receiptId = urlParams.get('receiptOrder');

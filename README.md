@@ -2,65 +2,43 @@
 
 ## Set up the project
 
-1. Install Node.js and npm.
-2. From the project folder, install the dependencies:
+1. Install dependencies and copy the example settings:
 
    ```sh
    npm install
+   cp .env.example .env
    ```
 
-3. Copy `.env.example` to `.env` and fill in the credentials for any external services you plan to use:
+2. Edit `.env` (private, never committed, so each teammate has their own). Only fill in what you will use:
 
    | Setting | Purpose |
    | --- | --- |
-   | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS` | SMTP server details for email notifications. Use an SMTP app password where your provider requires one; do not use your regular Gmail password. |
-   | `DISABLE_SIGN_IN_EMAIL_VERIFICATION` | Set to `true` to skip sign-in email-code delivery and code checks. Defaults to `false`; use only in trusted development environments. Password-reset verification is unaffected. |
-   | `PAYMONGO_SECRET_KEY` | PayMongo secret API key for payment features. Use a test key for development. |
-   | `PAYMONGO_WEBHOOK_SECRET` | Reserved for PayMongo webhook signature verification; the current webhook handler does not verify signatures. |
-   | `POS_WEBHOOK_SECRET` | A long, randomly generated secret used to authorize POS sold-menu-item webhook requests. |
-   | `PORT` | The example is set to `3000`; the server currently listens on port `3000` regardless of this value. |
+   | `DISABLE_SIGN_IN_EMAIL_VERIFICATION` | Set `true` for local testing to skip the sign-in email code (fake emails then work). Never use in production. Password reset still needs a real email. |
+   | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS` | SMTP for email codes. Use an app password, not your Gmail password. |
+   | `PAYMONGO_SECRET_KEY` | PayMongo **test** key for payment links. |
+   | `POS_WEBHOOK_SECRET` | Long random secret that authorizes POS webhook requests. |
+   | `GCASH_SMS_SECRET` | Long random secret the shop phone sends with each GCash text. See [GCash payments](#gcash-payments-shop-qr-with-automatic-recording). |
+   | `GCASH_REQUIRE_SMS_MATCH` | `true` = a GCash payment is accepted only if GCash's text arrived; `false` (default) also lets the cashier type the reference. |
+   | `SESSION_SECRET` | Optional. A long random value keeps sessions valid across restarts. |
 
-   `SESSION_SECRET` is optional but recommended. Set it to a long, random value so sessions remain valid across server restarts. If it is omitted, the server generates a temporary value each time it starts.
+   `PAYMONGO_WEBHOOK_SECRET` and `PORT` can stay as they are (the server always uses port 3000).
 
-   No external account is needed to run the app locally. Email and PayMongo accounts are needed only for their respective integrations. Sign-in uses user records in `database.sqlite`; the repository database includes local demo accounts listed in [Local database test accounts](#local-database-test-accounts). Other database copies may contain different users.
-
-   The login page's **Forgot password?** flow sends an email verification code to active accounts. Configure the `EMAIL_*` settings above to enable email delivery. Codes expire after 10 minutes, allow at most five incorrect attempts, and can be used once; a verified code lets the user choose a new password of 8–256 characters.
-
-   Users without an account can apply from the login page with their name, email, and password. Applications create inactive Service Crew accounts; a manager must activate the account before the user can sign in. Applicants should contact their manager for approval. Branch selection remains part of the sign-in flow.
-
-4. Start the server:
+3. Start the server. The first run creates `database.sqlite` on your computer. It is not in the repository, so everyone starts empty.
 
    ```sh
    npm start
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000). The app redirects to the sign-in page.
+4. In a second terminal, create your account (roles: `admin`, `manager`, `supervisor`, `service-crew`; use `manager` to see every page), then add the sample menu and photos (safe to repeat):
 
-## Create an account from the terminal
+   ```sh
+   npm run create-user
+   npm run seed-menu
+   ```
 
-Run `npm run create-user` from the project folder and follow the prompts. The script creates an account in the local `database.sqlite` database, hashes the password using the app's password helper, and does not display the password as you type. Available roles are `admin`, `manager`, `supervisor`, and `service-crew`; status defaults to `active`. Existing `Cook` and `Vendor` accounts are redirected to the Supervisor and Service Crew dashboards, respectively, and should be updated to their replacement role. These retired roles cannot be assigned to new accounts or retained when editing an account. The database does not restrict role names; the application validates roles when creating or updating accounts.
+5. Open [http://localhost:3000](http://localhost:3000) and sign in.
 
-## Disable email sign in verification
-
-For trusted development environments, add this setting to `.env` to skip the sign-in email code:
-
-```env
-DISABLE_SIGN_IN_EMAIL_VERIFICATION=true
-```
-
-Restart the server after changing the setting. Verification is enabled by default. When sign-in verification is disabled, test accounts can use fake email addresses because sign-in does not send or check an email code. Password-reset verification is unaffected, so use a real email address if you need to test password resets. Disabling sign-in verification removes an extra layer of account protection; do not use this setting in production.
-
-### Local database test accounts
-
-With the repository's `database.sqlite` and sign-in email verification disabled, these local demo accounts can be used to test the retired roles' replacement dashboards:
-
-| Role | Email | Password |
-| --- | --- | --- |
-| Service Crew | `servicecrew@mail.com` | `12345678` |
-| Manager | `manager@mail.com` | `12345678` |
-| Supervisor | `supervisor@mail.com` | `12345678` |
-
-These are development-only credentials. Do not use them in production or on a deployed instance; change or remove them before deployment. Their fake email addresses cannot receive password-reset codes.
+New users can also apply from the login page. That creates an inactive Service Crew account that a manager must activate.
 
 ## Request flow and code structure
 
@@ -169,3 +147,47 @@ The commissary is available at `/commissary` to signed-in `admin`, `manager`, `s
 The module records stock changes and their associated production, wastage, receipt, and delivery status changes in SQLite transactions. Batch start deducts recipe ingredients; batch completion adds finished goods. Receiving an approved purchase order adds raw materials to the commissary warehouse. Dispatch deducts finished goods from commissary stock only; it does not change branch inventory.
 
 Barcode/QR scanning is available from the stock page when the browser can access a camera (for local development, use `localhost`; otherwise use HTTPS). If camera access or the scanner library is unavailable, enter the item's saved barcode/QR value manually. A scan only identifies the item and never changes stock without a confirmed adjustment.
+
+## GCash payments (shop QR with automatic recording)
+
+Customers pay the shop's own GCash. The shop phone forwards GCash's "You have received..." text to the server, and the POS shows the payment so the cashier can match it with the customer's receipt.
+
+1. Save the shop's GCash QR as `app/assets/sales/img/gcash-qr.png`. It is not committed, so each computer needs its own copy.
+2. Add `GCASH_SMS_SECRET=` with a long random value to `.env`, then restart the server.
+3. Set up the shop phone to forward GCash texts to the server (see [Set up the phone](#set-up-the-phone)).
+4. At the POS, choose **GCash**. When the customer pays, the payment appears as a card; compare it with their receipt and tap **Use this payment**.
+
+If no text arrives, the cashier can type the reference number (set `GCASH_REQUIRE_SMS_MATCH=true` to turn that off). PayMongo payment links still work, but live keys need a registered business account.
+
+### Set up the phone
+
+Use the phone that has the shop's GCash SIM.
+
+1. Install the free **SMS to URL Forwarder** app. It is not on Google Play, so on the phone open [f-droid.org](https://f-droid.org), install the F-Droid app, then search for the forwarder and install it. You can also download the `.apk` from the app's [F-Droid page](https://f-droid.org/packages/tech.bogomolov.incomingsmsgateway/) or its [GitHub releases](https://github.com/bogkonstantin/android_income_sms_gateway_webhook/releases). Android will ask you to allow installing from that source, and Play Protect may show a warning; continue only if you downloaded it from one of these places.
+2. Connect the phone to the same Wi-Fi as the server computer. On the computer run `ipconfig` and note the **IPv4 Address** (for example `192.168.1.23`). Allow Node through the Windows firewall if it asks.
+3. Open the app, allow the permissions it asks for, and add a forwarding setting:
+   - **Sender:** `GCash` (the name shown in your messages app; use `*` if unsure, the server ignores texts that are not GCash payments).
+   - **URL:** `http://192.168.1.23:3000/webhooks/gcash/sms?token=YOUR_SECRET` (your own IP address and the secret from `.env`).
+   - **JSON body:** `{"from":"%from%","text":"%text%"}`
+4. Press the app's **Test** button. Success means the phone can reach the server and the secret is right.
+5. If forwarding stops in the background, allow the app to **Autostart** and exclude it from battery limits.
+
+## Test from a phone on mobile data (ngrok)
+
+A phone on mobile data cannot reach your computer directly. [ngrok](https://ngrok.com) gives the server a temporary public HTTPS address (HTTPS is also needed for the phone camera).
+
+1. Sign up free at ngrok.com and copy your authtoken from [dashboard.ngrok.com/get-started/your-authtoken](https://dashboard.ngrok.com/get-started/your-authtoken). Keep it private.
+2. Install and save the token once:
+
+   ```sh
+   winget install ngrok.ngrok
+   ngrok config add-authtoken YOUR_TOKEN
+   ```
+
+3. With `npm start` running, start the tunnel in a second terminal, then open the `https://...ngrok-free.app` address it prints (choose **Visit Site** on the warning page):
+
+   ```sh
+   ngrok http 3000
+   ```
+
+The address changes every restart. For the GCash forwarder over mobile data, use it as the URL: `https://YOUR-ADDRESS.ngrok-free.app/webhooks/gcash/sms?token=YOUR_SECRET`. Anyone with the address can reach the sign-in page, so use strong passwords and PayMongo test keys, and press `Ctrl+C` to stop the tunnel when done.

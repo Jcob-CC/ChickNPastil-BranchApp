@@ -1,6 +1,7 @@
 const { randomInt } = require('crypto');
 const db = require('../../lib/database');
 const paymongo = require('./paymongo');
+const gcash = require('./gcash');
 const { getMappedInventoryUsage } = require('../../lib/menu_inventory_mappings');
 
 const orderStatuses = ['Pending', 'Preparing', 'Completed', 'Cancelled'];
@@ -195,6 +196,10 @@ function create(req, res) {
             const status = body.order_status || 'Pending';
             if (!['Pending', 'Preparing'].includes(status)) throw new Error('Invalid order status.');
             const branchName = branchFor(req);
+            // With no orders left, numbering starts again at #1 (AUTOINCREMENT would carry on from the last number ever used).
+            if (!db.prepare('SELECT 1 FROM orders LIMIT 1').get()) {
+                db.prepare("DELETE FROM sqlite_sequence WHERE name = 'orders'").run();
+            }
             const inserted = insertOrder.run(
                 typeof body.cust_name === 'string' ? body.cust_name.trim() || 'Walk-in Customer' : 'Walk-in Customer',
                 typeof body.contact_number === 'string' ? body.contact_number : '',
@@ -367,8 +372,36 @@ async function pay(req, res) {
             return res.status(400).json({ success: false, error: 'Payment amount must cover the order total' });
         }
         let verifiedReference = null;
-        if (payment_method === 'GCash') {
-            if (!paymongo_link_id || paymongo_link_id !== order.paymongo_link_id) {
+        let claimedNotificationId = null;
+        if (payment_method === 'GCash' && !paymongo_link_id) {
+            // Paid straight to the shop's own GCash QR. When the shop phone has forwarded GCash's "you have received"
+            // text, the amount and reference come from that message. Otherwise the cashier types the reference
+            // (unless GCASH_REQUIRE_SMS_MATCH=true). Each reference can only be used for one order.
+            const reference = String(gcash_reference_number || '').replace(/\s+/g, '');
+            const received = reference ? gcash.findByReference(reference) : gcash.findMatchingNotification(due);
+            if (received) {
+                if (received.claimed_order_id && Number(received.claimed_order_id) !== Number(req.params.id)) {
+                    return res.status(409).json({ success: false, error: 'This GCash payment was already used for another order.' });
+                }
+                if (Math.abs(Number(received.amount) - due) >= 0.005) {
+                    return res.status(400).json({ success: false, error: `The GCash payment received (Php ${Number(received.amount).toFixed(2)}) does not match this order (Php ${due.toFixed(2)}).` });
+                }
+                verifiedReference = received.reference_number;
+                claimedNotificationId = received.notification_id;
+            } else {
+                if (!/^[A-Za-z0-9-]{6,30}$/.test(reference)) {
+                    return res.status(400).json({ success: false, error: "Enter the GCash reference number from the customer's receipt." });
+                }
+                if (process.env.GCASH_REQUIRE_SMS_MATCH === 'true') {
+                    return res.status(409).json({ success: false, error: 'No matching GCash payment has been received yet.' });
+                }
+                if (db.prepare('SELECT 1 FROM payments WHERE gcash_reference_number = ? AND order_id != ?').get(reference, req.params.id)) {
+                    return res.status(409).json({ success: false, error: 'This GCash reference number was already used for another order.' });
+                }
+                verifiedReference = reference;
+            }
+        } else if (payment_method === 'GCash') {
+            if (paymongo_link_id !== order.paymongo_link_id) {
                 return res.status(400).json({ success: false, error: 'Create a PayMongo payment link for this order first.' });
             }
             let verification;
@@ -412,6 +445,17 @@ async function pay(req, res) {
                     VALUES (?, ?, ?, ?, ?, ?, 'Verified', CURRENT_TIMESTAMP)
                 `).run(req.params.id, payment_method, due, paid, change, verifiedReference);
                 paymentId = Number(result.lastInsertRowid);
+            }
+            if (claimedNotificationId) {
+                const claimed = db.prepare(`
+                    UPDATE gcash_notifications SET claimed_order_id = ?
+                    WHERE notification_id = ? AND (claimed_order_id IS NULL OR claimed_order_id = ?)
+                `).run(req.params.id, claimedNotificationId, req.params.id);
+                if (!claimed.changes) {
+                    const error = new Error('This GCash payment was already used for another order.');
+                    error.code = 'PAYMENT_ALREADY_VERIFIED';
+                    throw error;
+                }
             }
             const existingReceipt = db.prepare('SELECT receipt_id, transaction_number FROM receipts WHERE order_id = ?').get(req.params.id);
             const number = existingReceipt?.transaction_number || `TXN-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(randomInt(0, 10000)).padStart(4, '0')}`;
@@ -457,4 +501,16 @@ async function pay(req, res) {
     }
 }
 
-module.exports = { create, list, get, update, updateStatus, pay };
+// The POS polls this while the customer pays: has a GCash text arrived for exactly this order's amount?
+function gcashPayment(req, res) {
+    try {
+        const order = canAccessOrder(req, res, req.params.id);
+        if (!order) return;
+        const candidates = gcash.findCandidates(Number(order.order_total));
+        res.json({ success: true, found: candidates.length > 0, candidates });
+    } catch (error) {
+        failure(res, error, 'GCash payment lookup error');
+    }
+}
+
+module.exports = { create, list, get, update, updateStatus, pay, gcashPayment };

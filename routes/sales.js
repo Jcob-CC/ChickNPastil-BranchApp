@@ -62,6 +62,7 @@ api.get('/orders/:id', orders.get);
 api.patch('/orders/:id', orders.update);
 api.patch('/orders/:id/status', orders.updateStatus);
 api.post('/orders/:id/pay', orders.pay);
+api.get('/orders/:id/gcash-payment', orders.gcashPayment);
 
 api.get('/dashboard/stats', dashboard.stats);
 api.get('/analytics/summary', requireManager, analytics.summary);

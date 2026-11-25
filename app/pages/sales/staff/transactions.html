@@ -32,6 +32,8 @@
     .badge-pay-pending  { background-color: #fff8e6; color: #b7791f; }
     .badge-pay-failed   { background-color: #fde8e8; color: #c53030; }
     .badge-pay-refunded { background-color: #f0ebff; color: #6c35de; }
+    /* Dim the details modal while the payment modal is stacked on top */
+    .modal.modal-under .modal-content { opacity: 0.15; filter: blur(2px); pointer-events: none; transition: opacity .2s; }
   </style>
 </head>
 <body data-page-header="Today's Transactions">
@@ -196,11 +198,11 @@
           </div>
 
         </div>
-        <div class="modal-footer border-0 pt-1 d-flex justify-content-between">
-          <button type="button" class="btn btn-success rounded-pill px-3 fw-semibold" id="btn-staff-pay" style="background-color: var(--primary-green);" onclick="openStaffPaymentModal()">
+        <div class="modal-footer border-0 pt-1 d-flex flex-column gap-2 align-items-stretch">
+          <button type="button" class="btn btn-success rounded-pill px-3 fw-semibold w-100 m-0" id="btn-staff-pay" style="background-color: var(--primary-green);" onclick="openStaffPaymentModal()">
             <i class="bi bi-cash-stack me-1"></i> Pay Order
           </button>
-          <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-3 w-100 m-0" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
@@ -287,11 +289,11 @@
           </div>
 
         </div>
-        <div class="modal-footer border-0 pt-1">
-          <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold flex-fill" style="background-color: var(--primary-green);" onclick="submitStaffPayment()">
+        <div class="modal-footer border-0 pt-1 d-flex flex-column gap-2 align-items-stretch">
+          <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold w-100 m-0" style="background-color: var(--primary-green);" onclick="submitStaffPayment()">
             Complete Payment & Verify
           </button>
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-3 w-100 m-0" data-bs-dismiss="modal">Cancel</button>
         </div>
       </div>
     </div>
@@ -753,7 +755,11 @@
       calculateStaffChange();
 
       setStaffPayMethod('Cash');
-      new bootstrap.Modal(document.getElementById('staffPaymentModal')).show();
+      const payEl = document.getElementById('staffPaymentModal');
+      const underEl = document.getElementById('staffDetailsModal');
+      underEl.classList.add('modal-under');
+      payEl.addEventListener('hidden.bs.modal', () => underEl.classList.remove('modal-under'), { once: true });
+      new bootstrap.Modal(payEl).show();
     }
 
     function setStaffPayMethod(method) {
